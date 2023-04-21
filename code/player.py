@@ -67,10 +67,10 @@ class Player(pg.sprite.Sprite):
 
         image = animation[int(self.frame_index)]
         if self.facing_right:
-            scaled_image = pg.transform.scale(image, (64,64))
+            scaled_image = pg.transform.scale(image, (87,147))
             self.image = scaled_image
         else:
-            scaled_image = pg.transform.scale(image, (64,64))
+            scaled_image = pg.transform.scale(image, (87,147))
             flipped_image = pg.transform.flip(scaled_image, True, False)
             self.image = flipped_image
 
