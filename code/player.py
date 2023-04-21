@@ -1,7 +1,7 @@
 import pygame as pg
 from settings import *
 from support import *
-
+from projectile import Projectile
 
 class Player(pg.sprite.Sprite):
     def __init__(self, pos, groups, collisionSprites, surface):
@@ -108,8 +108,8 @@ class Player(pg.sprite.Sprite):
             self.status = 'attack'
 
     def input(self):
+        pg.key.set_repeat(0)
         keys = pg.key.get_pressed()
-
         if keys[pg.K_d]:
             self.direction.x = 1
             self.facing_right = True
@@ -124,6 +124,8 @@ class Player(pg.sprite.Sprite):
 
         if keys[pg.K_p] and self.onGround:
             self.attacking = True
+            if self.mana > 0:
+                self.mana -= 10
         # else:
             # self.attacking = False
 
@@ -209,4 +211,4 @@ class Player(pg.sprite.Sprite):
         self.attackTimer()
 
         pg.draw.rect(self.display_surface, "blue", self.hitBox)
-        # pg.draw.rect(self.display_surface, "red", self.rect)
+        pg.draw.rect(self.display_surface, "red", self.rect)

@@ -44,7 +44,7 @@ class UI:
             (self.mana_bar_topleft[0]+16, self.mana_bar_topleft[1]+49),
             (self.bar_max_width, current_bar_height)
         )
-        pg.draw.rect(self.display_surface, 'red',
+        pg.draw.rect(self.display_surface, 'teal',
                      mana_bar_rect,
                      0,
                      0,

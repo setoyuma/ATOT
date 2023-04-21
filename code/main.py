@@ -8,6 +8,7 @@ from button import Button
 from pygame import mixer
 from particle import ParticlePrinciple
 
+
 # pg setup
 
 class Game:

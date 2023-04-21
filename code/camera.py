@@ -21,11 +21,6 @@ class CameraGroup(pg.sprite.Group):
         self.cameraRect = pg.Rect(camLeft,camTop,camWidth,camHeight)
 
     def customDraw(self,player):
-        '''CENTER CAM'''
-        # #get player offset
-        # self.offset.x = player.rect.centerx - self.halfWidth
-        # self.offset.y = player.rect.centery - self.halfHeight
-
         '''BOX CAM'''
         #get camera pos
         if player.rect.left < self.cameraRect.left:
@@ -49,7 +44,7 @@ class CameraGroup(pg.sprite.Group):
             offsetPos = sprite.rect.topleft - self.offset
             self.displaySurface.blit(sprite.image,offsetPos)
 
-        # pg.draw.rect(self.displaySurface,'red',self.cameraRect)
+        pg.draw.rect(self.displaySurface,'red',self.cameraRect)
 
     
 
