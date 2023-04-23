@@ -3,11 +3,14 @@ import json
 from settings import *
 from xp_targets import xp_targets
 from player_stat_line import StatLine
+from pygame.locals import *
 
 class Player(pg.sprite.Sprite):
 	
 	def __init__(self, pos, groups, collisionSprites, surface):
 		super().__init__(groups)
+		self.player_stat_sheet = self.get_stat_sheet()
+
 		# stats
 		self.xp_targets = xp_targets
 		self.hp = 100
@@ -34,32 +37,35 @@ class Player(pg.sprite.Sprite):
 
 	def event_handler(self):
 
-		keys = pg.key.get_pressed()
-		if keys[pg.K_d]:
-			self.direction.x = 1
-		elif keys[pg.K_a]:
-			self.direction.x = -1
-		else:
-			self.direction.x = 0
+		pass
 
-		if keys[pg.K_w]:
-			self.direction.y = -1
-		elif keys[pg.K_s]:
-			self.direction.y = 1
-		else:
-			self.direction.y = 0
+		# keys = pg.key.get_pressed()
+		# if keys[pg.K_d]:
+		# 	self.direction.x = 1
+		# elif keys[pg.K_a]:
+		# 	self.direction.x = -1
+		# else:
+		# 	self.direction.x = 0
 
-		if keys[pg.K_p]:
-			self.attacking = True
-			print('attack')
+		# if keys[pg.K_w]:
+		# 	self.direction.y = -1
+		# elif keys[pg.K_s]:
+		# 	self.direction.y = 1
+		# else:
+		# 	self.direction.y = 0
 
-		if keys[pg.K_u]:
-			self.xp_up()
+		# if keys[pg.K_p]:
+		# 	self.attacking = True
+		# 	print('attack')
 
-		if self.running and keys[pg.K_LSHIFT]:
-			self.speed = BASE_SPEED + 3
-		else:
-			self.speed = BASE_SPEED
+		# if keys[pg.K_u]:
+		# 	# self.xp_up()
+		# 	print("wow")
+
+		# if self.running and keys[pg.K_LSHIFT]:
+		# 	self.speed = BASE_SPEED + 3
+		# else:
+		# 	self.speed = BASE_SPEED
 
 	def get_state(self):
 		if self.direction.x != 0:
@@ -101,10 +107,9 @@ class Player(pg.sprite.Sprite):
 			f.close()
 
 	def update(self):
-		self.player_stat_sheet = self.get_stat_sheet()
+		
+					
 		self.check_stats(self.player_stat_sheet)
-		self.stat_line = StatLine("Lvl", 32, self, (self.rect.centerx, self.rect.y-10), "white", self.display_surface)
-		self.stat_line.update()
 		self.event_handler()
 		self.get_state()
 		self.rect.x += self.direction.x * self.speed

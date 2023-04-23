@@ -6,7 +6,7 @@ from support import *
 from settings import *
 from tile import *
 from ui import UI
-
+from player_stat_line import StatLine
 class World:
 	def __init__(self, world_data, surface):
 		self.display_surface = surface
@@ -65,9 +65,12 @@ class World:
 					pass
 
 	def run(self):
+		self.visibleSprites.customDraw(self.Player)
+		
+		self.stat_line = StatLine("Lvl", 32, self.Player, (self.visibleSprites.offsetPos.x + 64, self.visibleSprites.offsetPos.y), "white", self.display_surface)
+		self.stat_line.update()
 		self.visibleSprites.update()
 		# self.visibleSprites.draw(self.display_surface)
 		self.player.update()
 		self.ui.show_health(self.Player.hp, 100)
 		self.ui.show_mana(self.Player.mana, 100)
-		self.visibleSprites.customDraw(self.Player)

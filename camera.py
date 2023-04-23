@@ -13,12 +13,9 @@ class CameraGroup(pg.sprite.Group):
         self.offset.y = player.rect.centery - SCREEN_HEIGHT//1.5
 
         for sprite in self.sprites():
-            offsetPos = sprite.rect.topleft - self.offset
-            self.displaySurface.blit(sprite.image,offsetPos)
+            self.offsetPos = sprite.rect.topleft - self.offset
+            self.displaySurface.blit(sprite.image,self.offsetPos)
+            
 
-        # pg.draw.rect(self.displaySurface,'red',self.cameraRect)
-
-    
-
-
+        # pg.draw.rect(self.displaySurface, "blue", player.rect)
 
