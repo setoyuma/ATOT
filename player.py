@@ -4,17 +4,20 @@ from settings import *
 from xp_targets import xp_targets
 from player_stat_line import StatLine
 from pygame.locals import *
+from projectile import Projectile
 
 class Player(pg.sprite.Sprite):
 	
 	def __init__(self, pos, groups, collisionSprites, surface):
 		super().__init__(groups)
 		self.player_stat_sheet = self.get_stat_sheet()
-
+		self.collisionSprites = collisionSprites
+		self.groups = groups
 		# stats
 		self.xp_targets = xp_targets
 		self.hp = 100
 		self.mana = 100
+		self.projectiles = []
 
 		self.display_surface = surface
 		self.spawn_x = pos[0]
@@ -22,8 +25,8 @@ class Player(pg.sprite.Sprite):
 		self.image = pg.image.load('./assets/races/Ebonheart.png')
 		scaled_image = pg.transform.scale(self.image, (128,128))
 		self.image = scaled_image
-		self.rect = self.image.get_rect()
-		# self.rect = pg.Rect(self.spawn_x, self.spawn_y, 12, 20)
+		# self.rect = self.image.get_rect()
+		self.rect = pg.Rect((self.spawn_x, self.spawn_y), (128, 128))
 		# self.image = pg.Surface((TILE_SIZE//2, TILE_SIZE))
 		# movement
 		self.direction = pg.math.Vector2()
@@ -31,15 +34,56 @@ class Player(pg.sprite.Sprite):
 
 		# state vars
 		self.running = False
+		self.dashing = False
 		self.attacking = False
 		self.on_left = False
 		self.on_right = False
+
+	def horizontalCollisions(self):
+		for sprite in self.collisionSprites.sprites():
+			if sprite.rect.colliderect(self.rect):
+				if self.direction.x < 0:
+					self.rect.left = sprite.rect.right
+					self.on_left = True
+					self.currentX = self.rect.left
+					# print(f'touching left: {self.on_left}')
+
+				if self.direction.x > 0:
+					self.rect.right = sprite.rect.left
+					self.on_right = True
+					self.currentX = self.rect.right
+					# print(f'touching right: {self.on_right}')
+		# if self.on_left and (self.rect.left < self.currentX or self.direction.x >= 0):
+		# 	self.on_left = False
+		# if self.on_right and (self.rect.right > self.currentX or self.direction.x <= 0):
+		# 	self.on_right = False
+
+	def verticalCollisions(self):
+		for sprite in self.collisionSprites.sprites():
+			if sprite.rect.colliderect(self.rect):
+				if self.direction.y > 0:
+					self.rect.bottom = sprite.rect.top
+					self.direction.y = 0
+					# self.onGround = True
+				if self.direction.y < 0:
+					self.rect.top = sprite.rect.bottom
+					self.direction.y = 0
+					self.onCeiling = True
+
+			# if self.onGround and self.direction.y != 0:
+			#     self.onGround = False
+		
+		# if self.onGround and self.direction.y < 0 or self.direction.y > 1:
+		# 	self.onGround = False
+		# if self.onCeiling and self.direction.y > 0.1:
+		# 	self.onCeiling = False
 
 	def event_handler(self):
 
 		pass
 
-		# keys = pg.key.get_pressed()
+		keys = pg.key.get_pressed()
+
 		# if keys[pg.K_d]:
 		# 	self.direction.x = 1
 		# elif keys[pg.K_a]:
@@ -107,11 +151,10 @@ class Player(pg.sprite.Sprite):
 			f.close()
 
 	def update(self):
-		
-					
-		self.check_stats(self.player_stat_sheet)
 		self.event_handler()
-		self.get_state()
 		self.rect.x += self.direction.x * self.speed
+		self.horizontalCollisions()
 		self.rect.y += self.direction.y * self.speed
-		# pg.draw.rect(self.display_surface, "blue", self.rect)
+		self.verticalCollisions()
+		self.player_stat_sheet = self.get_stat_sheet()
+		self.get_state()

@@ -17,5 +17,5 @@ class CameraGroup(pg.sprite.Group):
             self.displaySurface.blit(sprite.image,self.offsetPos)
             
 
-        # pg.draw.rect(self.displaySurface, "blue", player.rect)
+        pg.draw.rect(self.displaySurface, "blue", player.rect)
 

@@ -21,6 +21,9 @@ class World:
 		# sprites that the player can collide with
 		self.collisionSprites = pg.sprite.Group()
 
+		# projectile sprites
+		self.projectileSprites = pg.sprite.Group()
+
 		# terrain layout
 		terrain_layout = import_csv_layout(world_data['terrain'])
 		self.terrain_sprites = self.create_tile_group(
@@ -46,6 +49,7 @@ class World:
 							'./assets/tiles/Static_Tile.png')
 						tile_surface = terrain_tile_list[int(val)]
 						sprite = StaticTile(TILE_SIZE, x, y, tile_surface, [self.visibleSprites, self.collisionSprites])
+						pg.draw.rect(self.display_surface, "red", sprite.rect)
 					
 					sprite_group.add(sprite)
 		return sprite_group
@@ -56,8 +60,9 @@ class World:
 				x = col_index * TILE_SIZE
 				y = row_index * TILE_SIZE
 				if val == '0':
-					# print(f"Proper Spawn x: {x}")
-					# print(f"Proper Spawn y: {y}")
+					print(f"Proper Spawn x: {x}")
+					print(f"Proper Spawn y: {y}")
+					print("")
 					self.Player = Player((x, y), [self.visibleSprites, self.activeSprites], self.collisionSprites, self.display_surface)
 					self.player.add(self.Player)
 					self.visibleSprites.add(self.player)
@@ -65,12 +70,12 @@ class World:
 					pass
 
 	def run(self):
+		self.player.update()
 		self.visibleSprites.customDraw(self.Player)
 		
-		self.stat_line = StatLine("Lvl", 32, self.Player, (self.visibleSprites.offsetPos.x + 64, self.visibleSprites.offsetPos.y), "white", self.display_surface)
+		self.stat_line = StatLine("Lv", 32, self.Player, (self.visibleSprites.offsetPos.x + 64, self.visibleSprites.offsetPos.y- 10), "white", self.display_surface)
 		self.stat_line.update()
-		self.visibleSprites.update()
+		# self.visibleSprites.update()
 		# self.visibleSprites.draw(self.display_surface)
-		self.player.update()
 		self.ui.show_health(self.Player.hp, 100)
 		self.ui.show_mana(self.Player.mana, 100)
