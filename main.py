@@ -25,6 +25,8 @@ class Game:
 			
 			if self.player.direction.x != 0 or self.player.direction.y != 0:
 				pg.key.set_repeat(1,10)
+			else:
+				pg.key.set_repeat(0)
 
 
 			for event in pg.event.get():
@@ -36,8 +38,13 @@ class Game:
 					sys.exit()
 
 				if event.type == pg.MOUSEBUTTONDOWN:
+					print(self.player.projectiles)
 					proj = Bullet(self.player.groups[0].offsetPos.x + 60, self.player.groups[0].offsetPos.y + 60)
 					self.player.projectiles.append(proj)
+
+					if len(self.player.projectiles) > 4:
+						self.player.projectiles.append(proj)
+
 					# proj = Projectile(self.player.groups[0].offsetPos, "red", self.screen)
 					# self.player.projectiles.append(proj)
 					print("shoot")
@@ -55,7 +62,12 @@ class Game:
 						self.player.direction.y = -1
 
 					if event.key == pg.K_u:
-						self.player.xp_up()
+						# self.player.xp_up()
+						set = pg.image.load('./assets/gear/Voidknight_Set.png')
+						scaled_set = pg.transform.scale(set, (98,98))
+						self.player.image = scaled_set
+						# self.screen.blit((scaled_set), (self.player.hitbox.center))
+						# self.screen.blit(pg.image.load('./assets/gear/Voidknight_Set.png'), (self.player.groups[0].offsetPos.x, self.player.groups[0].offsetPos.y + 98))
 			 
 					# # Sprinting
 					# if event.key == K_LSHIFT:
@@ -92,6 +104,8 @@ class Game:
 
 			for proj in self.player.projectiles:
 				proj.update()
+				if not self.screen.get_rect().collidepoint(proj.pos):
+					self.player.projectiles.remove(proj)
 
 			font = pg.font.Font(None,30)
 			fpsCounter = str(int(self.clock.get_fps()))

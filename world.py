@@ -70,10 +70,12 @@ class World:
 					pass
 
 	def run(self):
-		self.player.update()
 		self.visibleSprites.customDraw(self.Player)
+		self.player.update()
+		# pg.draw.rect(self.display_surface, "blue", self.Player.hitbox)
+
 		
-		self.stat_line = StatLine("Lv", 32, self.Player, (self.visibleSprites.offsetPos.x + 64, self.visibleSprites.offsetPos.y- 10), "white", self.display_surface)
+		self.stat_line = StatLine("Lv", 32, self.Player, (self.visibleSprites.offsetPos.x + 50, self.visibleSprites.offsetPos.y- 15), "white", self.display_surface)
 		self.stat_line.update()
 		# self.visibleSprites.update()
 		# self.visibleSprites.draw(self.display_surface)

@@ -1,6 +1,6 @@
 import pygame as pg
 import math
-
+from settings import *
 class Projectile(pg.sprite.Sprite):
 	def __init__(self, offsetPos, color, surf):
 		self.offsetPos = offsetPos
@@ -53,7 +53,7 @@ class Bullet:
 
         # self.bullet.fill((255, 255, 255))
         self.bullet = pg.transform.rotate(self.bullet, angle)
-        self.speed = 2
+        self.speed = bullet_speed
 
     def update(self):  
         self.pos = (self.pos[0]+self.dir[0]*self.speed, 
@@ -61,4 +61,4 @@ class Bullet:
 
     def draw(self, surf):
         bullet_rect = self.bullet.get_rect(center = self.pos)
-        surf.blit(self.bullet, bullet_rect)  
+        surf.blit(self.bullet, bullet_rect)

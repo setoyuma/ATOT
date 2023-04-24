@@ -23,10 +23,10 @@ class Player(pg.sprite.Sprite):
 		self.spawn_x = pos[0]
 		self.spawn_y = pos[1]
 		self.image = pg.image.load('./assets/races/Ebonheart.png')
-		scaled_image = pg.transform.scale(self.image, (128,128))
+		scaled_image = pg.transform.scale(self.image, (98,98))
 		self.image = scaled_image
 		# self.rect = self.image.get_rect()
-		self.rect = pg.Rect((self.spawn_x, self.spawn_y), (128, 128))
+		self.rect = pg.Rect((self.spawn_x, self.spawn_y), (98, 98))
 		# self.image = pg.Surface((TILE_SIZE//2, TILE_SIZE))
 		# movement
 		self.direction = pg.math.Vector2()
@@ -158,3 +158,4 @@ class Player(pg.sprite.Sprite):
 		self.verticalCollisions()
 		self.player_stat_sheet = self.get_stat_sheet()
 		self.get_state()
+		self.hitbox = pg.Rect((self.groups[0].offsetPos.x + 20, self.groups[0].offsetPos.y), (60,98))

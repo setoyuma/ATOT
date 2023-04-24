@@ -2,6 +2,7 @@ TILE_SIZE = 64
 SCREEN_WIDTH = 1300
 SCREEN_HEIGHT = 720
 BASE_SPEED = 5
+bullet_speed = 5
 
 # colors
 BG_COLOR = '#060C17'
