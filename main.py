@@ -4,7 +4,7 @@ from world import World
 from world_data import worlds
 from settings import *
 from pygame.locals import *
-from projectile import Projectile
+from projectile import Projectile, Bullet
 class Game:
 
 	def __init__(self):
@@ -13,6 +13,7 @@ class Game:
 		pg.display.set_caption("Song Of Valks")
 		self.clock = pg.time.Clock()
 		self.FPS = 60
+		self.dt = self.clock.tick(self.FPS) / 1000
 		self.running = True
 		self.world = World(worlds[1], self.screen)
 		self.player = self.world.Player
@@ -35,8 +36,10 @@ class Game:
 					sys.exit()
 
 				if event.type == pg.MOUSEBUTTONDOWN:
-					proj = Projectile(self.player.groups[0].offsetPos, "red", self.screen)
+					proj = Bullet(self.player.groups[0].offsetPos.x + 60, self.player.groups[0].offsetPos.y + 60)
 					self.player.projectiles.append(proj)
+					# proj = Projectile(self.player.groups[0].offsetPos, "red", self.screen)
+					# self.player.projectiles.append(proj)
 					print("shoot")
 
 				if event.type == KEYDOWN:
@@ -88,8 +91,6 @@ class Game:
 						pass
 
 			for proj in self.player.projectiles:
-				proj.draw()
-				proj.move()
 				proj.update()
 
 			font = pg.font.Font(None,30)
@@ -100,6 +101,8 @@ class Game:
 
 			self.world.run()
 			self.clock.tick(60)
+			for proj in self.player.projectiles:
+				proj.draw(self.screen)
 			pg.display.flip()
 			self.player.check_stats(self.player.get_stat_sheet())
 
