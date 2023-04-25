@@ -46,7 +46,7 @@ class Player(pg.sprite.Sprite):
 		self.on_left = False
 		self.on_right = False
 
-
+		self.change_rank()
 
 	def switch_image(self):
 		if self.direction.x > 0:
@@ -284,10 +284,10 @@ class Player(pg.sprite.Sprite):
 		# print(f"{player['Username']}'s stats: ```{str(player_stats)}```")
 		return player_stats
 
-	def level_up(self, username, stat):
+	def level_up(self, stat):
 		level_increase = 1
 
-		with open(f"./player_data/players/{username}.json", "r") as file:
+		with open(f"./player_data/players/{self.player_name}.json", "r") as file:
 			player = json.load(file)
 
 			player_stats = player["Stats"]
@@ -363,7 +363,7 @@ class Player(pg.sprite.Sprite):
 								"def": player_stats["def"] + level_increase
 							}
 							}
-						with open(f"./player_data/players/{username}.json", "w") as file:
+						with open(f"./player_data/players/{self.player_name}.json", "w") as file:
 							json.dump(player_data, file, indent = 4)
 
 					case _:
@@ -410,6 +410,183 @@ class Player(pg.sprite.Sprite):
 		with open(f"./player_data/players/{self.player_name}.json", "w") as file:
 			json.dump(new_player_data, file, indent=4)
 			file.close()
+	
+	def change_rank(self):
+		with open(f"./player_data/players/{self.player_name}.json", "r") as file:
+			player = json.load(file)
+			player_stats = player["Stats"]
+		
+		if player["Stats"]["xp"] >= xp_targets["Civilian"]:
+			player_data =  {
+							"Username": player["Username"],
+							"Race": player["Race"],
+							"Class": player["Class"],
+							"Rank": "Page",
+							"Stats": {
+								"xp": player_stats["xp"],
+								"xporb": player_stats["xporb"],
+								"hp": player_stats["hp"],
+								"str": player_stats["str"],
+								"mgck": player_stats["mgck"],
+								"def": player_stats["def"]
+							}
+							}
+			with open(f"./player_data/players/{self.player_name}.json", "w") as file:
+							json.dump(player_data, file, indent = 4)
+							file.close()
+		
+		if player["Stats"]["xp"] >= xp_targets["Page"]:
+			player_data =  {
+							"Username": player["Username"],
+							"Race": player["Race"],
+							"Class": player["Class"],
+							"Rank": "Squire",
+							"Stats": {
+								"xp": player_stats["xp"],
+								"xporb": player_stats["xporb"],
+								"hp": player_stats["hp"],
+								"str": player_stats["str"],
+								"mgck": player_stats["mgck"],
+								"def": player_stats["def"]
+							}
+							}
+			with open(f"./player_data/players/{self.player_name}.json", "w") as file:
+							json.dump(player_data, file, indent = 4)
+							file.close()
+		
+		if player["Stats"]["xp"] >= xp_targets["Squire"]:
+			player_data =  {
+							"Username": player["Username"],
+							"Race": player["Race"],
+							"Class": player["Class"],
+							"Rank": "Knight",
+							"Stats": {
+								"xp": player_stats["xp"],
+								"xporb": player_stats["xporb"],
+								"hp": player_stats["hp"],
+								"str": player_stats["str"],
+								"mgck": player_stats["mgck"],
+								"def": player_stats["def"]
+							}
+							}
+			with open(f"./player_data/players/{self.player_name}.json", "w") as file:
+							json.dump(player_data, file, indent = 4)
+							file.close()
+		
+		if player["Stats"]["xp"] >= xp_targets["Knight"]:
+			player_data =  {
+							"Username": player["Username"],
+							"Race": player["Race"],
+							"Class": player["Class"],
+							"Rank": "Mage",
+							"Stats": {
+								"xp": player_stats["xp"],
+								"xporb": player_stats["xporb"],
+								"hp": player_stats["hp"],
+								"str": player_stats["str"],
+								"mgck": player_stats["mgck"],
+								"def": player_stats["def"]
+							}
+							}
+			with open(f"./player_data/players/{self.player_name}.json", "w") as file:
+							json.dump(player_data, file, indent = 4)
+							file.close()
+		
+		if player["Stats"]["xp"] >= xp_targets["Mage"]:
+			player_data =  {
+							"Username": player["Username"],
+							"Race": player["Race"],
+							"Class": player["Class"],
+							"Rank": "Oracle",
+							"Stats": {
+								"xp": player_stats["xp"],
+								"xporb": player_stats["xporb"],
+								"hp": player_stats["hp"],
+								"str": player_stats["str"],
+								"mgck": player_stats["mgck"],
+								"def": player_stats["def"]
+							}
+							}
+			with open(f"./player_data/players/{self.player_name}.json", "w") as file:
+							json.dump(player_data, file, indent = 4)
+							file.close()
+		
+		if player["Stats"]["xp"] >= xp_targets["Oracle"]:
+			player_data =  {
+							"Username": player["Username"],
+							"Race": player["Race"],
+							"Class": player["Class"],
+							"Rank": "Spellweaver",
+							"Stats": {
+								"xp": player_stats["xp"],
+								"xporb": player_stats["xporb"],
+								"hp": player_stats["hp"],
+								"str": player_stats["str"],
+								"mgck": player_stats["mgck"],
+								"def": player_stats["def"]
+							}
+							}
+			with open(f"./player_data/players/{self.player_name}.json", "w") as file:
+							json.dump(player_data, file, indent = 4)
+							file.close()
+		
+		if player["Stats"]["xp"] >= xp_targets["Spellweaver"]:
+			player_data =  {
+							"Username": player["Username"],
+							"Race": player["Race"],
+							"Class": player["Class"],
+							"Rank": "Lord",
+							"Stats": {
+								"xp": player_stats["xp"],
+								"xporb": player_stats["xporb"],
+								"hp": player_stats["hp"],
+								"str": player_stats["str"],
+								"mgck": player_stats["mgck"],
+								"def": player_stats["def"]
+							}
+							}
+			with open(f"./player_data/players/{self.player_name}.json", "w") as file:
+							json.dump(player_data, file, indent = 4)
+							file.close()
+		
+		if player["Stats"]["xp"] >= xp_targets["Lord"]:
+			player_data =  {
+							"Username": player["Username"],
+							"Race": player["Race"],
+							"Class": player["Class"],
+							"Rank": "Voidtouched",
+							"Stats": {
+								"xp": player_stats["xp"],
+								"xporb": player_stats["xporb"],
+								"hp": player_stats["hp"],
+								"str": player_stats["str"],
+								"mgck": player_stats["mgck"],
+								"def": player_stats["def"]
+							}
+							}
+			with open(f"./player_data/players/{self.player_name}.json", "w") as file:
+							json.dump(player_data, file, indent = 4)
+							file.close()
+		
+		if player["Stats"]["xp"] >= xp_targets["Voidtouched"]:
+			player_data =  {
+							"Username": player["Username"],
+							"Race": player["Race"],
+							"Class": player["Class"],
+							"Rank": "Shaper",
+							"Stats": {
+								"xp": player_stats["xp"],
+								"xporb": player_stats["xporb"],
+								"hp": player_stats["hp"],
+								"str": player_stats["str"],
+								"mgck": player_stats["mgck"],
+								"def": player_stats["def"]
+							}
+							}
+			with open(f"./player_data/players/{self.player_name}.json", "w") as file:
+							json.dump(player_data, file, indent = 4)
+							file.close()
+		
 	#broken
 	def write_json(self, new_data, player_name):
 		
@@ -433,5 +610,6 @@ class Player(pg.sprite.Sprite):
 		self.get_state()
 		self.hitbox = pg.Rect((self.groups[0].offsetPos.x + 20, self.groups[0].offsetPos.y), (60,98))
 
+		self.change_rank()
 		
 		# self.image = blue_ebonheart(self.image)  # pallet swapped ebonheart
