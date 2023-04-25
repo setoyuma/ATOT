@@ -22,7 +22,7 @@ class Player(pg.sprite.Sprite):
 		self.display_surface = surface
 		self.spawn_x = pos[0]
 		self.spawn_y = pos[1]
-		self.image = pg.image.load('./assets/races/Ebonheart.png')
+		self.image = pg.image.load('./assets/races/Ebonheart/Ebonheart.png')
 		scaled_image = pg.transform.scale(self.image, (98,98))
 		self.image = scaled_image
 		# self.rect = self.image.get_rect()
@@ -38,6 +38,24 @@ class Player(pg.sprite.Sprite):
 		self.attacking = False
 		self.on_left = False
 		self.on_right = False
+
+	def switch_image(self):
+		if self.direction.x > 0:
+			self.image = pg.image.load('./assets/races/Ebonheart/Ebonheart_Right.png')
+			scaled_image = pg.transform.scale(self.image, (98,98))
+			self.image = scaled_image
+		if self.direction.x < 0:
+			self.image = pg.image.load('./assets/races/Ebonheart/Ebonheart_Left.png')
+			scaled_image = pg.transform.scale(self.image, (98,98))
+			self.image = scaled_image
+		if self.direction.y > 0:
+			self.image = pg.image.load('./assets/races/Ebonheart/Ebonheart.png')
+			scaled_image = pg.transform.scale(self.image, (98,98))
+			self.image = scaled_image
+		if self.direction.y < 0:
+			self.image = pg.image.load('./assets/races/Ebonheart/Ebonheart_Back.png')
+			scaled_image = pg.transform.scale(self.image, (98,98))
+			self.image = scaled_image
 
 	def horizontalCollisions(self):
 		for sprite in self.collisionSprites.sprites():
@@ -151,6 +169,7 @@ class Player(pg.sprite.Sprite):
 			f.close()
 
 	def update(self):
+		self.switch_image()
 		self.event_handler()
 		self.rect.x += self.direction.x * self.speed
 		self.horizontalCollisions()

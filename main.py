@@ -38,7 +38,6 @@ class Game:
 					sys.exit()
 
 				if event.type == pg.MOUSEBUTTONDOWN:
-					print(self.player.projectiles)
 					proj = Bullet(self.player.groups[0].offsetPos.x + 60, self.player.groups[0].offsetPos.y + 60)
 					self.player.projectiles.append(proj)
 
@@ -47,7 +46,6 @@ class Game:
 
 					# proj = Projectile(self.player.groups[0].offsetPos, "red", self.screen)
 					# self.player.projectiles.append(proj)
-					print("shoot")
 
 				if event.type == KEYDOWN:
 					if event.key == K_ESCAPE:
