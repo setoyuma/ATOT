@@ -35,6 +35,8 @@ class World:
 		self.goal = pg.sprite.GroupSingle()
 		self.player_setup(player_layout)
 
+	
+
 	def create_tile_group(self, layout, type):
 		sprite_group = pg.sprite.Group()
 

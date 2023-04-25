@@ -9,7 +9,7 @@ class Game:
 
 	def __init__(self):
 		pg.init()
-		self.screen = pg.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
+		self.screen = pg.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pg.SCALED)
 		pg.display.set_caption("Song Of Valks")
 		self.clock = pg.time.Clock()
 		self.FPS = 60
@@ -18,6 +18,10 @@ class Game:
 		self.world = World(worlds[1], self.screen)
 		self.player = self.world.Player
 
+	def draw_mini_map(self):
+		self.mini_map = pg.image.load('./assets/maps/Mini_Map.png')
+		scaled_mini_map = pg.transform.scale(self.mini_map, (350,350))
+		self.screen.blit(scaled_mini_map, (SCREEN_WIDTH-345, SCREEN_HEIGHT - 750))
 
 	def run(self):
 		while self.running:
@@ -58,6 +62,9 @@ class Game:
 						self.player.direction.y = 1
 					if event.key == K_w:
 						self.player.direction.y = -1
+
+					if event.key == pg.K_f:
+						pg.display.toggle_fullscreen()
 
 					if event.key == pg.K_u:
 						# self.player.xp_up()
@@ -108,10 +115,11 @@ class Game:
 			font = pg.font.Font(None,30)
 			fpsCounter = str(int(self.clock.get_fps()))
 			text = font.render(f"FPS: {fpsCounter}",True,'white','black')
-			textPos = text.get_rect(centerx=1000, y=10)
+			textPos = text.get_rect(centerx=900, y=10)
 			self.screen.blit(text,textPos)
-
+			
 			self.world.run()
+			self.draw_mini_map()
 			self.clock.tick(60)
 			for proj in self.player.projectiles:
 				proj.draw(self.screen)
