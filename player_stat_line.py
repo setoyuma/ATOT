@@ -15,10 +15,12 @@ class StatLine():
 
 
     def draw(self):
-        draw_text(self.display_surface, f"{self.text}.{self.player.player_stat_sheet['Level']}", (self.x, self.y), self.size, self.color, "black")
+
+        draw_text(self.display_surface, f"{self.player.get_player(self.player.player_name)['Rank']}", (self.x, self.y), self.size, self.color, "black")
         # draw_text(self.display_surface, f"Xp: {self.player.player_stat_sheet['XP']}", (self.x, self.y+20), self.size, self.color, "gray")
+
+        pg.draw.rect(self.display_surface, "lime", self.hp_bar)
 
 
     def update(self):
         self.draw()
-        pg.draw.rect(self.display_surface, "lime", self.hp_bar)

@@ -5,6 +5,7 @@ from world_data import worlds
 from settings import *
 from pygame.locals import *
 from projectile import Projectile, Bullet
+from support import *
 class Game:
 
 	def __init__(self):
@@ -22,6 +23,18 @@ class Game:
 		self.mini_map = pg.image.load('./assets/maps/Mini_Map.png')
 		scaled_mini_map = pg.transform.scale(self.mini_map, (350,350))
 		self.screen.blit(scaled_mini_map, (SCREEN_WIDTH-345, SCREEN_HEIGHT - 750))
+
+		player_stats = self.player.get_player_stats(self.player.player_name)
+
+		draw_text(self.screen, f"STR | {player_stats['str']}", (1185, 210), 20, (255,255,255))
+		draw_text(self.screen, f"MGCK | {player_stats['mgck']}", (1185, 240), 20, (255,255,255))
+		draw_text(self.screen, f"HP | {player_stats['hp']}", (1075, 210), 20, (255,255,255))
+		draw_text(self.screen, f"DEF | {player_stats['def']}", (1075, 240), 20, (255,255,255))
+		draw_text(self.screen, f"XP | {player_stats['xp']}", (1080, 270), 20, (255,255,255))
+		draw_text(self.screen, f"ORBS | {player_stats['xporb']}", (1175, 270), 20, (255,255,255))
+		
+
+		
 
 	def run(self):
 		while self.running:
@@ -54,15 +67,26 @@ class Game:
 				if event.type == KEYDOWN:
 					if event.key == K_ESCAPE:
 						running = False
-					if event.key == K_d:
-						self.player.direction.x = 1
-					if event.key == K_a:
-						self.player.direction.x = -1
-					if event.key == K_s:
-						self.player.direction.y = 1
-					if event.key == K_w:
-						self.player.direction.y = -1
+					# if event.key == K_d:
+					# 	self.player.direction.x = 1
+					# if event.key == K_a:
+					# 	self.player.direction.x = -1
+					# if event.key == K_s:
+					# 	self.player.direction.y = 1
+					# if event.key == K_w:
+					# 	self.player.direction.y = -1
+					
+					if event.key == pg.K_c:
+						self.player.create_player()
 
+					
+					if event.key == pg.K_x:
+						self.player.xp_up(25)
+					
+					if event.key == pg.K_l:
+						self.player.level_up(self.player.player_name, "hp")
+						
+					
 					if event.key == pg.K_f:
 						pg.display.toggle_fullscreen()
 
@@ -79,15 +103,15 @@ class Game:
 					# 	print("sprinting")
 					# 	self.player.speed = BASE_SPEED + 3
 
-					# # Dashing
-					# if event.key == K_q and self.player.direction.x > 0:
-					# 	self.player.rect.x += 200
-					# 	self.player.dashing = True
-					# 	print("dash")
-					# if event.key == K_q and self.player.direction.x < 0:
-					# 	self.player.rect.x -= 200
-					# 	self.player.dashing = True
-					# 	print("dash")
+					# Dashing
+					if event.key == K_q and self.player.direction.x > 0:
+						self.player.rect.x += 20
+						self.player.dashing = True
+						print("dash")
+					if event.key == K_q and self.player.direction.x < 0:
+						self.player.rect.x -= 20
+						self.player.dashing = True
+						print("dash")
 
 
 
@@ -124,7 +148,6 @@ class Game:
 			for proj in self.player.projectiles:
 				proj.draw(self.screen)
 			pg.display.flip()
-			self.player.check_stats(self.player.get_stat_sheet())
 
 
 if __name__ == '__main__':

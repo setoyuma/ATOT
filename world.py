@@ -65,7 +65,7 @@ class World:
 					print(f"Proper Spawn x: {x}")
 					print(f"Proper Spawn y: {y}")
 					print("")
-					self.Player = Player((x, y), [self.visibleSprites, self.activeSprites], self.collisionSprites, self.display_surface)
+					self.Player = Player((x, y), [self.visibleSprites, self.activeSprites], self.collisionSprites, self.display_surface, "setoichi", "Frostknight", "Voidkin")
 					self.player.add(self.Player)
 					self.visibleSprites.add(self.player)
 				if val == '1':
@@ -77,7 +77,7 @@ class World:
 		# pg.draw.rect(self.display_surface, "blue", self.Player.hitbox)
 
 		
-		self.stat_line = StatLine("Lv", 32, self.Player, (self.visibleSprites.offsetPos.x + 50, self.visibleSprites.offsetPos.y- 15), "white", self.display_surface)
+		self.stat_line = StatLine("", 25, self.Player, (self.visibleSprites.offsetPos.x + 50, self.visibleSprites.offsetPos.y- 15), "white", self.display_surface)
 		self.stat_line.update()
 		# self.visibleSprites.update()
 		# self.visibleSprites.draw(self.display_surface)

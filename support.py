@@ -53,3 +53,4 @@ def draw_text(surf, text, pos, size=30, color=(255,255,255), bg_color=None):
 		_text_library[f"{text}{color}{size}"] = text_surf
 	x, y = pos
 	surf.blit(text_surf, (x - (text_surf.get_width() // 2), y - (text_surf.get_height() // 2)))
+
