@@ -2,10 +2,10 @@
     "Username": "Setoichi",
     "Race": "Voidkin",
     "Class": "Frostknight",
-    "Rank": "Civilian",
+    "Rank": "Page",
     "Stats": {
-        "xp": 0,
-        "xporb": 0,
+        "xp": 25,
+        "xporb": 1,
         "hp": 6,
         "str": 8,
         "mgck": 7,

@@ -4,14 +4,17 @@ from world import World
 from world_data import worlds
 from settings import *
 from pygame.locals import *
-from projectile import Projectile, Bullet
+from projectile import Bullet
 from support import *
+from button import Button
 class Game:
 
 	def __init__(self):
 		pg.init()
 		self.screen = pg.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pg.SCALED)
-		pg.display.set_caption("Song Of Valks")
+		pg.display.set_caption("A Tale Of Time")
+		self.game_icon = pg.image.load('./assets/logo.ico')
+		pg.display.set_icon(self.game_icon)
 		self.clock = pg.time.Clock()
 		self.FPS = 60
 		self.dt = self.clock.tick(self.FPS) / 1000
@@ -32,9 +35,6 @@ class Game:
 		draw_text(self.screen, f"DEF | {player_stats['def']}", (1075, 240), 20, (255,255,255))
 		draw_text(self.screen, f"XP | {player_stats['xp']}", (1080, 270), 20, (255,255,255))
 		draw_text(self.screen, f"ORBS | {player_stats['xporb']}", (1175, 270), 20, (255,255,255))
-		
-
-		
 
 	def run(self):
 		while self.running:
@@ -44,7 +44,6 @@ class Game:
 				pg.key.set_repeat(1,10)
 			else:
 				pg.key.set_repeat(0)
-
 
 			for event in pg.event.get():
 
@@ -67,69 +66,24 @@ class Game:
 				if event.type == KEYDOWN:
 					if event.key == K_ESCAPE:
 						running = False
-					# if event.key == K_d:
-					# 	self.player.direction.x = 1
-					# if event.key == K_a:
-					# 	self.player.direction.x = -1
-					# if event.key == K_s:
-					# 	self.player.direction.y = 1
-					# if event.key == K_w:
-					# 	self.player.direction.y = -1
-					
+
 					if event.key == pg.K_c:
 						self.player.create_player()
 
-					
 					if event.key == pg.K_x:
 						self.player.xp_up(25)
 					
 					if event.key == pg.K_l:
-						self.player.level_up(self.player.player_name, "hp")
+						self.player.level_up("hp")
 						
-					
 					if event.key == pg.K_f:
 						pg.display.toggle_fullscreen()
-
-					if event.key == pg.K_u:
-						# self.player.xp_up()
-						set = pg.image.load('./assets/gear/Voidknight_Set.png')
-						scaled_set = pg.transform.scale(set, (98,98))
-						self.player.image = scaled_set
-						# self.screen.blit((scaled_set), (self.player.hitbox.center))
-						# self.screen.blit(pg.image.load('./assets/gear/Voidknight_Set.png'), (self.player.groups[0].offsetPos.x, self.player.groups[0].offsetPos.y + 98))
-			 
-					# # Sprinting
-					# if event.key == K_LSHIFT:
-					# 	print("sprinting")
-					# 	self.player.speed = BASE_SPEED + 3
-
-					# Dashing
-					if event.key == K_q and self.player.direction.x > 0:
-						self.player.rect.x += 20
-						self.player.dashing = True
-						print("dash")
-					if event.key == K_q and self.player.direction.x < 0:
-						self.player.rect.x -= 20
-						self.player.dashing = True
-						print("dash")
-
-
 
 				if event.type == KEYUP:
 					if event.key == K_a or event.key == K_d:
 						self.player.direction.x = 0
 					if event.key == K_w or event.key == K_s:
 						self.player.direction.y = 0
-
-					# # Sprinting
-					# if event.key == K_LSHIFT:
-					# 	self.player.speed = BASE_SPEED
-
-					# Dashing
-					if event.key == K_q and self.player.direction.x > 0:
-						self.player.rect.x -= 0
-						self.player.dashing = False
-						pass
 
 			for proj in self.player.projectiles:
 				proj.update()
@@ -149,7 +103,102 @@ class Game:
 				proj.draw(self.screen)
 			pg.display.flip()
 
+class Launcher():
+
+	def __init__(self):
+		pg.init()
+		# super().__init__()
+		self.screen = pg.display.set_mode((1000,500), pg.SCALED)
+		pg.display.set_caption("A Tale Of Time")
+		self.game_icon = pg.image.load('./assets/logo.ico')
+		pg.display.set_icon(self.game_icon)
+		self.clock = pg.time.Clock()
+		self.FPS = 60
+		self.dt = self.clock.tick(self.FPS) / 1000
+		self.running = True
+		self.cs = Character_select(self)
+	
+	def run_game(self):
+		self.game = Game()
+		self.game.run()
+
+	def launch(self):
+		button_img = 'assets/UI/buttons/button_plate1.png'
+		self.buttons = [
+			Button(self, "PLAY", (925, 455), self.run_game, button_img, button_img, text_size=30),
+			Button(self, "Characters", (925, 355), self.cs.run, button_img, button_img, text_size=30),
+			# Button(self.game, "QUIT", (self.game.settings["screen_width"] - 100, 50,), pg.quit, "assets/ui/buttons/button_plate1.png", "assets/ui/buttons/button_plate1.png", text_size=30)
+		]
+		while self.running:
+			self.screen.fill("black")
+			self.logo = pg.image.load("./assets/logo.png")
+			scaled_logo = pg.transform.scale(self.logo, (64,64))
+			self.screen.blit(self.logo, (250, 25))
+
+			for event in pg.event.get():
+				
+				for button in self.buttons:
+					button.update(event)
+
+				if event.type == pg.QUIT:
+					print("Game Closed")
+					self.running = False
+					pg.quit()
+					sys.exit()
+
+				if event.type == pg.MOUSEBUTTONDOWN:
+					pass
+
+				if event.type == KEYDOWN:
+					pass
+
+				if event.type == KEYUP:
+					pass
+
+			for button in self.buttons:
+				button.draw()
+
+			font = pg.font.Font(None,30)
+			fpsCounter = str(int(self.clock.get_fps()))
+			text = font.render(f"FPS: {fpsCounter}",True,'white','black')
+			textPos = text.get_rect(centerx=900, y=10)
+			self.screen.blit(text,textPos)
+			
+			self.clock.tick(60)
+			pg.display.flip()
+
+class Character_select():
+	def __init__(self, game):
+		pg.init()
+		# super().__init__()
+		self.game = game
+		self.screen = pg.display.set_mode((1000,500), pg.SCALED)
+		pg.display.set_caption("A Tale Of Time")
+		self.clock = pg.time.Clock()
+		self.FPS = 60
+		self.dt = self.clock.tick(self.FPS) / 1000
+		self.running = True
+
+	def draw(self):
+		self.character_select = pg.image.load('./assets/race_select.png')
+		scaled_cs = pg.transform.scale(self.character_select, (1000,500))
+		self.screen.blit(scaled_cs, (0,0))
+
+	def update(self):
+		font = pg.font.Font(None,30)
+		fpsCounter = str(int(self.clock.get_fps()))
+		text = font.render(f"FPS: {fpsCounter}",True,'white','black')
+		textPos = text.get_rect(centerx=900, y=10)
+		self.screen.blit(text,textPos)
+		
+		self.clock.tick(60)
+		pg.display.flip()
+
+	def run(self):
+		self.draw()
+		self.update()
+
 
 if __name__ == '__main__':
-	game = Game()
-	game.run()
+	launcher = Launcher()
+	launcher.launch()

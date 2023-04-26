@@ -6,7 +6,6 @@ from pallete_swaps import *
 from xp_targets import xp_targets
 from player_stat_line import StatLine
 from pygame.locals import *
-from projectile import Projectile
 from RACES import *
 from CLASSES import *
 
@@ -50,19 +49,19 @@ class Player(pg.sprite.Sprite):
 
 	def switch_image(self):
 		if self.direction.x > 0:
-			self.image = pg.image.load('./assets/races/Ebonheart/Ebonheart_Right.png')
+			self.image = pg.image.load('./assets/races/Skolfen.png')
 			scaled_image = pg.transform.scale(self.image, (98,98))
 			self.image = scaled_image
 		if self.direction.x < 0:
-			self.image = pg.image.load('./assets/races/Ebonheart/Ebonheart_Left.png')
+			self.image = pg.image.load('./assets/races/Skolfen.png')
 			scaled_image = pg.transform.scale(self.image, (98,98))
 			self.image = scaled_image
 		if self.direction.y > 0:
-			self.image = pg.image.load('./assets/races/Ebonheart/Ebonheart.png')
+			self.image = pg.image.load('./assets/races/Skolfen.png')
 			scaled_image = pg.transform.scale(self.image, (98,98))
 			self.image = scaled_image
 		if self.direction.y < 0:
-			self.image = pg.image.load('./assets/races/Ebonheart/Ebonheart_Back.png')
+			self.image = pg.image.load('./assets/races/Skolfen.png')
 			scaled_image = pg.transform.scale(self.image, (98,98))
 			self.image = scaled_image
 
@@ -309,7 +308,7 @@ class Player(pg.sprite.Sprite):
 								"def": player_stats["def"]
 							}
 							}
-						with open(f"./player_data/players/{username}.json", "w") as file:
+						with open(f"./player_data/players/{self.player_name}.json", "w") as file:
 							json.dump(player_data, file, indent = 4)
 
 					case "str":
@@ -327,7 +326,7 @@ class Player(pg.sprite.Sprite):
 								"def": player_stats["def"]
 							}
 							}
-						with open(f"./player_data/players/{username}.json", "w") as file:
+						with open(f"./player_data/players/{self.player_name}.json", "w") as file:
 							json.dump(player_data, file, indent = 4)
 
 					case "mgck":
@@ -345,7 +344,7 @@ class Player(pg.sprite.Sprite):
 								"def": player_stats["def"]
 							}
 							}
-						with open(f"./player_data/players/{username}.json", "w") as file:
+						with open(f"./player_data/players/{self.player_name}.json", "w") as file:
 							json.dump(player_data, file, indent = 4)
 
 					case "def":

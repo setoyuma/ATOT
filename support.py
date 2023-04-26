@@ -1,6 +1,6 @@
 from csv import reader
 from settings import TILE_SIZE
-from os import walk
+from os import walk,sep
 import pygame as pg
 
 
@@ -53,4 +53,14 @@ def draw_text(surf, text, pos, size=30, color=(255,255,255), bg_color=None):
 		_text_library[f"{text}{color}{size}"] = text_surf
 	x, y = pos
 	surf.blit(text_surf, (x - (text_surf.get_width() // 2), y - (text_surf.get_height() // 2)))
+
+_image_library = {}
+def get_image(path):
+    global _image_library
+    image = _image_library.get(path)
+    if image == None:
+        canonicalized_path = path.replace('/', sep).replace('\\', sep)
+        image = pg.image.load(canonicalized_path).convert_alpha()
+        _image_library[path] = image
+    return image
 
