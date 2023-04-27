@@ -25,9 +25,9 @@ class World:
 		self.projectileSprites = pg.sprite.Group()
 
 		# ground layout
-		deco_layout = import_csv_layout(world_data['ground'])
-		self.deco_sprites = self.create_tile_group(
-			deco_layout, 'ground')
+		ground_layout = import_csv_layout(world_data['ground'])
+		self.ground_sprites = self.create_tile_group(
+			ground_layout, 'ground')
 		
 		# terrain layout
 		terrain_layout = import_csv_layout(world_data['terrain'])
@@ -50,16 +50,21 @@ class World:
 
 		for row_index, row in enumerate(layout):
 			for col_index, val in enumerate(row):
-				if val == '2':
+				if val != '-1':
 					x = col_index * TILE_SIZE
 					y = row_index * TILE_SIZE
 	
-					if type == 'deco':
+					if type == 'deco' and val == '0':
 						deco_list = get_image(
-							'./assets/tiles/deco/tree.png')
+							'./assets/tiles/deco/trees/tree.png')
 						deco_surface = deco_list
 						sprite = StaticTile(TILE_SIZE, x, y, deco_surface, [self.visibleSprites])
-						pg.draw.rect(self.display_surface, "red", sprite.rect)
+					
+					if type == 'deco' and val == '1':
+						deco_list = get_image(
+							'./assets/tiles/deco/trees/abborath_tree.png')
+						deco_surface = deco_list
+						sprite = StaticTile(TILE_SIZE, x, y, deco_surface, [self.visibleSprites])
 
 	def create_tile_group(self, layout, type):
 		sprite_group = pg.sprite.Group()
@@ -79,7 +84,7 @@ class World:
 					
 					if type == 'ground':
 						ground_tile_list = import_cut_graphics(
-							'./assets/tiles/Static_Tile.png')
+							'./assets/tiles/grasstileset.png')
 						ground_surface = ground_tile_list[int(val)]
 						sprite = StaticTile(TILE_SIZE, x, y, ground_surface, [self.visibleSprites])
 						pg.draw.rect(self.display_surface, "red", sprite.rect)
