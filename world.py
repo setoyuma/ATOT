@@ -24,16 +24,42 @@ class World:
 		# projectile sprites
 		self.projectileSprites = pg.sprite.Group()
 
+		# ground layout
+		deco_layout = import_csv_layout(world_data['ground'])
+		self.deco_sprites = self.create_tile_group(
+			deco_layout, 'ground')
+		
 		# terrain layout
 		terrain_layout = import_csv_layout(world_data['terrain'])
 		self.terrain_sprites = self.create_tile_group(
 			terrain_layout, 'terrain')
+		
+		# decoration layout
+		deco_layout = import_csv_layout(world_data['deco'])
+		self.deco_sprites = self.create_decoration_group(
+			deco_layout, 'deco')
 
 		# player
 		player_layout = import_csv_layout(world_data['player'])
 		self.player = pg.sprite.GroupSingle()
 		self.goal = pg.sprite.GroupSingle()
 		self.player_setup(player_layout)
+
+	def create_decoration_group(self, layout, type):
+		sprite_group = pg.sprite.Group()
+
+		for row_index, row in enumerate(layout):
+			for col_index, val in enumerate(row):
+				if val == '2':
+					x = col_index * TILE_SIZE
+					y = row_index * TILE_SIZE
+	
+					if type == 'deco':
+						deco_list = get_image(
+							'./assets/tiles/deco/tree.png')
+						deco_surface = deco_list
+						sprite = StaticTile(TILE_SIZE, x, y, deco_surface, [self.visibleSprites])
+						pg.draw.rect(self.display_surface, "red", sprite.rect)
 
 	def create_tile_group(self, layout, type):
 		sprite_group = pg.sprite.Group()
@@ -50,6 +76,15 @@ class World:
 						tile_surface = terrain_tile_list[int(val)]
 						sprite = StaticTile(TILE_SIZE, x, y, tile_surface, [self.visibleSprites, self.collisionSprites])
 						pg.draw.rect(self.display_surface, "red", sprite.rect)
+					
+					if type == 'ground':
+						ground_tile_list = import_cut_graphics(
+							'./assets/tiles/Static_Tile.png')
+						ground_surface = ground_tile_list[int(val)]
+						sprite = StaticTile(TILE_SIZE, x, y, ground_surface, [self.visibleSprites])
+						pg.draw.rect(self.display_surface, "red", sprite.rect)
+					
+					
 					
 					sprite_group.add(sprite)
 		return sprite_group

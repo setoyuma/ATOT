@@ -49,19 +49,19 @@ class Player(pg.sprite.Sprite):
 
 	def switch_image(self):
 		if self.direction.x > 0:
-			self.image = pg.image.load('./assets/races/Skolfen.png')
+			self.image = pg.image.load('./assets/races/Voidkin/Voidkin_Right.png')
 			scaled_image = pg.transform.scale(self.image, (98,98))
 			self.image = scaled_image
 		if self.direction.x < 0:
-			self.image = pg.image.load('./assets/races/Skolfen.png')
+			self.image = pg.image.load('./assets/races/Voidkin/Voidkin_Left.png')
 			scaled_image = pg.transform.scale(self.image, (98,98))
 			self.image = scaled_image
 		if self.direction.y > 0:
-			self.image = pg.image.load('./assets/races/Skolfen.png')
+			self.image = pg.image.load('./assets/races/Voidkin/Voidkin.png')
 			scaled_image = pg.transform.scale(self.image, (98,98))
 			self.image = scaled_image
 		if self.direction.y < 0:
-			self.image = pg.image.load('./assets/races/Skolfen.png')
+			self.image = pg.image.load('./assets/races/Voidkin/Voidkin_Back.png')
 			scaled_image = pg.transform.scale(self.image, (98,98))
 			self.image = scaled_image
 

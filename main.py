@@ -1,5 +1,6 @@
 import pygame as pg
 import sys
+import json
 from world import World
 from world_data import worlds
 from settings import *
@@ -103,11 +104,11 @@ class Game:
 				proj.draw(self.screen)
 			pg.display.flip()
 
-class Launcher():
+class Launcher(Game):
 
 	def __init__(self):
 		pg.init()
-		# super().__init__()
+		super().__init__()
 		self.screen = pg.display.set_mode((1000,500), pg.SCALED)
 		pg.display.set_caption("A Tale Of Time")
 		self.game_icon = pg.image.load('./assets/logo.ico')
@@ -118,6 +119,23 @@ class Launcher():
 		self.running = True
 		self.cs = Character_select(self)
 	
+	def character_list(self):
+		draw_text(self.screen, "Characters", (915,125), bg_color="white", color="black")
+		draw_text(self.screen, f"{self.player.get_player(self.player.player_name)['Race']} | XP:{self.player.get_player(self.player.player_name)['Stats']['xp']}", (900,150), color="black", bg_color="white")
+
+	def patch_notes(self):
+		# notes
+		with open('./temp/0-0-1.json', 'r') as file:
+			notes = json.load(file)
+		patch_notes_surf = pg.Surface((240,250))
+		patch_notes_surf.fill("white")
+		self.screen.blit(patch_notes_surf, (10,125))
+		patch_notes_rect = patch_notes_surf.get_rect(topleft=(10,175))
+		# pg.draw.rect(self.screen, "red", patch_notes_rect)
+		draw_text(self.screen, "Patch Notes", (120,150), color="black")
+		text_line_wrap(self.screen, f"{notes['Launcher']}"+f"{notes['Game']}", "black", patch_notes_rect, pg.font.Font(None, 30))
+
+
 	def run_game(self):
 		self.game = Game()
 		self.game.run()
@@ -126,7 +144,7 @@ class Launcher():
 		button_img = 'assets/UI/buttons/button_plate1.png'
 		self.buttons = [
 			Button(self, "PLAY", (925, 455), self.run_game, button_img, button_img, text_size=30),
-			Button(self, "Characters", (925, 355), self.cs.run, button_img, button_img, text_size=30),
+			Button(self, "NEW", (925, 355), self.cs.run, button_img, button_img, text_size=30),
 			# Button(self.game, "QUIT", (self.game.settings["screen_width"] - 100, 50,), pg.quit, "assets/ui/buttons/button_plate1.png", "assets/ui/buttons/button_plate1.png", text_size=30)
 		]
 		while self.running:
@@ -134,6 +152,8 @@ class Launcher():
 			self.logo = pg.image.load("./assets/logo.png")
 			scaled_logo = pg.transform.scale(self.logo, (64,64))
 			self.screen.blit(self.logo, (250, 25))
+			self.character_list()
+			self.patch_notes()
 
 			for event in pg.event.get():
 				
