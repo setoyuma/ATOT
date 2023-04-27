@@ -15,7 +15,6 @@ def import_folder(path):
 
 	return surface_list
 
-
 def import_csv_layout(path):
 	terrain_map = []
 	with open(path) as map:
@@ -24,9 +23,8 @@ def import_csv_layout(path):
 			terrain_map.append(list(row))
 		return terrain_map
 
-
 def import_cut_graphics(path):
-	surface = pg.image.load(path).convert_alpha()
+	surface = get_image(path)
 	tile_num_x = int(surface.get_size()[0] / TILE_SIZE)
 	tile_num_y = int(surface.get_size()[1] / TILE_SIZE)
 
@@ -63,6 +61,13 @@ def get_image(path):
         image = pg.image.load(canonicalized_path).convert_alpha()
         _image_library[path] = image
     return image
+
+def scale_images(images: list, size: tuple):
+    """ returns scaled image assets """
+    scaled_images = []
+    for image in images:
+        scaled_images.append(pg.transform.scale(image, size))
+    return scaled_images
 
 def text_line_wrap(surface, text, color, rect, font, aa=False, bkg=None):
     rect = pg.Rect(rect)

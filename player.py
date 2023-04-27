@@ -8,13 +8,16 @@ from player_stat_line import StatLine
 from pygame.locals import *
 from RACES import *
 from CLASSES import *
+from animation import Animator
 
 class Player(pg.sprite.Sprite):
 	
-	def __init__(self, pos, groups, collisionSprites, surface, player_name, player_class, race):
+	def __init__(self, game, pos, groups, collisionSprites, surface, player_name, player_class, race):
 		super().__init__(groups)
 		self.collisionSprites = collisionSprites
 		self.groups = groups
+		self.game = game
+		
 		# stats
 		self.player_name = str(player_name).capitalize()
 		self.player_class = str(player_class).capitalize()
@@ -27,16 +30,22 @@ class Player(pg.sprite.Sprite):
 		self.display_surface = surface
 		self.spawn_x = pos[0]
 		self.spawn_y = pos[1]
-		self.image = pg.image.load('./assets/races/Skolfen.png').convert_alpha(self.display_surface)
-		scaled_image = pg.transform.scale(self.image, (98,98))
-		
-		self.image = scaled_image
+		self.size = 64
 		# self.rect = self.image.get_rect()
 		self.rect = pg.Rect((self.spawn_x, self.spawn_y), (98, 98))
 		# self.image = pg.Surface((TILE_SIZE//2, TILE_SIZE))
 		# movement
 		self.direction = pg.math.Vector2()
 		self.speed = BASE_SPEED
+		
+		# animations
+		self.import_character_assets()
+		self.status = 'idle'
+		self.frame_index = 0
+		self.animation = self.animations[self.status]
+		self.image = self.animations['idle'][self.frame_index]
+		self.animation_speed = 0.15
+
 
 		# state vars
 		self.running = False
@@ -44,26 +53,37 @@ class Player(pg.sprite.Sprite):
 		self.attacking = False
 		self.on_left = False
 		self.on_right = False
+		self.facing_right = False
 
 		self.change_rank()
 
-	def switch_image(self):
-		if self.direction.x > 0:
-			self.image = pg.image.load('./assets/races/Voidkin/Voidkin_Right.png')
-			scaled_image = pg.transform.scale(self.image, (98,98))
-			self.image = scaled_image
-		if self.direction.x < 0:
-			self.image = pg.image.load('./assets/races/Voidkin/Voidkin_Left.png')
-			scaled_image = pg.transform.scale(self.image, (98,98))
-			self.image = scaled_image
-		if self.direction.y > 0:
-			self.image = pg.image.load('./assets/races/Voidkin/Voidkin.png')
-			scaled_image = pg.transform.scale(self.image, (98,98))
-			self.image = scaled_image
-		if self.direction.y < 0:
-			self.image = pg.image.load('./assets/races/Voidkin/Voidkin_Back.png')
-			scaled_image = pg.transform.scale(self.image, (98,98))
-			self.image = scaled_image
+	def import_character_assets(self):
+		# character_path = f'./assets/races/8bit/Ebonheart/'
+		character_path = f'./assets/races/8bit/{self.race}/'
+		self.animations = {'idle':[],'run-right':[],'run-left':[],'run-back':[], 'run':[]}
+		
+		for animation in self.animations.keys():
+			full_path = character_path + animation
+			self.animations[animation] = scale_images(import_folder(full_path), (self.size, self.size))
+			# print(self.animations[animation])
+
+	def animate(self):
+		animation = self.animations[self.status]
+		# self.hitBox = pg.rect.Rect(self.rect.x,self.rect.y,38,64)
+		# self.hitBox.center = self.rect.center
+
+
+		# loop over frame index 
+		self.frame_index += self.animation_speed
+		if self.frame_index >= len(animation):
+			self.frame_index = 0
+			
+		image = animation[int(self.frame_index)]
+		if self.facing_right:
+			self.image = image
+		else:
+			flipped_image = pg.transform.flip(image,True,False)
+			self.image = flipped_image
 
 	def horizontalCollisions(self):
 		for sprite in self.collisionSprites.sprites():
@@ -138,10 +158,23 @@ class Player(pg.sprite.Sprite):
 		# 	self.speed = BASE_SPEED
 
 	def get_state(self):
-		if self.direction.x != 0:
+		if self.direction.x > 0:
 			self.running = True
-		if self.direction.y != 0:
+			self.facing_right = True
+			self.status = 'run-right'
+		elif self.direction.x < 0:
+			self.running = False
+			self.facing_right = True
+			self.status = 'run-left'
+		elif self.direction.y > 0:
 			self.running = True
+			self.status = 'run'
+		elif self.direction.y < 0:
+			self.running = True
+			self.status = 'run-back'
+		else:
+			self.status = 'idle'
+			self.running = False
 
 	def create_player(self):
 		
@@ -600,7 +633,8 @@ class Player(pg.sprite.Sprite):
 			json.dump(player_data, file, indent = 4)
 
 	def update(self):
-		self.switch_image()
+		self.animate()
+		# self.switch_image()
 		self.event_handler()
 		self.rect.x += self.direction.x * self.speed
 		self.horizontalCollisions()

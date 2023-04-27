@@ -5,7 +5,7 @@ from world import World
 from world_data import worlds
 from settings import *
 from pygame.locals import *
-from projectile import Bullet
+from projectile import *
 from support import *
 from button import Button
 class Game:
@@ -20,7 +20,7 @@ class Game:
 		self.FPS = 60
 		self.dt = self.clock.tick(self.FPS) / 1000
 		self.running = True
-		self.world = World(worlds[1], self.screen)
+		self.world = World(worlds[1], self.screen, self)
 		self.player = self.world.Player
 
 	def draw_mini_map(self):
@@ -55,14 +55,13 @@ class Game:
 					sys.exit()
 
 				if event.type == pg.MOUSEBUTTONDOWN:
-					proj = Bullet(self.player.groups[0].offsetPos.x + 60, self.player.groups[0].offsetPos.y + 60)
-					self.player.projectiles.append(proj)
-
-					if len(self.player.projectiles) > 4:
+					if event.button == 1:
+						# proj = RadialBullet(*self.player.groups[0].offsetPos, 5)
+						proj = Bullet(self.player.groups[0].offsetPos.x + 35, self.player.groups[0].offsetPos.y + 40)
 						self.player.projectiles.append(proj)
 
-					# proj = Projectile(self.player.groups[0].offsetPos, "red", self.screen)
-					# self.player.projectiles.append(proj)
+						# proj = Projectile(self.player.groups[0].offsetPos, "red", self.screen)
+						# self.player.projectiles.append(proj)
 
 				if event.type == KEYDOWN:
 					if event.key == K_ESCAPE:
@@ -88,7 +87,7 @@ class Game:
 
 			for proj in self.player.projectiles:
 				proj.update()
-				if not self.screen.get_rect().collidepoint(proj.pos):
+				if not self.screen.get_rect().collidepoint((proj.pos[0], proj.pos[1])):
 					self.player.projectiles.remove(proj)
 
 			font = pg.font.Font(None,30)
@@ -120,8 +119,17 @@ class Launcher(Game):
 		self.cs = Character_select(self)
 	
 	def character_list(self):
-		draw_text(self.screen, "Characters", (915,125), bg_color="white", color="black")
-		draw_text(self.screen, f"{self.player.get_player(self.player.player_name)['Race']} | XP:{self.player.get_player(self.player.player_name)['Stats']['xp']}", (900,150), color="black", bg_color="white")
+		character_list_img = pg.image.load('./assets/UI/character_list.png')
+
+		scaled_char_list_img = pg.transform.scale(character_list_img, (580,320))
+		
+		self.screen.blit(character_list_img, (700, 100))
+		# self.screen.blit(scaled_char_list_img, (720, 100))
+
+		draw_text(self.screen, f"{self.player.get_player(self.player.player_name)['Race']} | XP:{self.player.get_player(self.player.player_name)['Stats']['xp']}", (884,166), size=18, color="white")
+
+		scaled_player_img = pg.transform.scale(self.player.image, (32,32))
+		self.screen.blit(scaled_player_img, (745, 150))
 
 	def patch_notes(self):
 		# notes
@@ -134,7 +142,6 @@ class Launcher(Game):
 		# pg.draw.rect(self.screen, "red", patch_notes_rect)
 		draw_text(self.screen, "Patch Notes", (120,150), color="black")
 		text_line_wrap(self.screen, f"{notes['Launcher']}"+f"{notes['Game']}", "black", patch_notes_rect, pg.font.Font(None, 30))
-
 
 	def run_game(self):
 		self.game = Game()
@@ -149,9 +156,8 @@ class Launcher(Game):
 		]
 		while self.running:
 			self.screen.fill("black")
-			self.logo = pg.image.load("./assets/logo.png")
-			scaled_logo = pg.transform.scale(self.logo, (64,64))
-			self.screen.blit(self.logo, (250, 25))
+			self.logo = get_image("./assets/UI/abberoth.png")
+			self.screen.blit(self.logo, (0,0))
 			self.character_list()
 			self.patch_notes()
 

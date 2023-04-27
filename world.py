@@ -8,9 +8,10 @@ from tile import *
 from ui import UI
 from player_stat_line import StatLine
 class World:
-	def __init__(self, world_data, surface):
+	def __init__(self, world_data, surface, game):
 		self.display_surface = surface
-		
+		self.game = game
+
 		# UI
 		self.ui = UI(self.display_surface)
 
@@ -103,7 +104,7 @@ class World:
 					print(f"Proper Spawn x: {x}")
 					print(f"Proper Spawn y: {y}")
 					print("")
-					self.Player = Player((x, y), [self.visibleSprites, self.activeSprites], self.collisionSprites, self.display_surface, "setoichi", "Frostknight", "Voidkin")
+					self.Player = Player(self.game, (x, y), [self.visibleSprites, self.activeSprites], self.collisionSprites, self.display_surface, "setoichi", "Frostknight", "Technoki")
 					self.player.add(self.Player)
 					self.visibleSprites.add(self.player)
 				if val == '1':
