@@ -1,12 +1,11 @@
-from csv import reader
+import pygame as pg
 from settings import TILE_SIZE
 from os import walk,sep
-import pygame as pg
+from csv import reader
 
 
 def import_folder(path):
 	surface_list = []
-
 	for _, __, image_files in walk(path):
 		for image in image_files:
 			full_path = path + '/' + image

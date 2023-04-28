@@ -1,17 +1,16 @@
 import pygame as pg
+from pygame.locals import *
 import json
+
+from player_stat_line import StatLine
+from xp_targets import xp_targets
+from animation import Animator
+from pallete_swaps import *
+from CONSTANTS import *
 from settings import *
 from support import *
-from pallete_swaps import *
-from xp_targets import xp_targets
-from player_stat_line import StatLine
-from pygame.locals import *
-from RACES import *
-from CLASSES import *
-from animation import Animator
 
 class Player(pg.sprite.Sprite):
-	
 	def __init__(self, game, pos, groups, collisionSprites, surface, player_name, player_class):
 		super().__init__(groups)
 		self.collisionSprites = collisionSprites

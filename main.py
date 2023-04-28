@@ -1,16 +1,16 @@
 import pygame as pg
-import sys
-import json
-from world import World
-from world_data import worlds
-from settings import *
 from pygame.locals import *
-from projectile import *
-from support import *
-from button import Button
-from CLASSES import *
-class Game:
+import json
+import sys
 
+from button import Button
+from world import World
+from projectile import *
+from CONSTANTS import *
+from settings import *
+from support import *
+
+class Game:
 	def __init__(self):
 		pg.init()
 		self.screen = pg.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pg.SCALED)
@@ -263,8 +263,7 @@ class Character_select():
 				Button(self, "Ebonheart", (116, 280), self.game.player.create_player("Ebonheart"), button_img, button_img, text_size=30),
 				Button(self, "Voidkin", (372, 280), self.game.player.create_player("Voidkin"), button_img, button_img, text_size=30),
 				Button(self, "Lightbringer", (630, 280), self.game.player.create_player("Lightbringer"), button_img, button_img, text_size=30),
-				Button(self, "Technoki", (892, 280), self.game.player.create_player("Technoki"), button_img, button_img, text_size=30),
-
+				Button(self, "Technoki", (892, 280), self.game.player.create_player("Technoki"), button_img, button_img, text_size=30)
 			]
 
 			for event in pg.event.get():
