@@ -3,7 +3,7 @@ import math
 from settings import *
 from support import *
 class Bullet:
-	def __init__(self, x, y):
+	def __init__(self, x, y, type):
 		self.pos = (x, y)
 
 		mx, my = pg.mouse.get_pos()
@@ -16,10 +16,11 @@ class Bullet:
 		# angle = 1
 		angle = math.degrees(math.atan2(-self.dir[1], self.dir[0]))
 
-		self.bullet = get_image('./assets/spells/fireball/fireball.png')
+		self.bullet = get_image(f'./assets/spells/{type}/{type}1.png')
+		scaled_bullet = pg.transform.scale(self.bullet, (64,64))
 
 		# self.bullet.fill((255, 255, 255))
-		self.bullet = pg.transform.rotate(self.bullet, angle)
+		self.bullet = pg.transform.rotate(scaled_bullet, angle)
 		self.speed = bullet_speed
 
 	def update(self):  
