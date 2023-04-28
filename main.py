@@ -8,6 +8,7 @@ from pygame.locals import *
 from projectile import *
 from support import *
 from button import Button
+from CLASSES import *
 class Game:
 
 	def __init__(self):
@@ -90,24 +91,25 @@ class Game:
 				if not self.screen.get_rect().collidepoint((proj.pos[0], proj.pos[1])):
 					self.player.projectiles.remove(proj)
 
-			font = pg.font.Font(None,30)
-			fpsCounter = str(int(self.clock.get_fps()))
-			text = font.render(f"FPS: {fpsCounter}",True,'white','black')
-			textPos = text.get_rect(centerx=900, y=10)
-			self.screen.blit(text,textPos)
 			
 			self.world.run()
 			self.draw_mini_map()
 			self.clock.tick(60)
 			for proj in self.player.projectiles:
 				proj.draw(self.screen)
+			
+			font = pg.font.Font(None,30)
+			fpsCounter = str(int(self.clock.get_fps()))
+			text = font.render(f"FPS: {fpsCounter}",True,'white','black')
+			textPos = text.get_rect(centerx=900, y=10)
+			self.screen.blit(text,textPos)
 			pg.display.flip()
 
-class Launcher(Game):
+class Launcher():
 
-	def __init__(self):
+	def __init__(self, game):
 		pg.init()
-		super().__init__()
+		self.game = game
 		self.screen = pg.display.set_mode((1000,500), pg.SCALED)
 		pg.display.set_caption("A Tale Of Time")
 		self.game_icon = pg.image.load('./assets/logo.ico')
@@ -116,7 +118,6 @@ class Launcher(Game):
 		self.FPS = 60
 		self.dt = self.clock.tick(self.FPS) / 1000
 		self.running = True
-		self.cs = Character_select(self)
 	
 	def character_list(self):
 		character_list_img = pg.image.load('./assets/UI/character_list.png')
@@ -126,10 +127,10 @@ class Launcher(Game):
 		self.screen.blit(character_list_img, (700, 100))
 		# self.screen.blit(scaled_char_list_img, (720, 100))
 
-		draw_text(self.screen, f"{self.player.get_player(self.player.player_name)['Race']} | XP:{self.player.get_player(self.player.player_name)['Stats']['xp']}", (884,166), size=18, color="white")
+		draw_text(self.screen, f"{self.game.player.get_player(self.game.player.player_name)['Race']} | XP:{self.game.player.get_player(self.game.player.player_name)['Stats']['xp']}", (884,166), size=18, color="white")
 
-		scaled_player_img = pg.transform.scale(self.player.image, (32,32))
-		self.screen.blit(scaled_player_img, (745, 150))
+		self.scaled_player_img = pg.transform.scale(self.game.player.image, (32,32))
+		self.screen.blit(self.scaled_player_img, (745, 150))
 
 	def patch_notes(self):
 		# notes
@@ -148,12 +149,15 @@ class Launcher(Game):
 		self.game.run()
 
 	def launch(self):
+		self.cs = Character_select(self.game)
 		button_img = 'assets/UI/buttons/button_plate1.png'
 		self.buttons = [
 			Button(self, "PLAY", (925, 455), self.run_game, button_img, button_img, text_size=30),
 			Button(self, "NEW", (925, 355), self.cs.run, button_img, button_img, text_size=30),
 			# Button(self.game, "QUIT", (self.game.settings["screen_width"] - 100, 50,), pg.quit, "assets/ui/buttons/button_plate1.png", "assets/ui/buttons/button_plate1.png", text_size=30)
 		]
+		input_handler = Input_Handler(self, 30, (500,500))
+
 		while self.running:
 			self.screen.fill("black")
 			self.logo = get_image("./assets/UI/abberoth.png")
@@ -173,16 +177,27 @@ class Launcher(Game):
 					sys.exit()
 
 				if event.type == pg.MOUSEBUTTONDOWN:
-					pass
+					if input_handler.input_rect.collidepoint(event.pos):
+						input_handler.active = True
+					else:
+						input_handler.active = False
+					
 
-				if event.type == KEYDOWN:
-					pass
+				if event.type == pg.KEYDOWN:
+					# Check for backspace
+					if event.key == pg.K_BACKSPACE:
+						# get text input from 0 to -1 i.e. end.
+						input_handler.user_text = input_handler.user_text[:-1]
+					# Unicode standard is used for string
+					# formation
+					else:
+						input_handler.user_text += event.unicode
 
-				if event.type == KEYUP:
-					pass
-
+						
 			for button in self.buttons:
 				button.draw()
+
+			# input_handler.update()
 
 			font = pg.font.Font(None,30)
 			fpsCounter = str(int(self.clock.get_fps()))
@@ -196,7 +211,7 @@ class Launcher(Game):
 class Character_select():
 	def __init__(self, game):
 		pg.init()
-		# super().__init__()
+		
 		self.game = game
 		self.screen = pg.display.set_mode((1000,500), pg.SCALED)
 		pg.display.set_caption("A Tale Of Time")
@@ -206,25 +221,79 @@ class Character_select():
 		self.running = True
 
 	def draw(self):
-		self.character_select = pg.image.load('./assets/race_select.png')
-		scaled_cs = pg.transform.scale(self.character_select, (1000,500))
-		self.screen.blit(scaled_cs, (0,0))
+		self.logo = get_image("./assets/UI/abberoth.png")
+		self.screen.blit(self.logo, (0,0))
+		self.character_card =get_image('./assets/UI/character_card.png')
+		scaled_char_card = pg.transform.scale(self.character_card, (216, 264))
+
+		ebonheart = get_image('./assets/races/8bit/Ebonheart/idle/idle.png')
+		voidkin = get_image('./assets/races/8bit/Voidkin/idle/idle.png')
+		lightbringer = get_image('./assets/races/8bit/Lightbringer/idle/idle.png')
+		technoki = get_image('./assets/races/8bit/Technoki/idle/idle.png')
+
+		scaled_ebonheart = pg.transform.scale(ebonheart,(64,64))
+		scaled_voidkin = pg.transform.scale(voidkin,(64,64))
+		scaled_lightbringer = pg.transform.scale(lightbringer,(64,64))
+		scaled_technoki = pg.transform.scale(technoki,(64,64))
+
+
+		class_imgs = [
+			scaled_ebonheart,
+			scaled_voidkin,
+			scaled_lightbringer,
+			scaled_technoki
+		]
+
+		
+
+		for i in range(len(class_imgs)):
+			
+			self.screen.blit(scaled_char_card, (5+(258*(i)), 100))
+			self.screen.blit(class_imgs[i], (84+(258*(i)), 148))
 
 	def update(self):
-		font = pg.font.Font(None,30)
-		fpsCounter = str(int(self.clock.get_fps()))
-		text = font.render(f"FPS: {fpsCounter}",True,'white','black')
-		textPos = text.get_rect(centerx=900, y=10)
-		self.screen.blit(text,textPos)
+		launcher = Launcher(self.game)
 		
-		self.clock.tick(60)
-		pg.display.flip()
+		while True:
+			self.draw()
+			
+			button_img = 'assets/UI/buttons/button_plate1.png'
+			self.buttons = [
+				Button(self, "BACK", (925, 455), launcher.launch, button_img, button_img, text_size=30),
+				Button(self, "Ebonheart", (116, 280), self.game.player.create_player("Ebonheart"), button_img, button_img, text_size=30),
+				Button(self, "Voidkin", (372, 280), self.game.player.create_player("Voidkin"), button_img, button_img, text_size=30),
+				Button(self, "Lightbringer", (630, 280), self.game.player.create_player("Lightbringer"), button_img, button_img, text_size=30),
+				Button(self, "Technoki", (892, 280), self.game.player.create_player("Technoki"), button_img, button_img, text_size=30),
+
+			]
+
+			for event in pg.event.get():
+				
+				for button in self.buttons:
+					button.update(event)
+
+				if event.type == pg.QUIT:
+					print("Game Closed")
+					self.running = False
+					pg.quit()
+					sys.exit()
+
+			for button in self.buttons:
+				button.draw()
+
+			font = pg.font.Font(None,30)
+			fpsCounter = str(int(self.clock.get_fps()))
+			text = font.render(f"FPS: {fpsCounter}",True,'white','black')
+			textPos = text.get_rect(centerx=900, y=10)
+			self.screen.blit(text,textPos)
+
+			self.clock.tick(60)
+			pg.display.flip()
 
 	def run(self):
-		self.draw()
 		self.update()
 
 
 if __name__ == '__main__':
-	launcher = Launcher()
+	launcher = Launcher(Game())
 	launcher.launch()

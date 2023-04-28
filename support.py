@@ -54,55 +54,92 @@ def draw_text(surf, text, pos, size=30, color=(255,255,255), bg_color=None):
 
 _image_library = {}
 def get_image(path):
-    global _image_library
-    image = _image_library.get(path)
-    if image == None:
-        canonicalized_path = path.replace('/', sep).replace('\\', sep)
-        image = pg.image.load(canonicalized_path).convert_alpha()
-        _image_library[path] = image
-    return image
+	global _image_library
+	image = _image_library.get(path)
+	if image == None:
+		canonicalized_path = path.replace('/', sep).replace('\\', sep)
+		image = pg.image.load(canonicalized_path).convert_alpha()
+		_image_library[path] = image
+	return image
 
 def scale_images(images: list, size: tuple):
-    """ returns scaled image assets """
-    scaled_images = []
-    for image in images:
-        scaled_images.append(pg.transform.scale(image, size))
-    return scaled_images
+	""" returns scaled image assets """
+	scaled_images = []
+	for image in images:
+		scaled_images.append(pg.transform.scale(image, size))
+	return scaled_images
 
 def text_line_wrap(surface, text, color, rect, font, aa=False, bkg=None):
-    rect = pg.Rect(rect)
-    y = rect.top
-    lineSpacing = -2
+	rect = pg.Rect(rect)
+	y = rect.top
+	lineSpacing = -2
 
-    # get the height of the font
-    fontHeight = font.size("Tg")[1]
+	# get the height of the font
+	fontHeight = font.size("Tg")[1]
 
-    while text:
-        i = 1
+	while text:
+		i = 1
 
-        # determine if the row of text will be outside our area
-        if y + fontHeight > rect.bottom:
-            break
+		# determine if the row of text will be outside our area
+		if y + fontHeight > rect.bottom:
+			break
 
-        # determine maximum width of line
-        while font.size(text[:i])[0] < rect.width and i < len(text):
-            i += 1
+		# determine maximum width of line
+		while font.size(text[:i])[0] < rect.width and i < len(text):
+			i += 1
 
-        # if we've wrapped the text, then adjust the wrap to the last word      
-        if i < len(text): 
-            i = text.rfind(" ", 0, i) + 1
+		# if we've wrapped the text, then adjust the wrap to the last word      
+		if i < len(text): 
+			i = text.rfind(" ", 0, i) + 1
 
-        # render the line and blit it to the surface
-        if bkg:
-            image = font.render(text[:i], 1, color, bkg)
-            image.set_colorkey(bkg)
-        else:
-            image = font.render(text[:i], aa, color)
+		# render the line and blit it to the surface
+		if bkg:
+			image = font.render(text[:i], 1, color, bkg)
+			image.set_colorkey(bkg)
+		else:
+			image = font.render(text[:i], aa, color)
 
-        surface.blit(image, (rect.left, y))
-        y += fontHeight + lineSpacing
+		surface.blit(image, (rect.left, y))
+		y += fontHeight + lineSpacing
 
-        # remove the text we just blitted
-        text = text[i:]
+		# remove the text we just blitted
+		text = text[i:]
 
-    return text
+	return text
+
+
+class Input_Handler():
+
+	def __init__(self, game, size, pos):
+		self.game = game
+
+		self.base_font = pg.font.Font(None, size)
+		self.user_text = ''
+
+		self.input_rect = pg.Rect(pos, (140, 32))
+
+		self.color_active = pg.Color('lightskyblue3')
+		self.color_passive = pg.Color('chartreuse4')
+		self.color = self.color_passive
+
+		self.active = False
+		
+		if self.active:
+				self.color = self.color_active
+		else:
+			self.color = self.color_passive
+
+
+	def update(self):
+		# draw rectangle and argument passed which should
+		# be on screen
+		pg.draw.rect(self.game.screen, self.color, self.input_rect)
+	
+		self.text_surface = self.base_font.render(self.user_text, True, (255, 255, 255))
+	
+		# render at position stated in arguments
+		self.game.screen.blit(self.text_surface, (self.input_rect.x+5, self.input_rect.y+5))
+	
+		# set width of textfield so that text cannot get
+		# outside of user's text input
+		self.input_rect.w = max(100, self.text_surface.get_width()+10)

@@ -1,7 +1,7 @@
 import pygame as pg
 
 from player import Player
-from camera import CameraGroup
+from camera import SpriteCamera, WorldCamera
 from support import *
 from settings import *
 from tile import *
@@ -15,9 +15,10 @@ class World:
 		# UI
 		self.ui = UI(self.display_surface)
 
+		self.groundSprites = WorldCamera()  # sprites in here will be updated and drawn
+
 		# sprite group setup
-		self.visibleSprites = CameraGroup()  # sprites here will be drawn
-		# self.visibleSprites = pg.sprite.Group()   # sprites here will be drawn
+		self.visibleSprites = SpriteCamera() # sprites here will be drawn
 		self.activeSprites = pg.sprite.Group()  # sprites in here will be updated
 		# sprites that the player can collide with
 		self.collisionSprites = pg.sprite.Group()
@@ -30,6 +31,12 @@ class World:
 		self.ground_sprites = self.create_tile_group(
 			ground_layout, 'ground')
 		
+		# player
+		player_layout = import_csv_layout(world_data['player'])
+		self.player = pg.sprite.GroupSingle()
+		self.goal = pg.sprite.GroupSingle()
+		self.player_setup(player_layout)
+
 		# terrain layout
 		terrain_layout = import_csv_layout(world_data['terrain'])
 		self.terrain_sprites = self.create_tile_group(
@@ -40,11 +47,8 @@ class World:
 		self.deco_sprites = self.create_decoration_group(
 			deco_layout, 'deco')
 
-		# player
-		player_layout = import_csv_layout(world_data['player'])
-		self.player = pg.sprite.GroupSingle()
-		self.goal = pg.sprite.GroupSingle()
-		self.player_setup(player_layout)
+
+		
 
 	def create_decoration_group(self, layout, type):
 		sprite_group = pg.sprite.Group()
@@ -66,6 +70,9 @@ class World:
 							'./assets/tiles/deco/trees/abborath_tree.png')
 						deco_surface = deco_list
 						sprite = StaticTile(TILE_SIZE, x, y, deco_surface, [self.visibleSprites])
+					
+					sprite_group.add(sprite)
+		return sprite_group
 
 	def create_tile_group(self, layout, type):
 		sprite_group = pg.sprite.Group()
@@ -81,16 +88,12 @@ class World:
 							'./assets/tiles/Static_Tile.png')
 						tile_surface = terrain_tile_list[int(val)]
 						sprite = StaticTile(TILE_SIZE, x, y, tile_surface, [self.visibleSprites, self.collisionSprites])
-						pg.draw.rect(self.display_surface, "red", sprite.rect)
 					
 					if type == 'ground':
 						ground_tile_list = import_cut_graphics(
 							'./assets/tiles/grasstileset.png')
 						ground_surface = ground_tile_list[int(val)]
-						sprite = StaticTile(TILE_SIZE, x, y, ground_surface, [self.visibleSprites])
-						pg.draw.rect(self.display_surface, "red", sprite.rect)
-					
-					
+						sprite = StaticTile(TILE_SIZE, x, y, ground_surface, [self.groundSprites])
 					
 					sprite_group.add(sprite)
 		return sprite_group
@@ -104,13 +107,14 @@ class World:
 					print(f"Proper Spawn x: {x}")
 					print(f"Proper Spawn y: {y}")
 					print("")
-					self.Player = Player(self.game, (x, y), [self.visibleSprites, self.activeSprites], self.collisionSprites, self.display_surface, "setoichi", "Frostknight", "Technoki")
+					self.Player = Player(self.game, (x, y), [self.visibleSprites, self.activeSprites], self.collisionSprites, self.display_surface, "setoichi", "Frostknight")
 					self.player.add(self.Player)
 					self.visibleSprites.add(self.player)
 				if val == '1':
 					pass
 
 	def run(self):
+		self.groundSprites.customDraw(self.Player)
 		self.visibleSprites.customDraw(self.Player)
 		self.player.update()
 		# pg.draw.rect(self.display_surface, "blue", self.Player.hitbox)

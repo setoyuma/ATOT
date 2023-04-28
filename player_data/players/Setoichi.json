@@ -2,10 +2,10 @@
     "Username": "Setoichi",
     "Race": "Technoki",
     "Class": "Frostknight",
-    "Rank": "Shaper",
+    "Rank": "Civilian",
     "Stats": {
-        "xp": 3125,
-        "xporb": 125,
+        "xp": 0,
+        "xporb": 0,
         "hp": 6,
         "str": 8,
         "mgck": 7,

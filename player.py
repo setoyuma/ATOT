@@ -12,7 +12,7 @@ from animation import Animator
 
 class Player(pg.sprite.Sprite):
 	
-	def __init__(self, game, pos, groups, collisionSprites, surface, player_name, player_class, race):
+	def __init__(self, game, pos, groups, collisionSprites, surface, player_name, player_class):
 		super().__init__(groups)
 		self.collisionSprites = collisionSprites
 		self.groups = groups
@@ -21,7 +21,6 @@ class Player(pg.sprite.Sprite):
 		# stats
 		self.player_name = str(player_name).capitalize()
 		self.player_class = str(player_class).capitalize()
-		self.race = str(race).capitalize()
 		self.xp_targets = xp_targets
 		self.hp = 100
 		self.mana = 100
@@ -39,6 +38,7 @@ class Player(pg.sprite.Sprite):
 		self.speed = BASE_SPEED
 		
 		# animations
+		self.ask_class()
 		self.import_character_assets()
 		self.status = 'idle'
 		self.frame_index = 0
@@ -55,7 +55,10 @@ class Player(pg.sprite.Sprite):
 		self.on_right = False
 		self.facing_right = False
 
-		self.change_rank()
+
+	def ask_class(self):
+		self.race = str(input("pick a class: ")).capitalize()
+		return(self.race)
 
 	def import_character_assets(self):
 		# character_path = f'./assets/races/8bit/Ebonheart/'
@@ -176,20 +179,20 @@ class Player(pg.sprite.Sprite):
 			self.status = 'idle'
 			self.running = False
 
-	def create_player(self):
+	def create_player(self, race):
 		
-		if self.race in races:
-			self.player_race = self.race
+		if race in races:
+			self.player_race = race
 
 		else:
-			print(self.race, " Is Not An Available Race")
+			print(race, " Is Not An Available Race")
 			print("Not An Available Race")
 
 		match self.player_class:
 			case "Monk":
 				new_player_data =  {
 					"Username": self.player_name,
-					"Race": self.race,
+					"Race": race,
 					"Class": self.player_class,
 					"Rank": "Civilian",
 					"Stats": {
@@ -205,7 +208,7 @@ class Player(pg.sprite.Sprite):
 			case "Paladin":
 				new_player_data =  {
 					"Username": self.player_name,
-					"Race": self.race,
+					"Race": race,
 					"Class": self.player_class,
 					"Rank": "Civilian",
 					"Stats": {
@@ -220,7 +223,7 @@ class Player(pg.sprite.Sprite):
 			case "Mistwalker":
 				new_player_data =  {
 					"Username": self.player_name,
-					"Race": self.race,
+					"Race": race,
 					"Class": self.player_class,
 					"Rank": "Civilian",
 					"Stats": {
@@ -235,7 +238,7 @@ class Player(pg.sprite.Sprite):
 			case "Skolbinder":
 				new_player_data =  {
 					"Username": self.player_name,
-					"Race": self.race,
+					"Race": race,
 					"Class": self.player_class,
 					"Rank": "Civilian",
 					"Stats": {
@@ -250,7 +253,7 @@ class Player(pg.sprite.Sprite):
 			case "Ebonguard":
 				new_player_data =  {
 					"Username": self.player_name,
-					"Race": self.race,
+					"Race": race,
 					"Class": self.player_class,
 					"Rank": "Civilian",
 					"Stats": {
@@ -265,7 +268,7 @@ class Player(pg.sprite.Sprite):
 			case "Frostknight":
 				new_player_data =  {
 					"Username": self.player_name,
-					"Race": self.race,
+					"Race": race,
 					"Class": self.player_class,
 					"Rank": "Civilian",
 					"Stats": {
@@ -280,7 +283,7 @@ class Player(pg.sprite.Sprite):
 			case "Technomancer":
 				new_player_data =  {
 					"Username": self.player_name,
-					"Race": self.race,
+					"Race": race,
 					"Class": self.player_class,
 					"Rank": "Civilian",
 					"Stats": {
