@@ -1,14 +1,16 @@
 import pygame as pg
 
-from player import Player
 from camera import SpriteCamera, WorldCamera
-from support import *
-from settings import *
-from tile import *
-from ui import UI
 from player_stat_line import StatLine
+from player import Player
+from ui import UI
+from settings import *
+from support import *
+from tile import *
+
+
 class World:
-	def __init__(self, world_data, surface, game):
+	def __init__(self, world_data, player_data, surface, game):
 		self.display_surface = surface
 		self.game = game
 
@@ -35,7 +37,7 @@ class World:
 		player_layout = import_csv_layout(world_data['player'])
 		self.player = pg.sprite.GroupSingle()
 		self.goal = pg.sprite.GroupSingle()
-		self.player_setup(player_layout)
+		self.player_setup(player_layout, player_data)
 
 		# terrain layout
 		terrain_layout = import_csv_layout(world_data['terrain'])
@@ -98,7 +100,7 @@ class World:
 					sprite_group.add(sprite)
 		return sprite_group
 
-	def player_setup(self, layout):
+	def player_setup(self, layout, player_data):
 		for row_index, row in enumerate(layout):
 			for col_index, val in enumerate(row):
 				x = col_index * TILE_SIZE
@@ -107,7 +109,7 @@ class World:
 					print(f"Proper Spawn x: {x}")
 					print(f"Proper Spawn y: {y}")
 					print("")
-					self.Player = Player(self.game, (x, y), [self.visibleSprites, self.activeSprites], self.collisionSprites, self.display_surface, "setoichi", "Frostknight")
+					self.Player = Player(self.game, player_data, (x, y), [self.visibleSprites, self.activeSprites], self.collisionSprites, self.display_surface)
 					self.player.add(self.Player)
 					self.visibleSprites.add(self.player)
 				if val == '1':
@@ -118,7 +120,6 @@ class World:
 		self.visibleSprites.customDraw(self.Player)
 		self.player.update()
 		# pg.draw.rect(self.display_surface, "blue", self.Player.hitbox)
-
 		
 		self.stat_line = StatLine("", 25, self.Player, (self.visibleSprites.offsetPos.x + 50, self.visibleSprites.offsetPos.y- 15), "white", self.display_surface)
 		self.stat_line.update()

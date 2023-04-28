@@ -1,7 +1,8 @@
 import pygame as pg
-from settings import TILE_SIZE
 from os import walk,sep
 from csv import reader
+
+from settings import TILE_SIZE
 
 
 def import_folder(path):
@@ -107,8 +108,7 @@ def text_line_wrap(surface, text, color, rect, font, aa=False, bkg=None):
 	return text
 
 
-class Input_Handler():
-
+class Input_Handler:
 	def __init__(self, game, size, pos):
 		self.game = game
 
@@ -127,7 +127,6 @@ class Input_Handler():
 				self.color = self.color_active
 		else:
 			self.color = self.color_passive
-
 
 	def update(self):
 		# draw rectangle and argument passed which should

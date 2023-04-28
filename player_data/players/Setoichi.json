@@ -1,9 +1,9 @@
 {
-    "Username": "Setoichi",
-    "Race": "Technoki",
-    "Class": "Frostknight",
-    "Rank": "Civilian",
-    "Stats": {
+    "username": "Setoichi",
+    "race": "Technoki",
+    "class": "Frostknight",
+    "rank": "Civilian",
+    "stats": {
         "xp": 0,
         "xporb": 0,
         "hp": 6,

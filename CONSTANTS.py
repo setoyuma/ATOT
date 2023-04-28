@@ -1,3 +1,8 @@
+notes = {
+	"Launcher" : "Added patch notes section, and character list.",
+	"Game" : "Added decoration tiles and level system."
+}
+
 classes = {
 	# hp, str, mgck, def
 	"Monk": [4,6,10,3],
@@ -22,7 +27,7 @@ races = {
 	"Valkyrie": [4, 5, 3],
 } 
 
-xp_targets = {
+ranks = {
 	"Civilian": 25,
 	"Page": 50,
 	"Squire": 75,
