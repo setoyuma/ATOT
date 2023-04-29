@@ -3,6 +3,10 @@ notes = {
 	"Game" : "Added decoration tiles and level system."
 }
 
+class_icons = {
+	"paladin": './assets/UI/class-icons/paladin.png'
+}
+
 projectile_types = {
 	1: "windblade",
 	2: "iceorb",
@@ -11,13 +15,13 @@ projectile_types = {
 
 classes = {
 	# hp, str, mgck, def
-	"Monk": [4,6,10,3],
-	"Paladin": [6,8,7,12],
-	"Mistwalker": [4,5,8,6],
-	"Skolbinder": [5,5,11,10],
-	"Ebonguard": [8,8,5,10],
-	"Frostknight": [6,8,7,10],
-	"Technomancer": [7,2,10,8],
+	"monk": [4,6,10,3],
+	"paladin": [6,8,7,12],
+	"mistwalker": [4,5,8,6],
+	"skolbinder": [5,5,11,10],
+	"ebonguard": [8,8,5,10],
+	"frostknight": [6,8,7,10],
+	"technomancer": [7,2,10,8],
 }
 
 races = {

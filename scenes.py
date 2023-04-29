@@ -1,6 +1,7 @@
 import pygame as pg
 from pygame.locals import *
 import sys
+import json
 
 from button import Button
 from world import World
@@ -51,8 +52,6 @@ class Launcher(Scene):
 		if self.game.loaded_data is not None:
 			self.buttons.append(Button(game, "PLAY", (925, 455), self.load_world, img, img))
 		
-		self.input_handler = Input_Handler(self, 30, (500,500))
-
 	def character_list(self):
 		self.game.screen.blit(self.character_list_img, (700, 100))
 		#draw_text(self.game.screen, f"{self.game.player.player_data['race']} | XP:{self.game.player.player_data['stats']['xp']}", (884,166), size=18, color="white")
@@ -74,8 +73,6 @@ class Launcher(Scene):
 		self.game.scene = WorldScene(self.game, self.game.loaded_data)
 
 	def update(self):
-		# input_handler.update()
-
 		for event in pg.event.get():
 			for button in self.buttons:
 				button.update(event)
@@ -84,22 +81,6 @@ class Launcher(Scene):
 				print("Game Closed")
 				pg.quit()
 				sys.exit()
-
-			elif event.type == pg.MOUSEBUTTONDOWN:
-				if self.input_handler.input_rect.collidepoint(event.pos):
-					self.input_handler.active = True
-				else:
-					self.input_handler.active = False
-
-			elif event.type == pg.KEYDOWN:
-				# Check for backspace
-				if event.key == pg.K_BACKSPACE:
-					# get text input from 0 to -1 i.e. end.
-					self.input_handler.user_text = self.input_handler.user_text[:-1]
-				# Unicode standard is used for string
-				# formation
-				else:
-					self.input_handler.user_text += event.unicode
 
 	def draw(self):
 		self.game.screen.fill("black")
@@ -172,22 +153,169 @@ class CharacterSelect(Scene):
 		self.game.scene = Launcher(self.game)
 
 	def create_player(self, race):
-		class_stats = classes["Frostknight"]
-		player_data =  {
-			"username": "Setoichi",
-			"race": race,
-			"class": "Frostknight",
-			"rank": "civilian",
-			"stats": {
-				"xp": 0,
-				"xporb": 0,
-				"hp": class_stats[0],
-				"str": class_stats[1],
-				"mgck": class_stats[2],
-				"def": class_stats[3]
+		class_stats = classes["frostknight"]
+		
+		with open('./player_data/players/Setoichi.json', 'w') as file:
+			player_data =  {
+				"username": "Setoichi",
+				"race": race,
+				"class": "frostknight",
+				"rank": "civilian",
+				"stats": {
+					"xp": 0,
+					"xporb": 0,
+					"hp": class_stats[0],
+					"str": class_stats[1],
+					"mgck": class_stats[2],
+					"def": class_stats[3]
+				}
 			}
-		}
+			json.dump(player_data, file, indent=4)
+			file.close()
+
+		self.game.scene = ClassSelect(self.game)
+		
+
+class ClassSelect(Scene):
+	def __init__(self, game):
+		super().__init__(game)
+		self.logo = get_image("./assets/UI/abberoth.png")
+		character_card = get_image('./assets/UI/character_card.png')
+		self.scaled_char_card = pg.transform.scale(character_card, (216, 264))
+		
+		img = 'assets/UI/buttons/button_plate1.png'
+		self.buttons = [
+			Button(game, "BACK", (925, 455), self.back, img, img),
+			Button(game, "Paladin", (116, 280), self.create_player, img, img, id="paladin"),
+			# Button(game, "Voidkin", (372, 280), self.create_player, img, img, id="Voidkin"),
+			# Button(game, "Lightbringer", (630, 280), self.create_player, img, img, id="Lightbringer"),
+			# Button(game, "Technoki", (892, 280), self.create_player, img, img, id="Technoki")
+			]
+
+	def back(self):
+		self.game.scene = CharacterSelect(self.game)
+
+	def update(self):
+		for event in pg.event.get():
+			for button in self.buttons:
+				button.update(event)
+
+			if event.type == pg.QUIT:
+				print("Game Closed")
+				pg.quit()
+				sys.exit()
+	
+	def draw(self):
+		self.game.screen.blit(self.logo, (0,0))
+
+		for i, icon in enumerate(class_icons.values()):
+			scaled_icon = pg.transform.scale(get_image(icon), (64,64))
+			self.game.screen.blit(self.scaled_char_card, (5+(257*(i)), 100))
+			self.game.screen.blit(scaled_icon, (84+(257*(i)), 148))
+
+		for button in self.buttons:
+			button.draw()
+
+		self.game.draw_fps()
+
+	def create_player(self, player_class):
+		class_stats = classes[player_class]
+		
+		with open('./player_data/players/Setoichi.json', 'r') as file:
+			old_data = json.load(file)
+			file.close()
+
+		with open('./player_data/players/Setoichi.json', 'w') as file:
+
+			player_data =  {
+				"username": "Setoichi",
+				"race": old_data["race"],
+				"class": player_class,
+				"rank": "civilian",
+				"stats": {
+					"xp": 0,
+					"xporb": 0,
+					"hp": class_stats[0],
+					"str": class_stats[1],
+					"mgck": class_stats[2],
+					"def": class_stats[3]
+				}
+			}
+			json.dump(player_data, file, indent=4)
+			file.close()
+		
+		self.game.scene = CreateUsername(self.game)
+
+		
+class CreateUsername(Scene):
+	def __init__(self, game):
+		self.game = game
+		self.logo = get_image("./assets/UI/abberoth.png")
+		self.text_input = TextInput(self.game, 50, (455, 250))
+
+	def back(self):
+		self.game.scene = ClassSelect(self.game)
+
+	def update(self):
+		self.text_input.update()
+
+		for event in pg.event.get():
+			if event.type == pg.MOUSEBUTTONDOWN:
+				if event.button == 1:
+					if self.text_input.input_rect.collidepoint(event.pos):
+						self.text_input.active = True
+					else:
+						self.text_input.active = False
+
+			elif event.type == pg.KEYDOWN:
+				# Check for backspace
+				if event.key == pg.K_BACKSPACE:
+					# get text input from 0 to -1 i.e. end.
+					self.text_input.user_text = self.text_input.user_text[:-1]
+				elif event.key == pg.K_RETURN:
+					self.apply_username(self.text_input.user_text)
+				# Unicode standard is used for string
+				# formation
+				else:
+					self.text_input.user_text += event.unicode
+
+			if event.type == pg.QUIT:
+				print("Game Closed")
+				pg.quit()
+				sys.exit()
+	
+	def apply_username(self, username):
+		with open('./player_data/players/Setoichi.json', 'r') as file:
+			old_data = json.load(file)
+			file.close()
+
+		with open('./player_data/players/Setoichi.json', 'w') as file:
+
+			player_data =  {
+				"username": username,
+				"race": old_data["race"],
+				"class": old_data["class"],
+				"rank": old_data["rank"],
+				"stats": {
+					"xp": old_data["stats"]["xp"],
+					"xporb": old_data["stats"]["xporb"],
+					"hp": old_data["stats"]["hp"],
+					"str": old_data["stats"]["str"],
+					"mgck": old_data["stats"]["mgck"],
+					"def": old_data["stats"]["def"]
+				}
+			}
+			json.dump(player_data, file, indent=4)
+			file.close()
+		
 		self.game.scene = WorldScene(self.game, player_data)
+
+	def draw(self):
+		self.game.screen.blit(self.logo, (0,0))
+
+		draw_text(self.game.screen, "Create Username", (self.game.screen.get_width()/2, 200), color="red", bg_color="black", size=50)
+
+		self.game.draw_fps()
 
 
 class WorldScene(Scene):
@@ -239,15 +367,6 @@ class WorldScene(Scene):
 	def draw(self):
 		self.game.screen.fill("black")
 		self.game.world.run()
-		self.draw_mini_map()
 		self.game.draw_fps()
 
-	def draw_mini_map(self):
-		self.game.screen.blit(self.scaled_mini_map, (SCREEN_WIDTH-345, SCREEN_HEIGHT - 750))
-		player_stats = self.game.player.stats
-		draw_text(self.game.screen, f"STR | {player_stats['str']}", (1185, 210), 20, (255,255,255))
-		draw_text(self.game.screen, f"MGCK | {player_stats['mgck']}", (1185, 240), 20, (255,255,255))
-		draw_text(self.game.screen, f"HP | {player_stats['hp']}", (1075, 210), 20, (255,255,255))
-		draw_text(self.game.screen, f"DEF | {player_stats['def']}", (1075, 240), 20, (255,255,255))
-		draw_text(self.game.screen, f"XP | {player_stats['xp']}", (1080, 270), 20, (255,255,255))
-		draw_text(self.game.screen, f"ORBS | {player_stats['xporb']}", (1175, 270), 20, (255,255,255))
+	

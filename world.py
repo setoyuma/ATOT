@@ -151,3 +151,4 @@ class World:
 
 		self.ui.show_health(self.Player.hp, 100)
 		self.ui.show_mana(self.Player.mana, 100)
+		self.ui.draw_mini_map(self.Player.stats)

@@ -1,14 +1,14 @@
 {
     "username": "Setoichi",
-    "race": "Technoki",
-    "class": "Frostknight",
-    "rank": "Civilian",
+    "race": "Ebonheart",
+    "class": "paladin",
+    "rank": "civilian",
     "stats": {
         "xp": 0,
         "xporb": 0,
         "hp": 6,
         "str": 8,
         "mgck": 7,
-        "def": 10
+        "def": 12
     }
 }

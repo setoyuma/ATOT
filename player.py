@@ -53,8 +53,10 @@ class Player(pg.sprite.Sprite):
 		self.facing_right = False
 
 	def import_character_assets(self):
-		# character_path = f'./assets/races/8bit/Ebonheart/'
-		character_path = f'./assets/races/8bit/Voidkin/'
+		with open('./player_data/players/Setoichi.json', 'r') as file:
+			player_data = json.load(file)
+		
+		character_path = f'./assets/races/8bit/{player_data["race"]}/'
 		self.animations = {'idle':[],'run-right':[],'run-left':[],'run-back':[], 'run':[]}
 		
 		for animation in self.animations.keys():

@@ -30,9 +30,10 @@ class Game:
 
 	def run(self):
 		while True:
-			self.scene.update()
 			self.scene.draw()
+			self.scene.update()
 			self.send_frame()
+
 
 	def send_frame(self):
 		pg.display.flip()

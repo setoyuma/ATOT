@@ -107,8 +107,7 @@ def text_line_wrap(surface, text, color, rect, font, aa=False, bkg=None):
 
 	return text
 
-
-class Input_Handler:
+class TextInput:
 	def __init__(self, game, size, pos):
 		self.game = game
 
@@ -117,14 +116,14 @@ class Input_Handler:
 
 		self.input_rect = pg.Rect(pos, (140, 32))
 
-		self.color_active = pg.Color('lightskyblue3')
-		self.color_passive = pg.Color('chartreuse4')
+		self.color_active = pg.Color('black')
+		self.color_passive = pg.Color('white')
 		self.color = self.color_passive
 
 		self.active = False
 		
 		if self.active:
-				self.color = self.color_active
+			self.color = self.color_active
 		else:
 			self.color = self.color_passive
 
@@ -133,7 +132,7 @@ class Input_Handler:
 		# be on screen
 		pg.draw.rect(self.game.screen, self.color, self.input_rect)
 	
-		self.text_surface = self.base_font.render(self.user_text, True, (255, 255, 255))
+		self.text_surface = self.base_font.render(self.user_text, True, (0,0,0))
 	
 		# render at position stated in arguments
 		self.game.screen.blit(self.text_surface, (self.input_rect.x+5, self.input_rect.y+5))
