@@ -1,9 +1,8 @@
 import pygame as pg
-
 from settings import *
 
 
-class SpriteCamera(pg.sprite.Group):
+class YSortCamera(pg.sprite.Group):
     def __init__(self):
         super().__init__()
         self.displaySurface = pg.display.get_surface()
@@ -16,8 +15,10 @@ class SpriteCamera(pg.sprite.Group):
         for sprite in sorted(self.sprites(), key=lambda sprite: sprite.rect.centery):
             self.offsetPos = sprite.rect.topleft - self.offset
             self.displaySurface.blit(sprite.image,self.offsetPos)
+            sprite.rect.x = self.offsetPos.x
+            sprite.rect.y = self.offsetPos.y
 
-class WorldCamera(pg.sprite.Group):
+class NoSortCamera(pg.sprite.Group):
     def __init__(self):
         super().__init__()
         self.displaySurface = pg.display.get_surface()
@@ -30,3 +31,5 @@ class WorldCamera(pg.sprite.Group):
         for sprite in self.sprites():
             self.offsetPos = sprite.rect.topleft - self.offset
             self.displaySurface.blit(sprite.image,self.offsetPos)
+            sprite.rect.x = self.offsetPos.x
+            sprite.rect.y = self.offsetPos.y

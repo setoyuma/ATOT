@@ -213,10 +213,12 @@ class WorldScene(Scene):
 				sys.exit()
 
 			elif event.type == pg.MOUSEBUTTONDOWN:
-				if event.button == 1:
+				if event.button in projectile_types.keys():
+					self.game.player.casting_projectile = True
+					self.game.player.projectile_type = projectile_types[event.button]
 					# proj = RadialBullet(*self.player.groups[0].offsetPos, 5)
-					proj = Bullet(self.game.player.groups[0].offsetPos.x + 35, self.game.player.groups[0].offsetPos.y + 40)
-					self.game.player.projectiles.append(proj)
+			elif event.type == pg.MOUSEBUTTONUP:
+				self.game.player.casting_projectile = False
 
 			elif event.type == KEYDOWN:
 				if event.key == pg.K_c:
@@ -234,19 +236,10 @@ class WorldScene(Scene):
 				elif event.key == K_w or event.key == K_s:
 					self.game.player.direction.y = 0
 
-		for proj in self.game.player.projectiles:
-			proj.update()
-			if not self.game.screen.get_rect().collidepoint((proj.pos[0], proj.pos[1])):
-				self.game.player.projectiles.remove(proj)
-		
-
 	def draw(self):
 		self.game.screen.fill("black")
 		self.game.world.run()
 		self.draw_mini_map()
-		for proj in self.game.player.projectiles:
-			proj.draw(self.game.screen)
-
 		self.game.draw_fps()
 
 	def draw_mini_map(self):

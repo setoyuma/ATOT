@@ -3,6 +3,12 @@ notes = {
 	"Game" : "Added decoration tiles and level system."
 }
 
+projectile_types = {
+	1: "windblade",
+	2: "iceorb",
+	3: "fireball",
+}
+
 classes = {
 	# hp, str, mgck, def
 	"Monk": [4,6,10,3],

@@ -29,9 +29,7 @@ class Player(pg.sprite.Sprite):
 		self.spawn_x = pos[0]
 		self.spawn_y = pos[1]
 		self.size = 64
-		# self.rect = self.image.get_rect()
-		self.rect = pg.Rect((self.spawn_x, self.spawn_y), (98, 98))
-		# self.image = pg.Surface((TILE_SIZE//2, TILE_SIZE))
+		self.rect = pg.Rect((self.spawn_x, self.spawn_y), (64, 64))
 
 		# movement
 		self.direction = pg.math.Vector2()
@@ -46,6 +44,7 @@ class Player(pg.sprite.Sprite):
 		self.animation_speed = 0.15
 
 		# state vars
+		self.casting_projectile = False
 		self.running = False
 		self.dashing = False
 		self.attacking = False
@@ -65,8 +64,7 @@ class Player(pg.sprite.Sprite):
 
 	def animate(self):
 		animation = self.animations[self.status]
-		# self.hitBox = pg.rect.Rect(self.rect.x,self.rect.y,38,64)
-		# self.hitBox.center = self.rect.center
+		# self.hitbox = pg.Rect((self.groups[0].offsetPos.x + 20, self.groups[0].offsetPos.y), (60,98))
 
 		# loop over frame index 
 		self.frame_index += self.animation_speed
@@ -118,19 +116,6 @@ class Player(pg.sprite.Sprite):
 			self.direction.y = 1
 		else:
 			self.direction.y = 0
-
-		# if keys[pg.K_p]:
-		# 	self.attacking = True
-		# 	print('attack')
-
-		# if keys[pg.K_u]:
-		# 	# self.xp_up()
-		# 	print("wow")
-
-		# if self.running and keys[pg.K_LSHIFT]:
-		# 	self.speed = BASE_SPEED + 3
-		# else:
-		# 	self.speed = BASE_SPEED
 
 	def get_state(self):
 		if self.direction.x > 0:
@@ -185,13 +170,11 @@ class Player(pg.sprite.Sprite):
 
 	def update(self):
 		self.animate()
-		# self.switch_image()
 		self.event_handler()
 		self.rect.x += self.direction.x * self.speed
 		self.horizontalCollisions()
 		self.rect.y += self.direction.y * self.speed
 		self.verticalCollisions()
 		self.get_state()
-		self.hitbox = pg.Rect((self.groups[0].offsetPos.x + 20, self.groups[0].offsetPos.y), (60,98))
 		self.change_rank()
 		# self.image = blue_ebonheart(self.image)  # pallet swapped ebonheart
