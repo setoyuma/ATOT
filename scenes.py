@@ -2,6 +2,7 @@ import pygame as pg
 from pygame.locals import *
 import sys
 import json
+import os
 
 from button import Button
 from world import World
@@ -54,8 +55,20 @@ class Launcher(Scene):
 		
 	def character_list(self):
 		self.game.screen.blit(self.character_list_img, (700, 100))
-		#draw_text(self.game.screen, f"{self.game.player.player_data['race']} | XP:{self.game.player.player_data['stats']['xp']}", (884,166), size=18, color="white")
-		#self.game.screen.blit(self.scaled_player_img, (745, 150))
+		
+		if os.listdir('./player_data/players/'):
+			player_file = os.listdir('./player_data/players')
+			with open(f"./player_data/players/{str(player_file[0])}", 'r') as file:
+				player_data = json.load(file)
+
+			player_img = get_image(f'./assets/races/8bit/{str(player_data["race"]).capitalize()}/idle/idle.png')
+			self.scaled_player_img = pg.transform.scale(player_img, (32,32))
+			draw_text(self.game.screen, f"{player_data['race']} | XP:{player_data['stats']['xp']}", (884,166), size=18, color="white")
+		
+			self.game.screen.blit(self.scaled_player_img, (745, 150))
+		
+		else:
+			print('no characters')
 
 	def patch_notes(self):
 		patch_notes_surf = pg.Surface((240,250))
@@ -187,7 +200,7 @@ class ClassSelect(Scene):
 		self.buttons = [
 			Button(game, "BACK", (925, 455), self.back, img, img),
 			Button(game, "Paladin", (116, 280), self.create_player, img, img, id="paladin"),
-			# Button(game, "Voidkin", (372, 280), self.create_player, img, img, id="Voidkin"),
+			Button(game, "Monk", (372, 280), self.create_player, img, img, id="monk"),
 			# Button(game, "Lightbringer", (630, 280), self.create_player, img, img, id="Lightbringer"),
 			# Button(game, "Technoki", (892, 280), self.create_player, img, img, id="Technoki")
 			]

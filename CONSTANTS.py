@@ -4,7 +4,8 @@ notes = {
 }
 
 class_icons = {
-	"paladin": './assets/UI/class-icons/paladin.png'
+	"paladin": './assets/UI/class-icons/paladin.png',
+	"monk": './assets/UI/class-icons/monk.png'
 }
 
 projectile_types = {
