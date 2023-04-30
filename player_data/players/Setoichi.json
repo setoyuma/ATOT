@@ -1,14 +1,14 @@
 {
-    "username": "Apple eater",
-    "race": "Lightbringer",
-    "class": "monk",
+    "username": "a",
+    "race": "Voidkin",
+    "class": "paladin",
     "rank": "civilian",
     "stats": {
         "xp": 0,
         "xporb": 0,
-        "hp": 4,
-        "str": 6,
-        "mgck": 10,
-        "def": 3
+        "hp": 6,
+        "str": 8,
+        "mgck": 7,
+        "def": 12
     }
 }
