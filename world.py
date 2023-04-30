@@ -141,9 +141,12 @@ class World:
 		
 	def projectile_handler(self):
 		if self.Player.casting_projectile:
-			proj = Bullet(self.game.player.groups[0].offsetPos.x + 35, self.game.player.groups[0].offsetPos.y + 40, self.Player.projectile_type, self.projectileSprites)
+			proj = Bullet(self.Player.rect.centerx, self.Player.rect.centery, self.Player.projectile_type, self.projectileSprites)
+			# proj = Bullet(self.game.player.groups[0].offsetPos.x + 35, self.game.player.groups[0].offsetPos.y + 40, self.Player.projectile_type, self.projectileSprites)
+			self.projectileSprites.add(proj)
 			self.Player.projectiles.append(proj)
-		
+			self.Player.casting_projectile = False		
+	
 		for proj in self.Player.projectiles:
 			proj.draw(self.display_surface)
 			# delete projectiles when offscreen
@@ -159,6 +162,7 @@ class World:
 		self.projectileSprites.update()
 		self.playerSprites.update()
 		self.collisionSprites.update()
+		
 
 	def run(self):
 		self.layer_sort()

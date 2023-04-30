@@ -362,13 +362,7 @@ class WorldScene(Scene):
 				self.game.player.casting_projectile = False
 
 			elif event.type == KEYDOWN:
-				if event.key == pg.K_c:
-					self.game.player.create_player()
-				elif event.key == pg.K_x:
-					self.game.player.xp_up(25)
-				elif event.key == pg.K_l:
-					self.game.player.level_up("hp")
-				elif event.key == pg.K_f:
+				if event.key == pg.K_f:
 					pg.display.toggle_fullscreen()
 
 			elif event.type == KEYUP:

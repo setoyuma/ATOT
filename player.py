@@ -35,6 +35,7 @@ class Player(pg.sprite.Sprite):
 		self.direction = pg.math.Vector2()
 		self.speed = BASE_SPEED
 		
+		
 		# animations
 		self.import_character_assets()
 		self.status = 'idle'
@@ -179,4 +180,6 @@ class Player(pg.sprite.Sprite):
 		self.verticalCollisions()
 		self.get_state()
 		self.change_rank()
+		self.vel_x = self.direction.x * self.speed
+		self.vel_y = self.direction.y * self.speed
 		# self.image = blue_ebonheart(self.image)  # pallet swapped ebonheart

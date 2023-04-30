@@ -7,6 +7,7 @@ class Bullet(pg.sprite.Sprite):
 		super().__init__(group)
 		self.pos = (x, y)
 		self.group = group
+		self.type = type
 
 		mx, my = pg.mouse.get_pos()
 		self.dir = (mx - x, my - y)
@@ -18,20 +19,42 @@ class Bullet(pg.sprite.Sprite):
 
 		angle = math.degrees(math.atan2(-self.dir[1], self.dir[0]))
 
-		self.bullet = get_image(f'./assets/spells/{type}/{type}1.png')
-		scaled_bullet = pg.transform.scale(self.bullet, (64,64))
+		self.image = get_image(f'./assets/spells/{type}/{type}1.png')
+		scaled_bullet = pg.transform.scale(self.image, (64,64))
 
-		# self.bullet.fill((255, 255, 255))
-		self.bullet = pg.transform.rotate(scaled_bullet, angle)
+		self.image = pg.transform.rotate(scaled_bullet, angle)
 		self.speed = bullet_speed
 
-	def update(self):  
+	def import_assets(self):
+		path = f'./assets/spells/{self.type}/'
+		self.animations = {'idle':[],}
+		
+		for animation in self.animations.keys():
+			full_path = character_path + animation
+			self.animations[animation] = scale_images(import_folder(full_path), (self.size, self.size))
+			# print(self.animations[animation])
+
+	def animate(self):
+		animation = self.animations[self.status]
+		# self.hitbox = pg.Rect((self.groups[0].offsetPos.x + 20, self.groups[0].offsetPos.y), (60,98))
+
+		# loop over frame index 
+		self.frame_index += self.animation_speed
+		if self.frame_index >= len(animation):
+			self.frame_index = 0
+			
+		self.image = animation[int(self.frame_index)]
+		if not self.facing_right:
+			self.image = pg.transform.flip(self.image,True,False)
+
+	def update(self):
 		self.pos = (self.pos[0]+self.dir[0]*self.speed, 
 					self.pos[1]+self.dir[1]*self.speed)
 
 	def draw(self, surf):
-		self.rect = self.bullet.get_rect(center = self.pos)
-		surf.blit(self.bullet, self.rect)
+		self.rect = self.image.get_rect(center = self.pos)
+		surf.blit(self.image, self.rect)
+		pg.draw.rect(pg.display.get_surface(), "red", self.rect)
 
 class RadialBullet():
 
