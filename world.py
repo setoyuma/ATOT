@@ -8,7 +8,7 @@ from ui import UI
 from settings import *
 from support import *
 from tile import *
-
+from npc import NPC
 
 class World:
 	def __init__(self, world_data, player_data, surface, game):
@@ -23,6 +23,7 @@ class World:
 		self.terrainSprites = NoSortCamera()
 		self.groundSprites = NoSortCamera()
 		self.playerSprites = YSortCamera()
+		self.NPCsprites = YSortCamera()
 		self.projectileSprites = YSortCamera() 
 		self.activeSprites = pg.sprite.Group() # these sprites are updated
 		self.collisionSprites = pg.sprite.Group() # sprites with collision
@@ -36,6 +37,12 @@ class World:
 		player_layout = import_csv_layout(world_data['player'])
 		self.player = pg.sprite.GroupSingle()
 		self.player_setup(player_layout, player_data)
+
+		# enemy setup
+		'''NPC'''
+		NPC_layout = import_csv_layout(world_data['NPC'])
+		self.NPC_sprites = self.create_tile_group(
+			NPC_layout,'NPC')
 
 		# terrain layout
 		terrain_layout = import_csv_layout(world_data['terrain'])
@@ -99,6 +106,11 @@ class World:
 						sprite = StaticTile(TILE_SIZE, x, y, ground_surface, [self.groundSprites])
 						self.groundSprites.add(sprite)
 
+					if type == 'NPC':
+						sprite = NPC(TILE_SIZE,x,y,self.NPCsprites,"Alryn")
+						self.NPCsprites.add(sprite)
+						# sprite = NPC(TILE_SIZE,x,y,"Alryn")
+
 	def player_setup(self, layout, player_data):
 		for row_index, row in enumerate(layout):
 			for col_index, val in enumerate(row):
@@ -112,6 +124,14 @@ class World:
 				if val == '1':
 					pass
 	
+	def create_jump_particles(self,pos):
+		if self.player.sprite.facing_right:
+			pos -= pg.math.Vector2(10,5)
+		else:
+			pos += pg.math.Vector2(10,-5)
+		jump_particle_sprite = ParticleEffect(pos,'jump')
+		self.dust_sprite.add(jump_particle_sprite)
+
 	def projectileCollisions(self):
 		for sprite in self.terrainSprites.sprites():
 			for proj in self.Player.projectiles:
@@ -135,6 +155,7 @@ class World:
 		self.terrainSprites.customDraw(self.Player)
 		self.treeSprites.customDraw(self.Player)
 		self.playerSprites.customDraw(self.Player)
+		self.NPCsprites.customDraw(self.Player)
 		self.projectileSprites.update()
 		self.playerSprites.update()
 		self.collisionSprites.update()
@@ -143,7 +164,6 @@ class World:
 		self.layer_sort()
 		self.projectile_handler()
 		self.projectileCollisions()
-
 		# pg.draw.rect(self.display_surface, "blue", self.Player.rect)
 		
 		self.stat_line = StatLine("", 25, self.Player, (self.playerSprites.offsetPos.x + 50, self.playerSprites.offsetPos.y- 15), "white", self.display_surface)
