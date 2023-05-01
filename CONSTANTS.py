@@ -52,12 +52,14 @@ ranks = {
 }
 
 world_0 = {
+    'constraint': './level_data/data/world_0_constraint.csv',
     'terrain': './level_data/data/world_0_terrain.csv',
     'player': './level_data/data/world_0_player.csv',
     'deco': './level_data/data/world_0_deco.csv',
     'ground': './level_data/data/world_0_ground.csv',
     'trees': './level_data/data/world_0_trees.csv',
     'NPC': './level_data/data/world_0_NPC.csv',
+    'items': './level_data/data/world_0_items.csv',
 }
 
 worlds = {

@@ -54,7 +54,7 @@ class Bullet(pg.sprite.Sprite):
 	def draw(self, surf):
 		self.rect = self.image.get_rect(center = self.pos)
 		surf.blit(self.image, self.rect)
-		pg.draw.rect(pg.display.get_surface(), "red", self.rect)
+		# pg.draw.rect(pg.display.get_surface(), "red", self.rect)
 
 class RadialBullet():
 

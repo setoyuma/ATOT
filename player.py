@@ -24,6 +24,7 @@ class Player(pg.sprite.Sprite):
 		self.hp = 100
 		self.mana = 100
 		self.projectiles = []
+		self.items = []
 
 		self.display_surface = surface
 		self.spawn_x = pos[0]
@@ -136,7 +137,6 @@ class Player(pg.sprite.Sprite):
 			self.running = True
 			self.status = 'run-back'
 		else:
-			self.status = 'idle'
 			self.running = False
 
 	def level_up(self, stat, level_increase=1):
