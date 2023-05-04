@@ -22,8 +22,7 @@ class Player(pg.sprite.Sprite):
 		self.projectiles = []
 
 		# weapon
-		# self.weapon = get_image('./assets/shotgun.png').convert_alpha()
-		# self.weapon.set_colorkey((255,255,255))
+		self.weapon = pg.transform.scale(get_image('./assets/weapons/Skolfen.png'), (64, 64)).convert_alpha()
 		
 		# state
 		self.facing_right = True
@@ -162,5 +161,5 @@ class Player(pg.sprite.Sprite):
 		# self.horizontalCollisions()
 		# self.rect.y += self.direction.y * self.speed
 		# self.verticalCollisions()
-		# self.handle_weapon(display)
+		self.handle_weapon(display)
 		# self.image = blue_ebonheart(self.image)  # pallet swapped ebonheart
