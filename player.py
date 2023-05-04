@@ -76,12 +76,12 @@ class Player(pg.sprite.Sprite):
 			self.game.display_scroll.x += BASE_SPEED
 			self.direction.x = 1
 			for proj in self.projectiles:
-				proj.x += BASE_SPEED
+				proj.x -= BASE_SPEED
 		elif keys[pg.K_a]:
 			self.game.display_scroll.x -= BASE_SPEED
 			self.direction.x = -1
 			for proj in self.projectiles:
-				proj.x -= BASE_SPEED
+				proj.x += BASE_SPEED
 		else:
 			self.direction.x = 0
 
