@@ -2,7 +2,7 @@ import pygame as pg
 import json
 import os
 
-from CONSTANTS import *
+from constants import *
 from settings import *
 from support import *
 from scenes import *
@@ -13,6 +13,7 @@ class Game:
 		self.screen = pg.display.set_mode((1000,500), pg.SCALED)
 		self.clock = pg.time.Clock()
 		self.FPS = 60
+		self.display_scroll = pg.math.Vector2()
 		self.dt = self.clock.tick(self.FPS) / 1000
 		pg.display.set_icon(get_image('./assets/logo.ico'))
 		pg.display.set_caption("A Tale Of Time")

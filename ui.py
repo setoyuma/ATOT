@@ -20,7 +20,7 @@ class UI:
 		self.bar_height = 46
 
 		# mini map
-		mini_map = get_image('./assets/maps/Mini_Map.png')
+		mini_map = get_image('./assets/UI/maps/Mini_Map.png')
 		self.scaled_mini_map = pg.transform.scale(mini_map, (350,350))
 
 	def draw_mini_map(self, player_stats):

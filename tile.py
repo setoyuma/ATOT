@@ -8,6 +8,8 @@ class Tile(pg.sprite.Sprite):
         super().__init__(groups)
         self.image = pg.Surface((size, size))
         self.rect = self.image.get_rect(topleft=(x, y))
+        self.x = x
+        self.y = y
 
 
 class DecorationTile(Tile):

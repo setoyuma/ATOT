@@ -8,10 +8,11 @@ class NPC(pg.sprite.Sprite):
 	def __init__(self, pos, size, NPC, groups):
 		super().__init__(groups)
 		self.size = size
-		self.speed = 3
+		self.speed = 2
+		self.pos = pg.math.Vector2(pos)
 		self.direction = pg.math.Vector2()
-		# self.image = pg.transform.scale(get_image('./assets/NPC/GyrethII/idle/idle.png'), (self.size, self.size))
-		
+		self.velocity = pg.math.Vector2()
+
 		# animation
 		self.import_character_assets(NPC)
 		self.status = 'idle'
@@ -25,7 +26,33 @@ class NPC(pg.sprite.Sprite):
 		self.hit_constraint = False
 
 		# rect
-		self.rect = self.image.get_rect(topleft=pos)
+		self.rect = self.image.get_rect()
+		self.rect.center = pos
+		
+	def approach(self, player):
+		# set vector equal to entity's position
+		player_vector = pg.math.Vector2(player.rect.center)
+		enemy_vector = pg.math.Vector2(self.rect.center)
+		
+		# get distance between the vectors
+		distance = self.get_vector_distance(player_vector, enemy_vector)
+
+		# determine direction to go if there is distance to be traveled
+		if distance > 0:
+			self.direction = (player_vector - enemy_vector).normalize()
+		else:
+			self.direction = pg.math.Vector2()
+		
+		# update velocity and position 
+		self.velocity = self.direction * self.speed
+		self.pos += self.velocity
+
+		# apply updated position to rect
+		self.rect.centerx = self.pos.x
+		self.rect.centery = self.pos.y
+
+	def get_vector_distance(self, v1, v2):
+		return(v1 - v2).magnitude()
 
 	def reverse(self):
 		self.direction.x = -self.direction.x
@@ -72,9 +99,12 @@ class NPC(pg.sprite.Sprite):
 			self.image = pg.transform.flip(self.image,True,False)
 
 	def update(self):
-		self.get_state()
 		self.animate()
+		self.get_state()
 		self.rect.x += self.direction.x * self.speed
-		self.rect.y += self.direction.y * self.speed
+		# self.rect.y += self.direction.y * self.speed
+		# pg.draw.rect(pg.display.get_surface(), "yellow", self.rect)
+		# pg.draw.circle(pg.display.get_surface(), "red", self.rect.center, 100)
+		
 
 		

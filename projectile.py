@@ -2,12 +2,33 @@ import pygame as pg
 import math
 from settings import *
 from support import *
+
+class Projectile:
+	def __init__(self, x, y, mouseX, mouseY):
+		self.x = x
+		self.y = y
+		self.mouseX = mouseX
+		self.mouseY = mouseY
+		self.speed = 15
+		self.angle = math.atan2(y-mouseY, x-mouseX)
+		self.x_velocity = math.cos(self.angle) * self.speed
+		self.y_velocity = math.sin(self.angle) * self.speed
+
+	def main(self, display):
+		self.x -= int(self.x_velocity)
+		self.y -= int(self.y_velocity)
+
+		pg.draw.circle(display, (0,0,0), (self.x, self.y), 15)
+
+
 class Bullet(pg.sprite.Sprite):
-	def __init__(self, x, y, type, group):
+	def __init__(self, x, y, type, size, group):
 		super().__init__(group)
 		self.pos = (x, y)
 		self.group = group
 		self.type = type
+		self.size = size
+		self.speed = bullet_speed
 
 		mx, my = pg.mouse.get_pos()
 		self.dir = (mx - x, my - y)
@@ -17,35 +38,32 @@ class Bullet(pg.sprite.Sprite):
 		else:
 			self.dir = (self.dir[0]/length, self.dir[1]/length)
 
-		angle = math.degrees(math.atan2(-self.dir[1], self.dir[0]))
-
-		self.image = get_image(f'./assets/spells/{type}/{type}1.png')
-		scaled_bullet = pg.transform.scale(self.image, (64,64))
-
-		self.image = pg.transform.rotate(scaled_bullet, angle)
-		self.speed = bullet_speed
+		self.angle = math.degrees(math.atan2(-self.dir[1], self.dir[0]))
+		
+		# animation 
+		self.import_assets()
+		self.frame_index = 0
+		self.animation = self.animations[self.type]
+		self.animation_speed = 0.35
+		self.image = self.animations[self.type][self.frame_index]
 
 	def import_assets(self):
-		path = f'./assets/spells/{self.type}/'
-		self.animations = {'idle':[],}
+		path = f'./assets/player/spells/'
+		self.animations = {f'{self.type}':[],}
 		
 		for animation in self.animations.keys():
-			full_path = character_path + animation
+			full_path = path + animation
 			self.animations[animation] = scale_images(import_folder(full_path), (self.size, self.size))
-			# print(self.animations[animation])
 
 	def animate(self):
-		animation = self.animations[self.status]
-		# self.hitbox = pg.Rect((self.groups[0].offsetPos.x + 20, self.groups[0].offsetPos.y), (60,98))
+		animation = self.animations[self.type]
 
 		# loop over frame index 
 		self.frame_index += self.animation_speed
 		if self.frame_index >= len(animation):
 			self.frame_index = 0
 			
-		self.image = animation[int(self.frame_index)]
-		if not self.facing_right:
-			self.image = pg.transform.flip(self.image,True,False)
+		self.image = pg.transform.rotate(animation[int(self.frame_index)], self.angle)
 
 	def update(self):
 		self.pos = (self.pos[0]+self.dir[0]*self.speed, 
@@ -54,6 +72,7 @@ class Bullet(pg.sprite.Sprite):
 	def draw(self, surf):
 		self.rect = self.image.get_rect(center = self.pos)
 		surf.blit(self.image, self.rect)
+		self.animate()
 		# pg.draw.rect(pg.display.get_surface(), "red", self.rect)
 
 class RadialBullet():
