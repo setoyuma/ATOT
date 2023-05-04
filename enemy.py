@@ -3,9 +3,10 @@ from support import *
 import random
 from constants import *
 
-class Enemy:
+class Enemy(pg.sprite.Sprite):
 
-	def __init__(self, game, x, y, width, height):
+	def __init__(self, game, x, y, width, height, groups):
+		super().__init__(groups)
 		self.game = game
 		self.x = x
 		self.y = y

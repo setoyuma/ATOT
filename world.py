@@ -12,21 +12,27 @@ class World:
 		self.game = game
 		self.world_data = world_data
 		self.display_surface = display
-		self.enemies = [
-			Enemy(self.game, 600, 600, 64, 64),
-			]
 		self.ground = get_image('./assets/world/Abberoth.png')
+		
 
 		# groups
 		self.terrainSprites = pg.sprite.Group()
 		self.playerSprites = pg.sprite.Group()
+		self.projectileSprites = pg.sprite.Group()
 		self.collisionSprites = pg.sprite.Group() # sprites with collision
+		self.enemySprites = pg.sprite.Group()
+		
+		# enemy
+		self.enemies = [
+			Enemy(self.game, 600, 600, 64, 64, self.enemySprites),
+			]
 
 		# layouts 
 		# player
 		player_layout = import_csv_layout(world_data['player'])
 		self.player = pg.sprite.GroupSingle()
 		self.player_setup(player_layout)
+
 
 		# terrain layout
 		terrain_layout = import_csv_layout(world_data['terrain'])
@@ -79,11 +85,19 @@ class World:
 
 	def projectile_handler(self):
 		for proj in self.player.projectiles:
+			self.projectileSprites.add(proj)
 			proj.main(self.display_surface)
+
+	def projectile_collisions(self):
+		for proj in self.projectileSprites:
+			# collisions 
+			if len(pg.sprite.spritecollide(proj, self.enemySprites, True)) > 0:
+				print("hit enemy")
 
 	def enemy_handler(self):
 		for enemy in self.enemies:
 			enemy.main(self.display_surface, self.player)
+			self.enemySprites.add(enemy)
 
 	def layer_sort(self):
 		self.draw_ground()
@@ -96,6 +110,7 @@ class World:
 		self.layer_sort()
 		self.player_handler()
 		self.projectile_handler()
+		# self.projectile_collisions()  #this breaks everything
 		self.enemy_handler()
 		
 		statline = StatLine("text", 64, self.player, (self.player.rect.x + 50, self.player.rect.y-30), "green", self.display_surface)

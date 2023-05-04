@@ -109,7 +109,7 @@ class WorldScene(Scene):
 
 			elif event.type == pg.MOUSEBUTTONDOWN:
 				if event.button == 1:
-						self.game.world.player.projectiles.append(Projectile(self.game.world.player.x, self.game.world.player.y, mouseX, mouseY))
+					self.game.world.player.projectiles.append(Projectile(self.game.world.player.x, self.game.world.player.y, mouseX, mouseY, self.game.world.projectileSprites))
 				
 				# if event.button in projectile_types.keys():
 				# 	self.game.player.casting_projectile = True

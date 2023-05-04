@@ -3,8 +3,9 @@ import math
 from settings import *
 from support import *
 
-class Projectile:
-	def __init__(self, x, y, mouseX, mouseY):
+class Projectile(pg.sprite.Sprite):
+	def __init__(self, x, y, mouseX, mouseY, groups):
+		super().__init__(groups)
 		self.x = x
 		self.y = y
 		self.mouseX = mouseX
