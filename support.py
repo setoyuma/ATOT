@@ -2,7 +2,7 @@ import pygame as pg
 from os import walk,sep
 from csv import reader
 
-from settings import TILE_SIZE
+from constants import TILE_SIZE
 
 
 def import_folder(path):
@@ -10,7 +10,7 @@ def import_folder(path):
 	for _, __, image_files in walk(path):
 		for image in image_files:
 			full_path = path + '/' + image
-			image_surf = pg.image.load(full_path).convert_alpha()
+			image_surf =get_image(full_path).convert_alpha()
 			surface_list.append(image_surf)
 
 	return surface_list
@@ -69,74 +69,3 @@ def scale_images(images: list, size: tuple):
 		scaled_images.append(pg.transform.scale(image, size))
 	return scaled_images
 
-def text_line_wrap(surface, text, color, rect, font, aa=False, bkg=None):
-	rect = pg.Rect(rect)
-	y = rect.top
-	lineSpacing = -2
-
-	# get the height of the font
-	fontHeight = font.size("Tg")[1]
-
-	while text:
-		i = 1
-
-		# determine if the row of text will be outside our area
-		if y + fontHeight > rect.bottom:
-			break
-
-		# determine maximum width of line
-		while font.size(text[:i])[0] < rect.width and i < len(text):
-			i += 1
-
-		# if we've wrapped the text, then adjust the wrap to the last word      
-		if i < len(text): 
-			i = text.rfind(" ", 0, i) + 1
-
-		# render the line and blit it to the surface
-		if bkg:
-			image = font.render(text[:i], 1, color, bkg)
-			image.set_colorkey(bkg)
-		else:
-			image = font.render(text[:i], aa, color)
-
-		surface.blit(image, (rect.left, y))
-		y += fontHeight + lineSpacing
-
-		# remove the text we just blitted
-		text = text[i:]
-
-	return text
-
-class TextInput:
-	def __init__(self, game, size, pos):
-		self.game = game
-
-		self.base_font = pg.font.Font(None, size)
-		self.user_text = ''
-
-		self.input_rect = pg.Rect(pos, (140, 32))
-
-		self.color_active = pg.Color('black')
-		self.color_passive = pg.Color('white')
-		self.color = self.color_passive
-
-		self.active = False
-		
-		if self.active:
-			self.color = self.color_active
-		else:
-			self.color = self.color_passive
-
-	def update(self):
-		# draw rectangle and argument passed which should
-		# be on screen
-		pg.draw.rect(self.game.screen, self.color, self.input_rect)
-	
-		self.text_surface = self.base_font.render(self.user_text, True, (0,0,0))
-	
-		# render at position stated in arguments
-		self.game.screen.blit(self.text_surface, (self.input_rect.x+5, self.input_rect.y+5))
-	
-		# set width of textfield so that text cannot get
-		# outside of user's text input
-		self.input_rect.w = max(100, self.text_surface.get_width()+10)

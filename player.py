@@ -1,47 +1,121 @@
 import pygame as pg
-from pygame.locals import *
-import json
-import math
-
-from player_stat_line import StatLine
-from animation import Animator
-from pallete_swaps import *
 from constants import *
-from settings import *
 from support import *
 
 class Player(pg.sprite.Sprite):
-	def __init__(self, game, x, y, width, height, groups, collisionSprites):
+	def __init__(self,pos,groups,collisionSprites,surface):
 		super().__init__(groups)
-		self.game = game
-		self.collisionSprites = collisionSprites
-		self.x = x
-		self.y = y
-		self.width = width
-		self.height = height
-		self.projectiles = []
+		self.import_character_assets()
 
-		# weapon
-		self.weapon = pg.transform.scale(get_image('./assets/weapons/Skolfen.png'), (64, 64)).convert_alpha()
+		self.image = pg.Surface((TILE_SIZE//2,TILE_SIZE))
+		self.frame_index = 0
+		self.image = self.animations['idle'][self.frame_index]
 		
+		self.rect = pg.Rect(pos, (96,96))
+		self.pos = pg.math.Vector2(pos)
+
+		self.spawnx = pos[0]
+		self.spawny = pos[1]
+
+		# stats
+		self.hp = 100
+
 		# state
-		self.facing_right = True
-		self.running = False
+		self.animation_speed = 0.18
+		self.status = 'idle'
+		self.on_left = False
+		self.on_right = False
+		self.hitBoxOn = False
+		self.currentX = None
+		self.wallJump = False
 
 		# movement
-		self.speed = BASE_SPEED
 		self.direction = pg.math.Vector2()
+		self.speed = 6
+		self.gravity = 0.65
+		self.jumpHeight = 15  # jump speed
+		self.collisionSprites = collisionSprites
+		self.onGround = False
+		self.onCeiling = False
+		self.facing_right = True
+		self.airBorne = False
+		self.wallJumpCounter = 1
 
-		# animations
-		self.import_assets()
-		self.status = 'idle'
-		self.frame_index = 0
-		self.animation = self.animations[self.status]
-		self.image = self.animations['idle'][self.frame_index]
-		self.animation_speed = 0.15
+	def import_character_assets(self):
+		character_path = './assets/character/'
+		self.animations = {'idle':[],'run':[],'jump':[],'fall':[],'attack':[],'wallJump':[],}
 		
-		# rect
-		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+		for animation in self.animations.keys():
+			full_path = character_path + animation
+			self.animations[animation] = import_folder(full_path)
+
+	def animate(self):
+		animation = self.animations[self.status]
+
+		# loop over frame index 
+		self.frame_index += self.animation_speed
+		if self.frame_index >= len(animation):
+			self.frame_index = 0
+			
+		self.image = pg.transform.scale(pg.transform.flip(animation[int(self.frame_index)],True,False), (96,96))
+		if not self.facing_right:
+			self.image = pg.transform.scale(pg.transform.flip(self.image,True,False), (96,96))
+
+	def get_status(self):
+		if self.direction.y < 0:
+			self.status = 'jump'
+		elif self.direction.y > 1 and self.onGround == False:
+			 self.status = 'fall'
+		elif self.direction.x != 0 and self.onGround:
+			 self.status = 'run'
+		else:
+			 if self.direction.y == 0 and self.onGround:
+				 self.status = 'idle'
+
+		if self.onGround:
+			self.airBorne = False
+		else:
+			self.airBorne = True
+
+		if self.onGround == False and self.on_left:
+			self.status = 'wallJump'
+		if self.onGround == False and self.on_right:
+			self.status = 'wallJump'
+			
+	def input(self):
+		keys = pg.key.get_pressed()
+
+		if keys[pg.K_d]:
+			self.direction.x = 1
+			self.facing_right = True
+		elif keys[pg.K_a]:
+			self.direction.x = -1
+			self.facing_right = False
+		else:
+			self.direction.x = 0
+
+		if keys[pg.K_SPACE] and self.onGround:
+			self.direction.y = -self.jumpHeight
+		
+		'''WALL JUMP'''
+		if self.onGround == False:
+
+			if self.direction.y > -3 :
+				if keys[pg.K_SPACE] and self.wallJumpCounter != 0:
+					if self.on_left:
+						self.wallJump = True
+						self.direction.y = -self.jumpHeight
+						self.wallJumpCounter -= 1
+
+			if self.direction.y > -3 :
+				if keys[pg.K_SPACE] and self.wallJumpCounter != 0:
+					if self.on_right:
+						self.wallJump = True
+						self.direction.y = -self.jumpHeight
+						self.wallJumpCounter -= 1
+
+		if self.onGround:
+			self.wallJumpCounter = 1
 
 	def horizontalCollisions(self):
 		for sprite in self.collisionSprites.sprites():
@@ -55,6 +129,10 @@ class Player(pg.sprite.Sprite):
 					self.rect.right = sprite.rect.left
 					self.on_right = True
 					self.currentX = self.rect.right
+		if self.on_left and (self.rect.left < self.currentX or self.direction.x >= 0):
+			self.on_left = False
+		if self.on_right and (self.rect.right > self.currentX or self.direction.x <= 0):
+			self.on_right = False
 
 	def verticalCollisions(self):
 		for sprite in self.collisionSprites.sprites():
@@ -68,98 +146,37 @@ class Player(pg.sprite.Sprite):
 					self.direction.y = 0
 					self.onCeiling = True
 
-	def event_handler(self):
-		keys = pg.key.get_pressed()
+		if self.onGround and self.direction.y < 0 or self.direction.y > 1:
+			self.onGround = False
+		if self.onCeiling and self.direction.y > 0.1:
+			self.onCeiling = False
+	
+	def applyGravity(self):
+		self.direction.y += self.gravity
+		self.rect.y += self.direction.y
+		self.hurtbox.y += self.direction.y
 
-		if keys[pg.K_d]:
-			self.game.display_scroll.x += BASE_SPEED
-			self.direction.x = 1
-			for proj in self.projectiles:
-				proj.x -= BASE_SPEED
-		elif keys[pg.K_a]:
-			self.game.display_scroll.x -= BASE_SPEED
-			self.direction.x = -1
-			for proj in self.projectiles:
-				proj.x += BASE_SPEED
-		else:
-			self.direction.x = 0
+	def hurtboxing(self):
+		self.hurtbox = pg.Rect(self.rect.center, (self.image.get_width()/2, self.image.get_height()))
+		self.hurtbox.center = self.rect.center
+		# pg.draw.rect(pg.display.get_surface(), "white", self.hurtbox)
 
-		if keys[pg.K_w]:
-			self.direction.y = -1
-			self.game.display_scroll.y -= BASE_SPEED
-			for proj in self.projectiles:
-				proj.y += BASE_SPEED
-		elif keys[pg.K_s]:
-			self.game.display_scroll.y += BASE_SPEED
-			self.direction.y = 1
-			for proj in self.projectiles:
-				proj.y -= BASE_SPEED
-		else:
-			self.direction.y = 0
-
-	def handle_weapon(self, display):
-		mouseX, mouseY = pg.mouse.get_pos()
-		
-		rel_x, rel_y = mouseX - self.x, mouseY - self.y
-		angle = (180 / math.pi) * -math.atan2(rel_y, rel_x)
-
-		self.weapon_copy = pg.transform.rotate(self.weapon, angle)
-
-		display.blit(self.weapon_copy, (self.x - int(self.weapon.get_width()/2), self.y + 25 - int(self.weapon_copy.get_height()/2)))
-
-	def import_assets(self):
-		path = "./assets/player/"
-		self.animations = {'idle':[],'run-right':[],'run-left':[],'run-back':[], 'run':[]}
-
-		for animation in self.animations.keys():
-			full_path = path + animation
-			self.animations[animation] = scale_images(import_folder(full_path), (self.width, self.height))
-
-	def animate(self):
-		animation = self.animations[self.status]
-
-		# loop over frame index 
-		self.frame_index += self.animation_speed
-		if self.frame_index >= len(animation):
-			self.frame_index = 0
-			
-		self.image = animation[int(self.frame_index)]
-		if not self.facing_right:
-			self.image = pg.transform.flip(self.image,True,False)
-
-	def get_state(self):
-		if self.direction.x > 0:
-			self.facing_right = True
-			self.running = True
-			self.status = 'run-right'
-		elif self.direction.x < 0:
-			self.running = False
-			self.facing_right = True
-			self.status = 'run-left'
-		elif self.direction.y > 0:
-			self.running = True
-			self.status = 'run'
-		elif self.direction.y < 0:
-			self.running = True
-			self.status = 'run-back'
-		else:
-			self.running = False
-
-	def load_data(self):
-		with open(f"./player_data/players/{self.player_name}.json",'r') as f:
-			self.data = json.load(f)
-
-	def save_data(self):
-		with open(f"./player_data/players/{self.player_name}.json",'w') as f:
-			json.dump(self.data, f, indent=4)	
-
-	def main(self, display):
-		self.get_state()
+	def update(self):
 		self.animate()
-		self.event_handler()
-		# self.rect.x += self.direction.x * self.speed
-		# self.horizontalCollisions()
-		# self.rect.y += self.direction.y * self.speed
-		# self.verticalCollisions()
-		self.handle_weapon(display)
-		# self.image = blue_ebonheart(self.image)  # pallet swapped ebonheart
+		self.input()
+		self.get_status()
+
+		self.hurtboxing()
+
+		self.rect.x += self.direction.x * self.speed
+		self.hurtbox.x += self.direction.x * self.speed
+		
+		self.horizontalCollisions()
+		self.applyGravity()
+		self.verticalCollisions()
+
+		print(self.hurtbox.x)
+
+		# pg.draw.rect(pg.display.get_surface(), "black", self.rect)
+		# pg.draw.rect(pg.display.get_surface(), "white", self.hurtbox)
+		

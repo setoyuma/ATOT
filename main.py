@@ -1,47 +1,51 @@
-import pygame as pg
-import json
-import os
+import pygame as pg, sys
+from constants import * 
+from level import Level
+from game_data import levels
+from pygame.locals import KEYDOWN
 
-from constants import *
-from settings import *
-from support import *
-from scenes import *
+# pg setup
+def main():
+	pg.init()
+	screen = pg.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
+	pg.display.set_caption("ATOT")
+	pg.display.set_icon(pg.image.load("./assets/logo.ico"))
+	clock = pg.time.Clock()
+	level = Level(levels[2])
+	BG = pg.image.load('./assets/decoration/sky/DarkSky.png')
 
-class Game:
-	def __init__(self):
-		pg.init()
-		self.screen = pg.display.set_mode((1000,500), pg.SCALED)
-		self.clock = pg.time.Clock()
-		self.FPS = 60
-		self.display_scroll = pg.math.Vector2()
-		self.dt = self.clock.tick(self.FPS) / 1000
-		pg.display.set_icon(get_image('./assets/logo.ico'))
-		pg.display.set_caption("A Tale Of Time")
+	while True:
+		screen.fill('#0f0024')
+		screen.blit(BG,(0,0))
+		
+		for event in pg.event.get():
+			if event.type == pg.QUIT:
+				print('\nGame Closed\n')
+				pg.quit()
+				sys.exit()
+			if event.type == KEYDOWN:
+				if event.key == pg.K_f:
+					pg.display.toggle_fullscreen()
+				if event.key == pg.K_q:
+					print('\nGame Closed\n')
+					pg.quit()
+					sys.exit()
+				if event.key == pg.K_r:
+					print('\nGame Restarting...\n')
+					main()
 
-		path = "./player_data/players/Setoichi.json"
-		if os.path.exists(path):
-			with open(path, "r") as f:
-				self.loaded_data = json.load(f)
-		else:
-			self.loaded_data = None
-
-	def draw_fps(self):
-		fpsCounter = round(self.clock.get_fps())
-		draw_text(self.screen, f"FPS: {fpsCounter}", (900, 20))
-
-	def run(self):
-		while True:
-			self.scene.draw()
-			self.scene.update()
-			self.send_frame()
+		level.run()
+		clock.tick(60)
+		#show fps
+		font = pg.font.Font(None,30)
+		fpsCounter = str(int(clock.get_fps()))
+		text = font.render(f"FPS: {fpsCounter}",True,'white','black')
+		textPos = text.get_rect(centerx=1000, y=10)
+		screen.blit(text,textPos)
+		# print(int(clock.get_fps()))
 
 
-	def send_frame(self):
-		pg.display.flip()
-		self.dt = self.clock.tick(self.FPS) / 1000
-
+		pg.display.update()
 
 if __name__ == '__main__':
-	game = Game()
-	game.scene = Launcher(game)
-	game.run()
+	main()
