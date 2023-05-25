@@ -3,6 +3,7 @@ from constants import *
 from level import Level
 from game_data import levels
 from pygame.locals import KEYDOWN
+from particle import ParticlePrinciple
 
 # pg setup
 def main():
@@ -11,7 +12,7 @@ def main():
 	pg.display.set_caption("ATOT")
 	pg.display.set_icon(pg.image.load("./assets/logo.ico"))
 	clock = pg.time.Clock()
-	level = Level(levels[2])
+	level = Level(levels[1])
 	BG = pg.image.load('./assets/decoration/sky/DarkSky.png')
 
 	while True:
@@ -36,14 +37,14 @@ def main():
 
 		level.run()
 		clock.tick(60)
+		
 		#show fps
 		font = pg.font.Font(None,30)
 		fpsCounter = str(int(clock.get_fps()))
+		# print(fpsCounter)
 		text = font.render(f"FPS: {fpsCounter}",True,'white','black')
 		textPos = text.get_rect(centerx=1000, y=10)
 		screen.blit(text,textPos)
-		# print(int(clock.get_fps()))
-
 
 		pg.display.update()
 

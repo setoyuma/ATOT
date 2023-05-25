@@ -5,6 +5,9 @@ from csv import reader
 from constants import TILE_SIZE
 
 
+def clamp(num, min_value, max_value):
+	return max(min(num, max_value), min_value)
+
 def import_folder(path):
 	surface_list = []
 	for _, __, image_files in walk(path):

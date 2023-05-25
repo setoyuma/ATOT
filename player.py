@@ -11,8 +11,8 @@ class Player(pg.sprite.Sprite):
 		self.frame_index = 0
 		self.image = self.animations['idle'][self.frame_index]
 		
-		self.rect = pg.Rect(pos, (96,96))
 		self.pos = pg.math.Vector2(pos)
+		self.rect = pg.Rect(self.pos, (64,96))
 
 		self.spawnx = pos[0]
 		self.spawny = pos[1]
@@ -42,7 +42,7 @@ class Player(pg.sprite.Sprite):
 		self.wallJumpCounter = 1
 
 	def import_character_assets(self):
-		character_path = './assets/character/'
+		character_path = BUNNY_PATH
 		self.animations = {'idle':[],'run':[],'jump':[],'fall':[],'attack':[],'wallJump':[],}
 		
 		for animation in self.animations.keys():
@@ -57,7 +57,7 @@ class Player(pg.sprite.Sprite):
 		if self.frame_index >= len(animation):
 			self.frame_index = 0
 			
-		self.image = pg.transform.scale(pg.transform.flip(animation[int(self.frame_index)],True,False), (96,96))
+		self.image = pg.transform.scale(pg.transform.flip(animation[int(self.frame_index)],False,False), (96,96))
 		if not self.facing_right:
 			self.image = pg.transform.scale(pg.transform.flip(self.image,True,False), (96,96))
 
@@ -159,7 +159,6 @@ class Player(pg.sprite.Sprite):
 	def hurtboxing(self):
 		self.hurtbox = pg.Rect(self.rect.center, (self.image.get_width()/2, self.image.get_height()))
 		self.hurtbox.center = self.rect.center
-		# pg.draw.rect(pg.display.get_surface(), "white", self.hurtbox)
 
 	def update(self):
 		self.animate()
@@ -174,8 +173,6 @@ class Player(pg.sprite.Sprite):
 		self.horizontalCollisions()
 		self.applyGravity()
 		self.verticalCollisions()
-
-		print(self.hurtbox.x)
 
 		# pg.draw.rect(pg.display.get_surface(), "black", self.rect)
 		# pg.draw.rect(pg.display.get_surface(), "white", self.hurtbox)

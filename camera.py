@@ -11,6 +11,9 @@ class CameraGroup(pg.sprite.Group):
     def addLayer(self, groups):
         self.layers.append(groups)
 
+    def get_offset_pos(self, offsetPos):
+        return self.offsetPos
+
     def customDraw(self, player):
         self.offset.x = player.rect.centerx - SCREEN_WIDTH//2
         self.offset.y = player.rect.centery - SCREEN_HEIGHT//1.5
@@ -22,6 +25,7 @@ class CameraGroup(pg.sprite.Group):
                 sprite.rect.x = self.offsetPos.x
                 sprite.rect.y = self.offsetPos.y
                 # pg.draw.rect(pg.display.get_surface(), "red", sprite.rect)
+                # print(self.get_offset_pos(self.offsetPos))
                 
 
 
