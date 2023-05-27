@@ -1,6 +1,7 @@
 import pygame as pg
 from constants import *
 from support import *
+from light import Light
 
 class Player(pg.sprite.Sprite):
 	def __init__(self,pos,groups,collisionSprites,surface):
@@ -17,11 +18,14 @@ class Player(pg.sprite.Sprite):
 		self.spawnx = pos[0]
 		self.spawny = pos[1]
 
+		# fx
+		self.player_lights = []
+
 		# stats
 		self.hp = 100
 
 		# state
-		self.animation_speed = 0.18
+		self.animation_speed = 0.19
 		self.status = 'idle'
 		self.on_left = False
 		self.on_right = False
@@ -31,18 +35,18 @@ class Player(pg.sprite.Sprite):
 
 		# movement
 		self.direction = pg.math.Vector2()
-		self.speed = 6
+		self.speed = 7
 		self.gravity = 0.65
-		self.jumpHeight = 15  # jump speed
+		self.jumpHeight = 12  # jump speed
 		self.collisionSprites = collisionSprites
 		self.onGround = False
 		self.onCeiling = False
 		self.facing_right = True
 		self.airBorne = False
-		self.wallJumpCounter = 1
+		self.wallJumpCounter = 2
 
 	def import_character_assets(self):
-		character_path = BUNNY_PATH
+		character_path = ALRYN_PATH
 		self.animations = {'idle':[],'run':[],'jump':[],'fall':[],'attack':[],'wallJump':[],}
 		
 		for animation in self.animations.keys():
@@ -115,7 +119,7 @@ class Player(pg.sprite.Sprite):
 						self.wallJumpCounter -= 1
 
 		if self.onGround:
-			self.wallJumpCounter = 1
+			self.wallJumpCounter = 2
 
 	def horizontalCollisions(self):
 		for sprite in self.collisionSprites.sprites():
@@ -151,6 +155,13 @@ class Player(pg.sprite.Sprite):
 		if self.onCeiling and self.direction.y > 0.1:
 			self.onCeiling = False
 	
+	def player_light(self):
+		self.player_lights.append(Light(64, "red", 15, manual_pos=(self.rect.x + 20, self.rect.y + 20)))
+		
+		for light in self.player_lights:
+			light.apply_lighting(pg.display.get_surface())
+			break
+
 	def applyGravity(self):
 		self.direction.y += self.gravity
 		self.rect.y += self.direction.y
@@ -170,10 +181,20 @@ class Player(pg.sprite.Sprite):
 		self.rect.x += self.direction.x * self.speed
 		self.hurtbox.x += self.direction.x * self.speed
 		
+		# movement handling
+		# Check if player is going offscreen horizontally
+		if self.rect.left < 0:
+			self.rect.left = 0
+		elif self.rect.right > SCREEN_WIDTH:
+			self.rect.right = SCREEN_WIDTH
+
 		self.horizontalCollisions()
 		self.applyGravity()
 		self.verticalCollisions()
 
-		# pg.draw.rect(pg.display.get_surface(), "black", self.rect)
+
+		# self.player_light()
+
+		# pg.draw.rect(pg.display.get_surface(), "black", self.rect)	
 		# pg.draw.rect(pg.display.get_surface(), "white", self.hurtbox)
 		
