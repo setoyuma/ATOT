@@ -3,6 +3,7 @@ from constants import *
 from level import Level
 from game_data import levels
 from pygame.locals import KEYDOWN
+from particle import ParticlePrinciple
 
 # pg setup
 def main():
