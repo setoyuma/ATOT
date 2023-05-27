@@ -12,33 +12,38 @@ class Level:
 	def __init__(self,level_data):
 		#level setup
 		self.displaySurface = pg.display.get_surface()
+		self.world_shift = pg.math.Vector2()
+
 		# ui
 		self.UI = UI(self.displaySurface)
 
 		#sprite group setup
 		self.terrain = pg.sprite.Group()
-		self.lights = pg.sprite.Group()
+		self.torches = pg.sprite.Group()
 		self.movingPlats = pg.sprite.Group()
 		self.foreground = pg.sprite.Group()
 		self.playerLayer = pg.sprite.Group()
 		self.activeSprites = pg.sprite.Group() # sprites in here will be updated
 		self.collisionSprites = pg.sprite.Group() #sprites that the player can collide with
 
+		self.world_layers = [
+			self.terrain,
+			self.torches,
+			self.movingPlats, 
+			self.foreground,
+		]
+
 		# create layers
 		self.camera = CameraGroup()
 		self.camera.addLayer([
 			self.terrain,
-			self.lights,
+			self.torches,
 			self.movingPlats, 
 			self.playerLayer,
 			self.foreground,
 		])
 
 		# particles
-		# self.particle = ParticlePrinciple((0,0))
-		self.particle_system = ParticleSystem()
-		self.particle_image = pg.Surface((8,8))
-		self.particle_image.fill((0,250,150))
 		self.particles = []
 
 		# lights
@@ -52,8 +57,8 @@ class Level:
 		self.terrain_sprites = self.create_tile_group(terrain_layout,'terrain')
 		
 		#lights layout
-		self.lights_layout = import_csv_layout(level_data['lights'])
-		self.lights_sprites = self.create_tile_group(self.lights_layout,'lights')
+		self.torches_layout = import_csv_layout(level_data['lights'])
+		self.torches_sprites = self.create_tile_group(self.torches_layout,'lights')
 		
 		# foreground layout
 		foreground_layout = import_csv_layout(level_data['foreground'])
@@ -100,7 +105,7 @@ class Level:
 							print("light")
 							lights_tile_list = import_cut_graphics('./assets/terrain/Tileset.png')
 							tile_surface = lights_tile_list[int(val)]
-							sprite = StaticTile((x,y),[self.lights,],tile_surface)
+							sprite = StaticTile((x,y),[self.torches,],tile_surface)
 
 	def player_setup(self,layout):
 		for row_index, row in enumerate(layout):
@@ -112,24 +117,27 @@ class Level:
 					self.player.add(self.Player)
 
 	def light_handler(self, player):
-		self.light_list.append(Light((player.rect.x-55, player.rect.y-55), 50, 'white', 100))
-		
-		for i in range(len(self.lights)):
-			self.light_list.append(Light((10*i, 20), 50, 'white', 15))
+		self.light_list.append(Light(50, 'white', 15))
 
 		for light in self.light_list:
-			# light.draw(self.displaySurface)
-			light.apply_lighting(self.lights, self.displaySurface)
+			light.apply_lighting(self.displaySurface, self.torches)
 			break
 
 	def particle_handler(self):
 		
-		for light in self.lights.sprites():
-			self.particles.append(Particle(light.rect.centerx, light.rect.centery, 'up', 3, (255,255,255)))
+		# torch particles
+		for torch in self.torches.sprites():
+			self.particles.append(Particle(torch.rect.centerx, torch.rect.centery, '', 3, (255,255,255), 'torch'))
 
+		# draw and update particles
 		for particle in self.particles:
 			particle.update()
 			particle.draw(self.displaySurface)
+
+		# particle_light = Light(5, "white", 200, manual_pos=particle.pos)
+		# for particle in self.particles:
+		# 	particle_light.apply_lighting(self.displaySurface)
+		# 	break	
 
 		self.particles = [particle for particle in self.particles if not particle.is_expired()]
 	
@@ -138,15 +146,27 @@ class Level:
 			platform.move()
 			# pg.draw.rect(self.displaySurface, "white", platform.rect)
 
-
-	def layerSort(self):
+	def draw_layers(self):
 		self.camera.customDraw(self.Player)
+		
+		# for layer in self.world_layers:
+		# 	layer.draw(self.displaySurface)
+
+		# self.playerLayer.draw(self.displaySurface)
+
+	def update_layers(self):
+		for layer in self.world_layers:
+			for sprite in layer.sprites():
+				sprite.update(self.world_shift.x, self.world_shift.y)
+
+	def update_sprites(self):
 		self.playerLayer.update()
 		self.collisionSprites.update()
-		
 
 	def run(self):
-		self.layerSort()
+		self.draw_layers()
+		# self.update_layers()
+		self.update_sprites()
 		self.platform_handler()
 		self.particle_handler()
 		self.light_handler(self.Player)
