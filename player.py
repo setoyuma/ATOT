@@ -1,5 +1,5 @@
 import pygame as pg
-from constants import *
+from CONSTANTS import *
 from support import *
 from light import Light
 

@@ -1,5 +1,5 @@
 import pygame as pg, sys
-from constants import * 
+from CONSTANTS import * 
 from level import Level
 from game_data import levels
 from pygame.locals import KEYDOWN
