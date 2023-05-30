@@ -14,10 +14,10 @@ class Tile(pg.sprite.Sprite):
 
 	def move(self):
 		if self.rect.top <= -100:
-			print("at top")
+			# print("at top")
 			self.direction = "down"
 		if self.rect.bottom >= SCREEN_HEIGHT+100:
-			print("at bottom")
+			# print("at bottom")
 			self.direction = "up"
 
 		if self.rect.right >= SCREEN_WIDTH+100:
@@ -33,24 +33,6 @@ class Tile(pg.sprite.Sprite):
 			self.rect.x -= self.speed
 		elif self.direction == 'right':
 			self.rect.x += self.speed
-
-		# self.rect.topleft = self.current_pos
-
-		# # Check if the tile has moved beyond the allowed range
-		# if self.direction in ['up', 'down']:
-		# 	if self.current_pos.y < self.start_pos[1] - TILE_SIZE:
-		# 		self.current_pos.y = self.start_pos[1] - TILE_SIZE
-		# 		self.direction = 'down'
-		# 	elif self.current_pos.y > self.start_pos[1] + TILE_SIZE:
-		# 		self.current_pos.y = self.start_pos[1] + TILE_SIZE
-		# 		self.direction = 'up'
-		# elif self.direction in ['left', 'right']:
-		# 	if self.current_pos.x < self.start_pos[0] - TILE_SIZE:
-		# 		self.current_pos.x = self.start_pos[0] - TILE_SIZE
-		# 		self.direction = 'right'
-		# 	elif self.current_pos.x > self.start_pos[0] + TILE_SIZE:
-		# 		self.current_pos.x = self.start_pos[0] + TILE_SIZE
-		# 		self.direction = 'left'
 
 class StaticTile(Tile):
 	def __init__(self,pos,groups,surface):

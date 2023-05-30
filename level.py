@@ -4,173 +4,162 @@ from tile import *
 from player import Player
 from support import *
 from ui import UI
-from camera import CameraGroup
+from camera import Camera
 from particle import *
 from light import Light
+
 class Level:
+	def __init__(self, level_data):
+		# Initialize the Level object
 
-	def __init__(self,level_data):
-		#level setup
-		self.displaySurface = pg.display.get_surface()
-		self.world_shift = pg.math.Vector2()
+		# Level setup
+		self.displaySurface = pg.display.get_surface()  # Get the display surface
+		self.world_shift = pg.math.Vector2()  # Vector for shifting the world
 
-		# ui
-		self.UI = UI(self.displaySurface)
+		# UI
+		self.UI = UI(self.displaySurface)  # Create UI object
 
-		#sprite group setup
-		self.terrain = pg.sprite.Group()
-		self.torches = pg.sprite.Group()
-		self.movingPlats = pg.sprite.Group()
-		self.foreground = pg.sprite.Group()
-		self.playerLayer = pg.sprite.Group()
-		self.activeSprites = pg.sprite.Group() # sprites in here will be updated
-		self.collisionSprites = pg.sprite.Group() #sprites that the player can collide with
+		# Sprite groups setup
+		self.terrain = pg.sprite.Group()  # Terrain sprites group
+		self.torches = pg.sprite.Group()  # Torch sprites group
+		self.movingPlats = pg.sprite.Group()  # Moving platform sprites group
+		self.foreground = pg.sprite.Group()  # Foreground sprites group
+		self.player_layer = pg.sprite.GroupSingle()  # Player sprite group
+		self.activeSprites = pg.sprite.Group()  # Sprites in the level that will be updated
+		self.collisionSprites = pg.sprite.Group()  # Sprites that the player can collide with
 
 		self.world_layers = [
 			self.terrain,
 			self.torches,
-			self.movingPlats, 
+			self.movingPlats,
+			self.player_layer,
 			self.foreground,
-		]
+		]  # List of sprite groups for managing different layers of the level
 
-		# create layers
-		self.camera = CameraGroup()
-		self.camera.addLayer([
-			self.terrain,
-			self.torches,
-			self.movingPlats, 
-			self.playerLayer,
-			self.foreground,
-		])
+		# Particles
+		self.particles = []  # List to store particle objects
 
-		# particles
-		self.particles = []
+		# Lights
+		self.light_list = []  # List to store light objects
 
-		# lights
-		self.light_list = []
+		# Moving platforms
+		self.moving_platforms = []  # List to store moving platform objects
 
-		# moving platforms
-		self.moving_platforms = []
+		# Terrain layout
+		terrain_layout = import_csv_layout(level_data['terrain'])  # Load terrain layout from CSV
+		self.create_tile_group(terrain_layout, 'terrain')  # Create terrain tile sprites
 
-		#terrain layout
-		terrain_layout = import_csv_layout(level_data['terrain'])
-		self.terrain_sprites = self.create_tile_group(terrain_layout,'terrain')
-		
-		#lights layout
-		self.torches_layout = import_csv_layout(level_data['lights'])
-		self.torches_sprites = self.create_tile_group(self.torches_layout,'lights')
-		
-		# foreground layout
-		foreground_layout = import_csv_layout(level_data['foreground'])
-		self.foreground_sprites = self.create_tile_group(foreground_layout,'foreground')
-		
-		# movingPlats layout
-		movingPlats_layout = import_csv_layout(level_data['movingPlats'])
-		self.movingPlats_sprites = self.create_tile_group(movingPlats_layout,'movingPlats')
-		
-		# player 
-		player_layout = import_csv_layout(level_data['player'])
-		self.player = pg.sprite.GroupSingle()
-		self.goal = pg.sprite.GroupSingle()
-		self.player_setup(player_layout)
+		# Lights layout
+		self.torches_layout = import_csv_layout(level_data['lights'])  # Load torches layout from CSV
+		self.create_tile_group(self.torches_layout, 'lights')  # Create torch tile sprites
 
-	def create_tile_group(self,layout,type):
+		# Foreground layout
+		foreground_layout = import_csv_layout(level_data['foreground'])  # Load foreground layout from CSV
+		self.create_tile_group(foreground_layout, 'foreground')  # Create foreground tile sprites
+
+		# MovingPlats layout
+		movingPlats_layout = import_csv_layout(level_data['movingPlats'])  # Load movingPlats layout from CSV
+		self.create_tile_group(movingPlats_layout, 'movingPlats')  # Create moving platform tile sprites
+
+		# Player
+		player_layout = import_csv_layout(level_data['player'])  # Load player layout from CSV
+		self.player_setup(player_layout)  # Set up the player
+
+		# Calculate the size of the level based on the layers
+		self.calculate_level_size()
+
+		# Create the scroll bounds based on the level size
+		scroll_bounds = pg.Rect((0, 0), (self.level_width - 100, self.level_height - 100))
+
+		# Camera
+		self.camera = Camera(self.player_layer.sprite, scroll_bounds)  # Create camera object
+		self.camera.add_layer(self.world_layers)  # Add world layers to the camera
+
+	def calculate_level_size(self):
+		# Calculate the size of the level based on the layers
+		max_right = 0
+		max_bottom = 0
+
+		for layer in self.world_layers:
+			for sprite in layer:
+				sprite_rect = sprite.rect
+				sprite_right = sprite_rect.x + sprite_rect.width
+				sprite_bottom = sprite_rect.y + sprite_rect.height
+
+				max_right = max(max_right, sprite_right)
+				max_bottom = max(max_bottom, sprite_bottom)
+
+		self.level_width = max(max_right, MAP_WIDTH)
+		self.level_height = max(max_bottom, MAP_HEIGHT)
+
+	def create_tile_group(self, layout, tile_type):
+		# Create a group of tile sprites based on the layout and type
+		tile_list = import_cut_graphics('./assets/terrain/Tileset.png')  # Load tile graphics
+
 		for row_index, row in enumerate(layout):
-				for col_index,val in enumerate(row):
-					if val != '-1':
-						x = col_index * TILE_SIZE
-						y = row_index * TILE_SIZE
-						
-						if type == 'terrain':
-							terrain_tile_list = import_cut_graphics('./assets/terrain/Tileset.png')
-							tile_surface = terrain_tile_list[int(val)]
-							sprite = StaticTile((x,y),[self.terrain,self.collisionSprites],tile_surface)
-						
-						if type == 'foreground':
-							foreground_tile_list = import_cut_graphics('./assets/terrain/Tileset.png')
-							tile_surface = foreground_tile_list[int(val)]
-							sprite = StaticTile((x,y),self.foreground,tile_surface)
-							# sprite.image = pg.transform.scale(sprite.image, (32,32))
-						
-						if type == 'movingPlats':
-							movingPlats_tile_list = import_cut_graphics('./assets/terrain/Tileset.png')
-							tile_surface = movingPlats_tile_list[int(val)]
-							sprite = MovingTile((x,y),[self.movingPlats, self.collisionSprites],'right', 5, tile_surface)
+			for col_index, val in enumerate(row):
+				if val != '-1':
+					x = col_index * TILE_SIZE
+					y = row_index * TILE_SIZE
+
+					# Use match case to handle different tile types
+					match tile_type:
+						case 'terrain':
+							sprite = StaticTile((x, y), [self.terrain, self.collisionSprites], tile_list[int(val)])
+						case 'foreground':
+							sprite = StaticTile((x, y), self.foreground, tile_list[int(val)])
+						case 'movingPlats':
+							sprite = MovingTile((x, y), [self.movingPlats, self.collisionSprites], 'right', 5, tile_list[int(val)])
 							self.moving_platforms.append(sprite)
-						
-						if type == 'constraint':
-							sprite = Tile(TILE_SIZE,)
-						
-						if type == 'lights':
-							print("light")
-							lights_tile_list = import_cut_graphics('./assets/terrain/Tileset.png')
-							tile_surface = lights_tile_list[int(val)]
-							sprite = StaticTile((x,y),[self.torches,],tile_surface)
+						case 'lights':
+							sprite = StaticTile((x, y), [self.torches, ], tile_list[int(val)])
 
-	def player_setup(self,layout):
+					self.activeSprites.add(sprite)
+
+	def player_setup(self, layout):
+		# Set up the player based on the layout
 		for row_index, row in enumerate(layout):
-			for col_index,val in enumerate(row):
+			for col_index, val in enumerate(row):
 				x = col_index * TILE_SIZE
 				y = row_index * TILE_SIZE
 				if val == '0':
-					self.Player = Player((x,y),[self.playerLayer,],self.collisionSprites,self.displaySurface)
-					self.player.add(self.Player)
+					self.player = Player((x, y), [self.player_layer], self.collisionSprites, self.displaySurface)
 
-	def light_handler(self, player):
+	def light_handler(self):
+		# Handle the lights in the level
 		self.light_list.append(Light(50, 'white', 15))
 
 		for light in self.light_list:
-			light.apply_lighting(self.displaySurface, self.torches)
+			light.apply_lighting(self.displaySurface, self.camera, self.torches)
 			break
 
 	def particle_handler(self):
-		
-		# torch particles
+		# Handle the particles in the level
+		# Torch particles
 		for torch in self.torches.sprites():
-			self.particles.append(Particle(torch.rect.centerx, torch.rect.centery, '', 3, (255,255,255), 'torch'))
+			self.particles.append(Particle(torch.rect.centerx, torch.rect.centery, '', 3, (255, 255, 255), 'torch'))
 
-		# draw and update particles
+		# Draw and update particles
 		for particle in self.particles:
 			particle.update()
-			particle.draw(self.displaySurface)
-
-		# particle_light = Light(5, "white", 200, manual_pos=particle.pos)
-		# for particle in self.particles:
-		# 	particle_light.apply_lighting(self.displaySurface)
-		# 	break	
+			particle.draw(self.displaySurface, self.camera)
 
 		self.particles = [particle for particle in self.particles if not particle.is_expired()]
-	
+
 	def platform_handler(self):
+		# Handle the moving platforms in the level
 		for platform in self.moving_platforms:
 			platform.move()
-			# pg.draw.rect(self.displaySurface, "white", platform.rect)
 
-	def draw_layers(self):
-		self.camera.customDraw(self.Player)
-		
-		# for layer in self.world_layers:
-		# 	layer.draw(self.displaySurface)
-
-		# self.playerLayer.draw(self.displaySurface)
-
-	def update_layers(self):
-		for layer in self.world_layers:
-			for sprite in layer.sprites():
-				sprite.update(self.world_shift.x, self.world_shift.y)
-
-	def update_sprites(self):
-		self.playerLayer.update()
-		self.collisionSprites.update()
+	def camera_handler(self):
+		# Handle the camera in the level
+		self.camera.update()
+		self.camera.draw()
 
 	def run(self):
-		self.draw_layers()
-		# self.update_layers()
-		self.update_sprites()
+		# Run the level update functions
+		self.camera_handler()
+		self.player_layer.update()
 		self.platform_handler()
 		self.particle_handler()
-		self.light_handler(self.Player)
-		# self.UI.show_health(self.Player.hp,100)
-
-
-	
+		self.light_handler()

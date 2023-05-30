@@ -70,16 +70,22 @@ class Particle:
 		# Update the particle's position and properties over time
 		self.emit()  # Emit the particle (move and shrink)
 
-	def draw(self, screen):
+	def draw(self, screen, camera):
 		# Draw the particle on the screen
 		for i in range(int(self.radius), 0, -2):
 			alpha = int((i / self.radius) * 255)
 			color = self.color + (alpha,)
 			if self.fill:
-				pg.gfxdraw.aacircle(screen, int(self.pos.x), int(self.pos.y), i, color)
-				pg.gfxdraw.filled_circle(screen, int(self.pos.x), int(self.pos.y), i, color)
+				# Adjust the position based on the camera offset
+				pos_x = self.pos.x - camera.offset.x
+				pos_y = self.pos.y - camera.offset.y
+				pg.gfxdraw.aacircle(screen, int(pos_x), int(pos_y), i, color)
+				pg.gfxdraw.filled_circle(screen, int(pos_x), int(pos_y), i, color)
 			else:
-				pg.gfxdraw.aacircle(screen, int(self.pos.x), int(self.pos.y), i, color)
+				# Adjust the position based on the camera offset
+				pos_x = self.pos.x - camera.offset.x
+				pos_y = self.pos.y - camera.offset.y
+				pg.gfxdraw.aacircle(screen, int(pos_x), int(pos_y), i, color)
 
 	def is_expired(self):
 		# Check if the particle's timer has expired

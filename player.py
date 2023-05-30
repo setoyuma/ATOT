@@ -4,16 +4,16 @@ from support import *
 from light import Light
 
 class Player(pg.sprite.Sprite):
-	def __init__(self,pos,groups,collisionSprites,surface):
+	def __init__(self, pos, groups, collisionSprites, surface):
 		super().__init__(groups)
 		self.import_character_assets()
 
-		self.image = pg.Surface((TILE_SIZE//2,TILE_SIZE))
+		self.image = pg.Surface((TILE_SIZE // 2, TILE_SIZE))
 		self.frame_index = 0
 		self.image = self.animations['idle'][self.frame_index]
-		
+
 		self.pos = pg.math.Vector2(pos)
-		self.rect = pg.Rect(self.pos, (64,96))
+		self.rect = pg.Rect(self.pos, (64, 96))
 
 		self.spawnx = pos[0]
 		self.spawny = pos[1]
@@ -34,6 +34,7 @@ class Player(pg.sprite.Sprite):
 		self.wallJump = False
 
 		# movement
+		self.dash_length = 10
 		self.direction = pg.math.Vector2()
 		self.speed = 7
 		self.gravity = 0.65
@@ -45,10 +46,13 @@ class Player(pg.sprite.Sprite):
 		self.airBorne = False
 		self.wallJumpCounter = 2
 
+		# Collision detection
+		self.collision_area = pg.Rect(0, 0, TILE_SIZE * 3, TILE_SIZE * 3)
+
 	def import_character_assets(self):
 		character_path = ALRYN_PATH
-		self.animations = {'idle':[],'run':[],'jump':[],'fall':[],'attack':[],'wallJump':[],}
-		
+		self.animations = {'idle': [], 'run': [], 'jump': [], 'fall': [], 'attack': [], 'wallJump': []}
+
 		for animation in self.animations.keys():
 			full_path = character_path + animation
 			self.animations[animation] = import_folder(full_path)
@@ -56,36 +60,37 @@ class Player(pg.sprite.Sprite):
 	def animate(self):
 		animation = self.animations[self.status]
 
-		# loop over frame index 
+		# loop over frame index
 		self.frame_index += self.animation_speed
 		if self.frame_index >= len(animation):
 			self.frame_index = 0
-			
-		self.image = pg.transform.scale(pg.transform.flip(animation[int(self.frame_index)],False,False), (96,96))
+
+		self.image = pg.transform.scale(pg.transform.flip(animation[int(self.frame_index)], False, False),
+										 (96, 96))
 		if not self.facing_right:
-			self.image = pg.transform.scale(pg.transform.flip(self.image,True,False), (96,96))
+			self.image = pg.transform.scale(pg.transform.flip(self.image, True, False), (96, 96))
 
 	def get_status(self):
 		if self.direction.y < 0:
 			self.status = 'jump'
-		elif self.direction.y > 1 and self.onGround == False:
-			 self.status = 'fall'
+		elif self.direction.y > 1 and not self.onGround:
+			self.status = 'fall'
 		elif self.direction.x != 0 and self.onGround:
-			 self.status = 'run'
+			self.status = 'run'
 		else:
-			 if self.direction.y == 0 and self.onGround:
-				 self.status = 'idle'
+			if self.direction.y == 0 and self.onGround:
+				self.status = 'idle'
 
 		if self.onGround:
 			self.airBorne = False
 		else:
 			self.airBorne = True
 
-		if self.onGround == False and self.on_left:
+		if not self.onGround and self.on_left:
 			self.status = 'wallJump'
-		if self.onGround == False and self.on_right:
+		if not self.onGround and self.on_right:
 			self.status = 'wallJump'
-			
+
 	def input(self):
 		keys = pg.key.get_pressed()
 
@@ -100,18 +105,20 @@ class Player(pg.sprite.Sprite):
 
 		if keys[pg.K_SPACE] and self.onGround:
 			self.direction.y = -self.jumpHeight
-		
-		'''WALL JUMP'''
-		if self.onGround == False:
+		if keys[pg.K_LSHIFT]:
+			for _ in range(self.dash_length * 2):
+				self.rect.x += 1
 
-			if self.direction.y > -3 :
+		'''WALL JUMP'''
+		if not self.onGround:
+			if self.direction.y > -3:
 				if keys[pg.K_SPACE] and self.wallJumpCounter != 0:
 					if self.on_left:
 						self.wallJump = True
 						self.direction.y = -self.jumpHeight
 						self.wallJumpCounter -= 1
 
-			if self.direction.y > -3 :
+			if self.direction.y > -3:
 				if keys[pg.K_SPACE] and self.wallJumpCounter != 0:
 					if self.on_right:
 						self.wallJump = True
@@ -122,7 +129,10 @@ class Player(pg.sprite.Sprite):
 			self.wallJumpCounter = 2
 
 	def horizontalCollisions(self):
-		for sprite in self.collisionSprites.sprites():
+		self.collision_area.center = self.rect.center
+		sprites_to_check = [sprite for sprite in self.collisionSprites if sprite.rect.colliderect(self.collision_area)]
+
+		for sprite in sprites_to_check:
 			if sprite.rect.colliderect(self.rect):
 				if self.direction.x < 0:
 					self.rect.left = sprite.rect.right
@@ -133,13 +143,17 @@ class Player(pg.sprite.Sprite):
 					self.rect.right = sprite.rect.left
 					self.on_right = True
 					self.currentX = self.rect.right
+
 		if self.on_left and (self.rect.left < self.currentX or self.direction.x >= 0):
 			self.on_left = False
 		if self.on_right and (self.rect.right > self.currentX or self.direction.x <= 0):
 			self.on_right = False
 
 	def verticalCollisions(self):
-		for sprite in self.collisionSprites.sprites():
+		self.collision_area.center = self.rect.center
+		sprites_to_check = [sprite for sprite in self.collisionSprites if sprite.rect.colliderect(self.collision_area)]
+
+		for sprite in sprites_to_check:
 			if sprite.rect.colliderect(self.rect):
 				if self.direction.y > 0:
 					self.rect.bottom = sprite.rect.top
@@ -154,10 +168,10 @@ class Player(pg.sprite.Sprite):
 			self.onGround = False
 		if self.onCeiling and self.direction.y > 0.1:
 			self.onCeiling = False
-	
+
 	def player_light(self):
 		self.player_lights.append(Light(64, "red", 15, manual_pos=(self.rect.x + 20, self.rect.y + 20)))
-		
+
 		for light in self.player_lights:
 			light.apply_lighting(pg.display.get_surface())
 			break
@@ -168,7 +182,7 @@ class Player(pg.sprite.Sprite):
 		self.hurtbox.y += self.direction.y
 
 	def hurtboxing(self):
-		self.hurtbox = pg.Rect(self.rect.center, (self.image.get_width()/2, self.image.get_height()))
+		self.hurtbox = pg.Rect(self.rect.center, (self.image.get_width() // 2, self.image.get_height()))
 		self.hurtbox.center = self.rect.center
 
 	def update(self):
@@ -180,21 +194,14 @@ class Player(pg.sprite.Sprite):
 
 		self.rect.x += self.direction.x * self.speed
 		self.hurtbox.x += self.direction.x * self.speed
-		
-		# movement handling
-		# Check if player is going offscreen horizontally
-		if self.rect.left < 0:
-			self.rect.left = 0
-		elif self.rect.right > SCREEN_WIDTH:
-			self.rect.right = SCREEN_WIDTH
 
 		self.horizontalCollisions()
 		self.applyGravity()
 		self.verticalCollisions()
 
+		# pg.draw.rect(pg.display.get_surface(), "white", self.collision_area)
 
 		# self.player_light()
 
-		# pg.draw.rect(pg.display.get_surface(), "black", self.rect)	
+		# pg.draw.rect(pg.display.get_surface(), "black", self.rect)
 		# pg.draw.rect(pg.display.get_surface(), "white", self.hurtbox)
-		
