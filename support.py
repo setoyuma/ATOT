@@ -2,7 +2,7 @@ import pygame as pg
 from os import walk,sep
 from csv import reader
 
-from constants import TILE_SIZE
+from CONSTANTS import TILE_SIZE
 
 
 def clamp(num, min_value, max_value):
