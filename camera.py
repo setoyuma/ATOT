@@ -1,5 +1,5 @@
 import pygame as pg
-from CONSTANTS import *
+from constants import *
 
 class Camera:
 	def __init__(self, player, scroll_bounds):

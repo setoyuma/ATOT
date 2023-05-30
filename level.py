@@ -1,5 +1,5 @@
 import pygame as pg
-from CONSTANTS import *
+from constants import *
 from tile import *
 from player import Player
 from support import *

@@ -1,5 +1,5 @@
 import pygame as pg
-from CONSTANTS import *
+from constants import *
 from support import *
 
 class Tile(pg.sprite.Sprite):

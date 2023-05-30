@@ -2,7 +2,7 @@ import pygame as pg
 
 from tile import *
 from support import *
-from CONSTANTS import *
+from constants import *
 from enemy import Enemy
 from player import Player
 
