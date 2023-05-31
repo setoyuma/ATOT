@@ -1,3 +1,8 @@
+notes = {
+	"Launcher" : "Added patch notes section, and character list.",
+	"Game" : "Added decoration tiles and level system."
+}
+
 FPS = 60
 TILE_SIZE = 32
 SCREEN_WIDTH = 1600

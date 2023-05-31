@@ -12,28 +12,6 @@ class Tile(pg.sprite.Sprite):
 		self.current_pos = pg.math.Vector2(pos)  # Current position of the tile
 		self.start_pos = pos  # Initial position of the tile
 
-	def move(self):
-		if self.rect.top <= -100:
-			# print("at top")
-			self.direction = "down"
-		if self.rect.bottom >= SCREEN_HEIGHT+100:
-			# print("at bottom")
-			self.direction = "up"
-
-		if self.rect.right >= SCREEN_WIDTH+100:
-			self.direction = "left"
-		if self.rect.left <= -100:
-			self.direction = "right"
-		
-		if self.direction == 'up':
-			self.rect.y -= self.speed
-		elif self.direction == 'down':
-			self.rect.y += self.speed
-		elif self.direction == 'left':
-			self.rect.x -= self.speed
-		elif self.direction == 'right':
-			self.rect.x += self.speed
-
 class StaticTile(Tile):
 	def __init__(self,pos,groups,surface):
 		super().__init__(pos,groups)
@@ -47,6 +25,31 @@ class MovingTile(Tile):
 		self.speed = speed  # Movement speed (pixels per frame)
 		self.start_pos = pos  # Initial position of the tile
 		self.current_pos = pg.math.Vector2(pos)  # Current position of the tile
+
+	def move(self, constraints):
+		for constraint in constraints:
+			if self.rect.colliderect(constraint.rect):
+				if self.direction == 'up':
+					print("at top")
+					self.direction = "down"
+				elif self.direction == 'down':
+					print("at bottom")
+					self.direction = "up"
+				elif self.direction == 'right':
+					print("at right")
+					self.direction = "left"
+				elif self.direction == 'left':
+					print("at left")
+					self.direction = "right"
+			
+			if self.direction == 'up':
+				self.rect.y -= self.speed
+			elif self.direction == 'down':
+				self.rect.y += self.speed
+			elif self.direction == 'left':
+				self.rect.x -= self.speed
+			elif self.direction == 'right':
+				self.rect.x += self.speed
 
 class AnimatedTile(Tile):
 	def __init__(self,size,x,y,path):

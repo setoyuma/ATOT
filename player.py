@@ -31,6 +31,7 @@ class Player(pg.sprite.Sprite):
 		self.currentX = None
 		self.wallJump = False
 		self.heavy_fall = False
+		self.on_moving_tile = False
 
 		# movement
 		self.dash_length = 10
@@ -201,6 +202,7 @@ class Player(pg.sprite.Sprite):
 		self.rect.x += self.direction.x * self.speed
 		self.hurtbox.x += self.direction.x * self.speed
 
+		
 
 		self.horizontalCollisions()
 		self.applyGravity()

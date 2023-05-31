@@ -23,8 +23,9 @@ class Level:
 		self.torches = pg.sprite.Group()  # Torch sprites group
 		self.movingPlats = pg.sprite.Group()  # Moving platform sprites group
 		self.foreground = pg.sprite.Group()  # Foreground sprites group
+		self.constraints = pg.sprite.Group() # Constraint Sprite group
 		self.player_layer = pg.sprite.GroupSingle()  # Player sprite group
-		self.enemy_layer = pg.sprite.Group()
+		self.enemy_layer = pg.sprite.Group() # Enemy Sprite Group
 		self.activeSprites = pg.sprite.Group()  # Sprites in the level that will be updated
 		self.collisionSprites = pg.sprite.Group()  # Sprites that the player can collide with
 
@@ -49,6 +50,10 @@ class Level:
 		# Terrain layout
 		terrain_layout = import_csv_layout(level_data['terrain'])  # Load terrain layout from CSV
 		self.create_tile_group(terrain_layout, 'terrain')  # Create terrain tile sprites
+		
+		# Constraint layout
+		constraints_layout = import_csv_layout(level_data['constraints'])  # Load constraints layout from CSV
+		self.create_tile_group(constraints_layout, 'constraints')  # Create constraints tile sprites
 
 		# Lights layout
 		self.torches_layout = import_csv_layout(level_data['lights'])  # Load torches layout from CSV
@@ -114,10 +119,12 @@ class Level:
 						case 'foreground':
 							sprite = StaticTile((x, y), self.foreground, tile_list[int(val)])
 						case 'movingPlats':
-							sprite = MovingTile((x, y), [self.movingPlats, self.collisionSprites], 'right', 5, tile_list[int(val)])
+							sprite = MovingTile((x, y), [self.movingPlats, self.collisionSprites], 'right', 3, tile_list[int(val)])
 							self.moving_platforms.append(sprite)
 						case 'lights':
 							sprite = StaticTile((x, y), [self.torches, ], tile_list[int(val)])
+						case 'constraints':
+							sprite = Tile((x,y), [self.constraints])
 
 					self.activeSprites.add(sprite)
 
@@ -170,7 +177,7 @@ class Level:
 	def platform_handler(self):
 		# Handle the moving platforms in the level
 		for platform in self.moving_platforms:
-			platform.move()
+			platform.move(self.constraints)
 
 	def camera_handler(self):
 		# Handle the camera in the level
