@@ -155,7 +155,7 @@ class Level:
 
 	def light_handler(self):
 		# Handle the lights in the level
-		self.light_list.append(Light(50, 'white', 15))
+		self.light_list.append(Light(50, 'teal', 15))
 
 		for light in self.light_list:
 			light.apply_lighting(self.displaySurface, self.camera, self.torches)

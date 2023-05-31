@@ -213,4 +213,4 @@ class Player(pg.sprite.Sprite):
 		# self.player_light()
 
 		# pg.draw.rect(pg.display.get_surface(), "black", self.rect)
-		pg.draw.rect(pg.display.get_surface(), "white", self.hurtbox)
+		# pg.draw.rect(pg.display.get_surface(), "white", self.hurtbox)

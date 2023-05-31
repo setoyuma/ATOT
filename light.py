@@ -19,10 +19,8 @@ class Light:
 
 		glow = clamp(glow, 0, 255)  # Clamp the glow intensity
 		for i in range(layers):
-			k = i * glow
-			k = clamp(k, 0, 255)
 			pg.draw.circle(
-				surf, (k, k, k), surf.get_rect().center, radius - i * 3
+				surf, self.color, surf.get_rect().center, radius - i * 3
 			)
 
 		return surf
