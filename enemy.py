@@ -10,7 +10,7 @@ class Enemy(pg.sprite.Sprite):
 		self.frame_index = 0
 		self.animation_speed = 0.2
 		self.image = self.animations['run'][self.frame_index]  # Current image
-		self.rect = self.image.get_rect(topleft=pos)
+		self.rect = pg.Rect(pos, (96,96))
 		self.velocity = pg.math.Vector2(0, 0)  # Velocity vector
 		self.gravity = GRAVITY  # Gravity value
 		self.hit_status = 'normal'  # Status variable ('normal', 'damaged')
@@ -36,14 +36,14 @@ class Enemy(pg.sprite.Sprite):
 	def update(self, offset):
 		self.hurtboxing(offset)
 		self.animate()
+		self.handle_status()
+		self.move()
+
+		self.rect.x += self.velocity.x * self.patrol_speed
 		self.horizontal_collisions()
 		self.apply_gravity()
 		self.vertical_collisions()
-		self.move()
-		self.handle_status()
 
-		self.rect.x += self.velocity.x * self.patrol_speed
-		# self.rect.y += self.velocity.y
 
 	def hurtboxing(self, offset):
 		self.hurtbox = pg.Rect((self.rect.x - offset.x, self.rect.y - offset.y), self.image.get_size())
@@ -71,6 +71,7 @@ class Enemy(pg.sprite.Sprite):
 
 	def apply_gravity(self):
 		self.velocity.y += self.gravity
+		self.rect.y += self.velocity.y
 
 	def move(self):
 		if self.current_wait_frames > 0:

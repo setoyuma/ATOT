@@ -144,7 +144,7 @@ class Level:
 				x = col_index * TILE_SIZE
 				y = row_index * TILE_SIZE
 				if val == '0':
-					enemy = Enemy((x,y), [self.enemy_layer], self.collisionSprites)
+					enemy = Enemy((x,y), [self.enemy_layer], self.collisionSprites, direction='left')
 
 	def player_handler(self):
 		self.player.update(self.camera.offset)
