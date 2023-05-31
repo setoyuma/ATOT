@@ -4,16 +4,15 @@ from support import *
 from light import Light
 
 class Player(pg.sprite.Sprite):
-	def __init__(self, pos, groups, collisionSprites, surface):
+	def __init__(self, game, pos, groups, collisionSprites, surface):
 		super().__init__(groups)
 		self.import_character_assets()
 
-		self.image = pg.Surface((TILE_SIZE // 2, TILE_SIZE))
 		self.frame_index = 0
 		self.image = self.animations['idle'][self.frame_index]
 
 		self.pos = pg.math.Vector2(pos)
-		self.rect = pg.Rect(self.pos, (64, 96))
+		self.rect = pg.Rect(self.pos, (96, 96))
 
 		self.spawnx = pos[0]
 		self.spawny = pos[1]
@@ -25,21 +24,20 @@ class Player(pg.sprite.Sprite):
 		self.hp = 100
 
 		# state
-		self.animation_speed = 0.19
+		self.animation_speed = 0.2
 		self.status = 'idle'
 		self.on_left = False
 		self.on_right = False
-		self.hitBoxOn = False
 		self.currentX = None
 		self.wallJump = False
+		self.heavy_fall = False
 
 		# movement
 		self.dash_length = 10
 		self.direction = pg.math.Vector2()
 		self.speed = 7
-		self.gravity = 0.65
+		self.gravity = GRAVITY
 		self.jumpHeight = 12  # jump speed
-		self.collisionSprites = collisionSprites
 		self.onGround = False
 		self.onCeiling = False
 		self.facing_right = True
@@ -47,11 +45,12 @@ class Player(pg.sprite.Sprite):
 		self.wallJumpCounter = 2
 
 		# Collision detection
+		self.collisionSprites = collisionSprites
 		self.collision_area = pg.Rect(0, 0, TILE_SIZE * 3, TILE_SIZE * 3)
 
 	def import_character_assets(self):
 		character_path = ALRYN_PATH
-		self.animations = {'idle': [], 'run': [], 'jump': [], 'fall': [], 'attack': [], 'wallJump': []}
+		self.animations = {'idle': [], 'run': [], 'jump': [], 'fall': [], 'attack': [], 'wallJump': [], 'heavyFall': []}
 
 		for animation in self.animations.keys():
 			full_path = character_path + animation
@@ -65,12 +64,13 @@ class Player(pg.sprite.Sprite):
 		if self.frame_index >= len(animation):
 			self.frame_index = 0
 
-		self.image = pg.transform.scale(pg.transform.flip(animation[int(self.frame_index)], False, False),
-										 (96, 96))
+		self.image = pg.transform.scale(pg.transform.flip(animation[int(self.frame_index)], False, False),(96, 96))
+
 		if not self.facing_right:
 			self.image = pg.transform.scale(pg.transform.flip(self.image, True, False), (96, 96))
 
 	def get_status(self):
+
 		if self.direction.y < 0:
 			self.status = 'jump'
 		elif self.direction.y > 1 and not self.onGround:
@@ -91,6 +91,9 @@ class Player(pg.sprite.Sprite):
 		if not self.onGround and self.on_right:
 			self.status = 'wallJump'
 
+		if self.direction.y >= 25:
+			self.heavy_fall = True
+
 	def input(self):
 		keys = pg.key.get_pressed()
 
@@ -105,6 +108,9 @@ class Player(pg.sprite.Sprite):
 
 		if keys[pg.K_SPACE] and self.onGround:
 			self.direction.y = -self.jumpHeight
+		else:
+			self.direction.y = self.direction.y
+			
 		if keys[pg.K_LSHIFT]:
 			for _ in range(self.dash_length * 2):
 				self.rect.x += 1
@@ -181,19 +187,20 @@ class Player(pg.sprite.Sprite):
 		self.rect.y += self.direction.y
 		self.hurtbox.y += self.direction.y
 
-	def hurtboxing(self):
-		self.hurtbox = pg.Rect(self.rect.center, (self.image.get_width() // 2, self.image.get_height()))
-		self.hurtbox.center = self.rect.center
+	def hurtboxing(self, offset):
+		self.hurtbox = pg.Rect((self.rect.x - offset.x, self.rect.y - offset.y), (self.image.get_width() // 2, self.image.get_height()))
+		self.hurtbox.center = self.rect.center - offset
 
-	def update(self):
+	def update(self, offset):
 		self.animate()
 		self.input()
 		self.get_status()
 
-		self.hurtboxing()
+		self.hurtboxing(offset)
 
 		self.rect.x += self.direction.x * self.speed
 		self.hurtbox.x += self.direction.x * self.speed
+
 
 		self.horizontalCollisions()
 		self.applyGravity()
@@ -204,4 +211,4 @@ class Player(pg.sprite.Sprite):
 		# self.player_light()
 
 		# pg.draw.rect(pg.display.get_surface(), "black", self.rect)
-		# pg.draw.rect(pg.display.get_surface(), "white", self.hurtbox)
+		pg.draw.rect(pg.display.get_surface(), "white", self.hurtbox)

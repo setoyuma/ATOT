@@ -8,7 +8,7 @@ from CONSTANTS import TILE_SIZE
 def clamp(num, min_value, max_value):
 	return max(min(num, max_value), min_value)
 
-def import_folder(path):	
+def import_folder(path) -> list:	
 	surface_list = []
 	for _, __, image_files in walk(path):
 		for image in image_files:
@@ -18,7 +18,7 @@ def import_folder(path):
 
 	return surface_list
 
-def import_csv_layout(path):
+def import_csv_layout(path) -> list:
 	terrain_map = []
 	with open(path) as map:
 		level = reader(map, delimiter=',')
@@ -26,7 +26,7 @@ def import_csv_layout(path):
 			terrain_map.append(list(row))
 		return terrain_map
 
-def import_cut_graphics(path):
+def import_cut_graphics(path) -> list:
 	surface = get_image(path)
 	tile_num_x = int(surface.get_size()[0] / TILE_SIZE)
 	tile_num_y = int(surface.get_size()[1] / TILE_SIZE)
@@ -65,7 +65,7 @@ def get_image(path):
 		_image_library[path] = image
 	return image
 
-def scale_images(images: list, size: tuple):
+def scale_images(images: list, size: tuple) -> list:
 	""" returns scaled image assets """
 	scaled_images = []
 	for image in images:

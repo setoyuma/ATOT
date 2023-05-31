@@ -7,17 +7,16 @@ from ui import UI
 from camera import Camera
 from particle import *
 from light import Light
+from enemy import Enemy
 
 class Level:
-	def __init__(self, level_data):
+	def __init__(self, game, level_data):
 		# Initialize the Level object
+		self.game = game
 
 		# Level setup
 		self.displaySurface = pg.display.get_surface()  # Get the display surface
 		self.world_shift = pg.math.Vector2()  # Vector for shifting the world
-
-		# UI
-		self.UI = UI(self.displaySurface)  # Create UI object
 
 		# Sprite groups setup
 		self.terrain = pg.sprite.Group()  # Terrain sprites group
@@ -25,6 +24,7 @@ class Level:
 		self.movingPlats = pg.sprite.Group()  # Moving platform sprites group
 		self.foreground = pg.sprite.Group()  # Foreground sprites group
 		self.player_layer = pg.sprite.GroupSingle()  # Player sprite group
+		self.enemy_layer = pg.sprite.Group()
 		self.activeSprites = pg.sprite.Group()  # Sprites in the level that will be updated
 		self.collisionSprites = pg.sprite.Group()  # Sprites that the player can collide with
 
@@ -33,6 +33,7 @@ class Level:
 			self.torches,
 			self.movingPlats,
 			self.player_layer,
+			self.enemy_layer,
 			self.foreground,
 		]  # List of sprite groups for managing different layers of the level
 
@@ -64,6 +65,10 @@ class Level:
 		# Player
 		player_layout = import_csv_layout(level_data['player'])  # Load player layout from CSV
 		self.player_setup(player_layout)  # Set up the player
+		
+		# Enemy
+		enemy_layout = import_csv_layout(level_data['enemy'])  # Load enemy layout from CSV
+		self.enemy_setup(enemy_layout)  # Set up the player
 
 		# Calculate the size of the level based on the layers
 		self.calculate_level_size()
@@ -123,7 +128,23 @@ class Level:
 				x = col_index * TILE_SIZE
 				y = row_index * TILE_SIZE
 				if val == '0':
-					self.player = Player((x, y), [self.player_layer], self.collisionSprites, self.displaySurface)
+					self.player = Player(self.game, (x, y), [self.player_layer], self.collisionSprites, self.displaySurface)
+	
+	def enemy_setup(self, layout):
+		# Set up the player based on the layout
+		for row_index, row in enumerate(layout):
+			for col_index, val in enumerate(row):
+				x = col_index * TILE_SIZE
+				y = row_index * TILE_SIZE
+				if val == '0':
+					enemy = Enemy((x,y), [self.enemy_layer], self.collisionSprites)
+
+	def player_handler(self):
+		self.player.update(self.camera.offset)
+
+	def enemy_handler(self):
+		for enemy in self.enemy_layer.sprites():
+			enemy.update(self.camera.offset)
 
 	def light_handler(self):
 		# Handle the lights in the level
@@ -159,7 +180,8 @@ class Level:
 	def run(self):
 		# Run the level update functions
 		self.camera_handler()
-		self.player_layer.update()
+		self.player_handler()
+		self.enemy_handler()
 		self.platform_handler()
 		self.particle_handler()
 		self.light_handler()
