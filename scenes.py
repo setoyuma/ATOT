@@ -76,6 +76,7 @@ class Launcher(Scene):
 	def draw(self):
 		self.game.screen.fill("black")
 		self.game.screen.blit(self.logo, (0,0))
+		
 		self.patch_notes()
 
 		for button in self.buttons:
