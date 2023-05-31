@@ -7,6 +7,7 @@ class Player(pg.sprite.Sprite):
 	def __init__(self, game, pos, groups, collisionSprites, surface):
 		super().__init__(groups)
 		self.import_character_assets()
+		self.game = game
 
 		self.frame_index = 0
 		self.image = self.animations['idle'][self.frame_index]
@@ -35,7 +36,7 @@ class Player(pg.sprite.Sprite):
 
 		# movement
 		self.dash_length = 10
-		self.direction = pg.math.Vector2()
+		self.velocity = pg.math.Vector2()
 		self.speed = 7
 		self.gravity = GRAVITY
 		self.jumpHeight = 12  # jump speed
@@ -72,14 +73,14 @@ class Player(pg.sprite.Sprite):
 
 	def get_status(self):
 
-		if self.direction.y < 0:
+		if self.velocity.y < 0:
 			self.status = 'jump'
-		elif self.direction.y > 1 and not self.onGround:
+		elif self.velocity.y > 1 and not self.onGround:
 			self.status = 'fall'
-		elif self.direction.x != 0 and self.onGround:
+		elif self.velocity.x != 0 and self.onGround:
 			self.status = 'run'
 		else:
-			if self.direction.y == 0 and self.onGround:
+			if self.velocity.y == 0 and self.onGround:
 				self.status = 'idle'
 
 		if self.onGround:
@@ -92,25 +93,25 @@ class Player(pg.sprite.Sprite):
 		if not self.onGround and self.on_right:
 			self.status = 'wallJump'
 
-		if self.direction.y >= 25:
+		if self.velocity.y >= 25:
 			self.heavy_fall = True
 
 	def input(self):
 		keys = pg.key.get_pressed()
 
 		if keys[pg.K_d]:
-			self.direction.x = 1
+			self.velocity.x = 1
 			self.facing_right = True
 		elif keys[pg.K_a]:
-			self.direction.x = -1
+			self.velocity.x = -1
 			self.facing_right = False
 		else:
-			self.direction.x = 0
+			self.velocity.x = 0
 
 		if keys[pg.K_SPACE] and self.onGround:
-			self.direction.y = -self.jumpHeight
+			self.velocity.y = -self.jumpHeight
 		else:
-			self.direction.y = self.direction.y
+			self.velocity.y = self.velocity.y
 			
 		if keys[pg.K_LSHIFT]:
 			for _ in range(self.dash_length * 2):
@@ -118,18 +119,18 @@ class Player(pg.sprite.Sprite):
 
 		'''WALL JUMP'''
 		if not self.onGround:
-			if self.direction.y > -3:
+			if self.velocity.y > -3:
 				if keys[pg.K_SPACE] and self.wallJumpCounter != 0:
 					if self.on_left:
 						self.wallJump = True
-						self.direction.y = -self.jumpHeight
+						self.velocity.y = -self.jumpHeight
 						self.wallJumpCounter -= 1
 
-			if self.direction.y > -3:
+			if self.velocity.y > -3:
 				if keys[pg.K_SPACE] and self.wallJumpCounter != 0:
 					if self.on_right:
 						self.wallJump = True
-						self.direction.y = -self.jumpHeight
+						self.velocity.y = -self.jumpHeight
 						self.wallJumpCounter -= 1
 
 		if self.onGround:
@@ -141,19 +142,19 @@ class Player(pg.sprite.Sprite):
 
 		for sprite in sprites_to_check:
 			if sprite.rect.colliderect(self.rect):
-				if self.direction.x < 0:
+				if self.velocity.x < 0:
 					self.rect.left = sprite.rect.right
 					self.on_left = True
 					self.currentX = self.rect.left
 
-				if self.direction.x > 0:
+				if self.velocity.x > 0:
 					self.rect.right = sprite.rect.left
 					self.on_right = True
 					self.currentX = self.rect.right
 
-		if self.on_left and (self.rect.left < self.currentX or self.direction.x >= 0):
+		if self.on_left and (self.rect.left < self.currentX or self.velocity.x >= 0):
 			self.on_left = False
-		if self.on_right and (self.rect.right > self.currentX or self.direction.x <= 0):
+		if self.on_right and (self.rect.right > self.currentX or self.velocity.x <= 0):
 			self.on_right = False
 
 	def verticalCollisions(self):
@@ -162,18 +163,18 @@ class Player(pg.sprite.Sprite):
 
 		for sprite in sprites_to_check:
 			if sprite.rect.colliderect(self.rect):
-				if self.direction.y > 0:
+				if self.velocity.y > 0:
 					self.rect.bottom = sprite.rect.top
-					self.direction.y = 0
+					self.velocity.y = 0
 					self.onGround = True
-				if self.direction.y < 0:
+				if self.velocity.y < 0:
 					self.rect.top = sprite.rect.bottom
-					self.direction.y = 0
+					self.velocity.y = 0
 					self.onCeiling = True
 
-		if self.onGround and self.direction.y < 0 or self.direction.y > 1:
+		if self.onGround and self.velocity.y < 0 or self.velocity.y > 1:
 			self.onGround = False
-		if self.onCeiling and self.direction.y > 0.1:
+		if self.onCeiling and self.velocity.y > 0.1:
 			self.onCeiling = False
 
 	def player_light(self):
@@ -184,9 +185,9 @@ class Player(pg.sprite.Sprite):
 			break
 
 	def applyGravity(self):
-		self.direction.y += self.gravity
-		self.rect.y += self.direction.y
-		self.hurtbox.y += self.direction.y
+		self.velocity.y += self.gravity
+		self.rect.y += self.velocity.y
+		self.hurtbox.y += self.velocity.y
 
 	def hurtboxing(self, offset):
 		self.hurtbox = pg.Rect((self.rect.x - offset.x, self.rect.y - offset.y), (self.image.get_width() // 2, self.image.get_height()))
@@ -199,8 +200,8 @@ class Player(pg.sprite.Sprite):
 
 		self.hurtboxing(offset)
 
-		self.rect.x += self.direction.x * self.speed
-		self.hurtbox.x += self.direction.x * self.speed
+		self.rect.x += self.velocity.x * self.speed
+		self.hurtbox.x += self.velocity.x * self.speed
 
 		self.horizontalCollisions()
 		self.applyGravity()
