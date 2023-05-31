@@ -14,6 +14,8 @@ class Game:
 		pg.display.set_caption("ATOT")
 		pg.display.set_icon(pg.image.load("./assets/logo.ico"))
 		self.clock = pg.time.Clock()
+		pg.mouse.set_visible(False)
+		self.mouse = get_image("./assets/ui/cursor/cursor_test.png")
 
 	def draw_fps(self):
 		fpsCounter = round(self.clock.get_fps())
@@ -23,6 +25,7 @@ class Game:
 		while True:
 			self.scene.update()
 			self.scene.draw()
+			self.screen.blit(self.mouse, pg.mouse.get_pos())
 			self.send_frame()
 
 	def send_frame(self):

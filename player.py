@@ -202,8 +202,6 @@ class Player(pg.sprite.Sprite):
 		self.rect.x += self.direction.x * self.speed
 		self.hurtbox.x += self.direction.x * self.speed
 
-		
-
 		self.horizontalCollisions()
 		self.applyGravity()
 		self.verticalCollisions()

@@ -151,7 +151,7 @@ class Level:
 
 	def enemy_handler(self):
 		for enemy in self.enemy_layer.sprites():
-			enemy.update(self.camera.offset)
+			enemy.update(self.camera.offset, self.player)
 
 	def light_handler(self):
 		# Handle the lights in the level

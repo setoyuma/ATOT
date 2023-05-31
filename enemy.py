@@ -1,6 +1,7 @@
 import pygame as pg
 from CONSTANTS import *
 from support import *
+from math import hypot
 
 class Enemy(pg.sprite.Sprite):
 	def __init__(self, pos, groups, collision_sprites, direction='right'):
@@ -30,20 +31,20 @@ class Enemy(pg.sprite.Sprite):
 		self.wait_frames = 60  # Number of frames to wait at each end of patrol
 		self.current_wait_frames = 0  # Counter for current wait frames
 		self.patrol_speed = 2  # Speed of patrol movement
+		self.aggro_range = 100	 # distance from player in px
 
 		self.patrol()  # Start patrolling
 
-	def update(self, offset):
+	def update(self, offset, player):
 		self.hurtboxing(offset)
 		self.animate()
 		self.handle_status()
-		self.move()
-
 		self.rect.x += self.velocity.x * self.patrol_speed
 		self.horizontal_collisions()
 		self.apply_gravity()
 		self.vertical_collisions()
-
+		self.move()
+		self.check_aggro(player)
 
 	def hurtboxing(self, offset):
 		self.hurtbox = pg.Rect((self.rect.x - offset.x, self.rect.y - offset.y), self.image.get_size())
@@ -86,6 +87,10 @@ class Enemy(pg.sprite.Sprite):
 			elif self.direction == 'left':
 				self.velocity.x = -self.patrol_speed
 				self.facing_right = True
+
+	def check_aggro(self, player):
+		dist_from_player = hypot(self.rect.center[0] - player.rect.center[0], self.rect.center[1] - player.rect.center[1])
+		self.aggro = dist_from_player <= self.aggro_range
 
 	def handle_status(self):
 		if self.hit_status == 'damaged':
