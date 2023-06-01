@@ -91,7 +91,7 @@ class WorldScene(Scene):
 		self.game.screen = pg.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pg.SCALED)
 		self.game.level = Level(self.game, levels[1])
 		self.game.player = self.game.level.player
-		pg.display.toggle_fullscreen()
+		# pg.display.toggle_fullscreen()
 
 	def update(self):
 		for event in pg.event.get():
