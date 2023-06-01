@@ -10,8 +10,12 @@ class Button:
         self.pos = pos
         self.id = id
         self.function = function
-        self.base = pg.transform.scale(get_image(base), (128,64))
-        self.rect = self.base.get_rect()
+        if isinstance(base, str):
+            self.base = pg.transform.scale(get_image(base), (128,64))
+            self.rect = self.base.get_rect()
+        else:
+            self.base = base
+            self.rect = base
 
         if isinstance(base, str):
             self.surf = pg.Surface((self.rect[2], self.rect[3]), pg.SRCALPHA)

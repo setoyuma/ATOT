@@ -23,8 +23,9 @@ class Game:
 
 	def run(self):
 		while True:
-			self.scene.update()
-			self.scene.draw()
+			for scene in self.scenes:
+				scene.update()
+				scene.draw()
 			self.screen.blit(self.mouse, pg.mouse.get_pos())
 			self.send_frame()
 
@@ -35,5 +36,5 @@ class Game:
 			
 if __name__ == '__main__':
 	game = Game()
-	game.scene = Launcher(game)
+	game.scenes = [Launcher(game)]
 	game.run()
