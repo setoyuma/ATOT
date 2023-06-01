@@ -65,6 +65,21 @@ def get_image(path):
 		_image_library[path] = image
 	return image
 
+_sound_library = {}
+def play_sound(path, stop=None):
+    global _sound_library
+    sound = _sound_library.get(path)
+    if sound == None:
+        canonicalized_path = path.replace('/', sep).replace('\\', sep)
+        sound = pg.mixer.Sound(canonicalized_path)
+        _sound_library[path] = sound
+    if stop is None:
+        sound.play()
+    elif stop:
+        sound.stop()
+    else:
+        sound.play(10)
+
 def scale_images(images: list, size: tuple) -> list:
 	""" returns scaled image assets """
 	scaled_images = []

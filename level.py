@@ -24,7 +24,7 @@ class Level:
 		self.movingPlats = pg.sprite.Group()  # Moving platform sprites group
 		self.foreground = pg.sprite.Group()  # Foreground sprites group
 		self.constraints = pg.sprite.Group() # Constraint Sprite group
-		self.player_layer = pg.sprite.GroupSingle()  # Player sprite group
+		self.player_layer = pg.sprite.Group()  # Player sprite group
 		self.enemy_layer = pg.sprite.Group() # Enemy Sprite Group
 		self.activeSprites = pg.sprite.Group()  # Sprites in the level that will be updated
 		self.collisionSprites = pg.sprite.Group()  # Sprites that the player can collide with
@@ -82,7 +82,7 @@ class Level:
 		scroll_bounds = pg.Rect((0, 0), (self.level_width - 100, self.level_height - 100))
 
 		# Camera
-		self.camera = Camera(self.player_layer.sprite, scroll_bounds)  # Create camera object
+		self.camera = Camera(self.player_layer.sprites()[0], scroll_bounds)  # Create camera object
 		self.camera.add_layer(self.world_layers)  # Add world layers to the camera
 
 	def calculate_level_size(self):
@@ -148,6 +148,8 @@ class Level:
 
 	def player_handler(self):
 		self.player.update(self.camera.offset)
+		for proj in self.game.projectiles:
+			proj.update(self.camera.offset)
 
 	def enemy_handler(self):
 		for enemy in self.enemy_layer.sprites():

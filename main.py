@@ -18,7 +18,7 @@ class Game:
 		self.mouse = get_image("./assets/ui/cursor/cursor_test.png")
 
 	def draw_fps(self):
-		fpsCounter = round(self.clock.get_fps())
+		fpsCounter = int(self.clock.get_fps())
 		draw_text(self.screen, f"FPS: {fpsCounter}", (900, 20))
 
 	def run(self):
@@ -27,13 +27,14 @@ class Game:
 				scene.update()
 				scene.draw()
 			self.screen.blit(self.mouse, pg.mouse.get_pos())
+			self.draw_fps()
 			self.send_frame()
 
 	def send_frame(self):
 		pg.display.flip()
 		self.dt = self.clock.tick(FPS)/1000.0
 
-			
+
 if __name__ == '__main__':
 	game = Game()
 	game.scenes = [Launcher(game)]

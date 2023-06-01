@@ -3,11 +3,11 @@ from pygame.locals import *
 import math
 import sys
 
+from projectile import Projectile
 from animation import Animator
 from game_data import levels
 from button import Button
 from level import Level
-# from projectile import *
 from CONSTANTS import *
 from support import *
 
@@ -93,6 +93,7 @@ class WorldScene(Scene):
 		self.game.screen = pg.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pg.SCALED)
 		self.game.level = Level(self.game, levels[1])
 		self.game.player = self.game.level.player
+		self.game.projectiles = []
 		self.events = True
 		# pg.display.toggle_fullscreen()
 
@@ -108,7 +109,9 @@ class WorldScene(Scene):
 
 			elif event.type == pg.MOUSEBUTTONDOWN:
 				if event.button == 1:
-					pass
+					level = self.game.level
+					pos = self.game.player.hurtbox.center
+					self.game.projectiles.append(Projectile(pos, 5, None, 10, level.player_layer, level.camera.offset))
 
 			elif event.type == pg.MOUSEBUTTONUP:
 				pass
@@ -116,7 +119,7 @@ class WorldScene(Scene):
 			elif event.type == KEYDOWN:
 				if event.key == pg.K_f:
 					pg.display.toggle_fullscreen()
-				
+
 				elif event.key == pg.K_ESCAPE:
 					if len(self.game.scenes) == 1:
 						self.game.scenes.append(RadialMenu(self.game))
@@ -125,10 +128,6 @@ class WorldScene(Scene):
 	def draw(self):
 		self.game.screen.fill("black")
 		self.game.level.run()
-		# for proj in self.game.player.projectiles:
-		# 	proj.draw(self.game.screen)
-
-		self.game.draw_fps()
 
 
 class RadialMenu(Scene):
@@ -139,7 +138,7 @@ class RadialMenu(Scene):
 		self.rotation = 0 # keep track of how much the menu has rotated
 		self.target_angle = 0
 		self.section_radius = 200  # distance from the center to each section
-		self.sections = len(self.icons) # resume // settings // inventory // spells // equipment
+		self.sections = len(self.icons)
 		self.section_arc = 360 / self.sections
 		self.button = Button(game, "", (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-184), self.callback, base=(0,0,100,50), hovered=(0,0,100,50))
 		self.options = ["Equipment", "Grimoire", "Inventory", "Settings"]
@@ -164,16 +163,18 @@ class RadialMenu(Scene):
 					if self.selected < 0:
 						self.selected = len(self.options)-1
 					self.target_angle += self.section_arc
+					play_sound("./assets/sounds/menu_select.wav")
 		
 				elif event.key == pg.K_RIGHT:
 					self.selected += 1
 					if self.selected > len(self.options)-1:
 						self.selected = 0
 					self.target_angle -= self.section_arc
+					play_sound("./assets/sounds/menu_select.wav")
 
 		if self.rotation % 360 != self.target_angle % 360:
 			self.rotate()
-	
+
 	def rotate(self):
 		rotation_speed = 5
 		if self.rotation < self.target_angle:
@@ -186,7 +187,6 @@ class RadialMenu(Scene):
 		draw_text(self.game.screen, self.options[self.selected], (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-222), 24)
 		for i, icon in enumerate(self.icons):
 			angle = self.rotation + (i * self.section_arc)
-			#pg.transform.rotate(icon, rotation_angle)
 			angle_rad = math.radians(angle)
 			x = self.menu_center[0] + self.section_radius * math.sin(angle_rad)
 			y = self.menu_center[1] - self.section_radius * math.cos(angle_rad)

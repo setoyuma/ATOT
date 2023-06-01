@@ -201,15 +201,16 @@ class Player(pg.sprite.Sprite):
 		self.hurtboxing(offset)
 
 		self.rect.x += self.velocity.x * self.speed
-		self.hurtbox.x += self.velocity.x * self.speed
 
 		self.horizontalCollisions()
 		self.applyGravity()
 		self.verticalCollisions()
 
+		self.hurtbox.center = self.rect.center
+
 		# pg.draw.rect(pg.display.get_surface(), "white", self.collision_area)
 
 		# self.player_light()
 
-		# pg.draw.rect(pg.display.get_surface(), "black", self.rect)
+		pg.draw.rect(pg.display.get_surface(), "red", self.rect)
 		# pg.draw.rect(pg.display.get_surface(), "white", self.hurtbox)
