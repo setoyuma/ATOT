@@ -157,7 +157,7 @@ class Level:
 				x = col_index * TILE_SIZE
 				y = row_index * TILE_SIZE
 				if val == '0':
-					self.player = Player("ALRYN", (x, y), self.display_surface, self.player_layer)
+					self.player = Player(self.game, "ALRYN", (x, y), self.display_surface, self.player_layer)
 	
 	def enemy_setup(self, layout):
 		# Set up the player based on the layout

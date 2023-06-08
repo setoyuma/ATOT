@@ -1,8 +1,9 @@
 from saviorsystems.REDFORGE import *
 
 class Player(Entity):
-	def __init__(self,character:str,pos,surface,group):
+	def __init__(self, game, character:str, pos, surface, group):
 		super().__init__(96,pos,CHARACTERS[character]["SPEED"],group)
+		self.game = game
 		self.character = character
 		self.import_character_assets()
 		self.frame_index = 0
@@ -82,8 +83,15 @@ class Player(Entity):
 
 		self.hitbox.center = self.rect.center
 
+	def on_screen_check(self):
+		if self.rect.x >= self.game.level.level_bottomright.x:
+			print("ok")
+			self.rect.x = self.game.level.level_bottomright.x
+		elif self.rect.x <= self.game.level.level_topleft.x:
+			self.rect.x = self.game.level.level_topleft.x
 	""" UPDATE """
 	def update(self, world_shift):
+		self.on_screen_check()
 		self.hitboxing()
 		self.get_status()
 		self.animate()

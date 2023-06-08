@@ -7,7 +7,7 @@ from saviorsystems.REDFORGE import *
 class Game:
 	def __init__(self):
 		pygame.init()
-		self.current_level = 2
+		self.current_level = 1
 		self.screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pygame.SCALED)
 		pygame.display.set_caption("ATOT")
 		pygame.display.set_icon(pygame.image.load("../assets/logo.ico"))
