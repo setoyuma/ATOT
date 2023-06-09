@@ -9,7 +9,7 @@ class Game:
 		pygame.init()
 		self.current_level = 1
 		self.screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pygame.SCALED)
-		pygame.display.set_caption("ATOT")
+		pygame.display.set_caption("A Tale of Time")
 		pygame.display.set_icon(pygame.image.load("../assets/logo.ico"))
 		self.clock = pygame.time.Clock()
 		pygame.mouse.set_visible(False)
