@@ -1,8 +1,7 @@
-import pygame, sys
-from settings import * 
+from saviorsystems.REDFORGE import *
+
 from scenes import *
 
-from saviorsystems.REDFORGE import *
 
 class Game:
 	def __init__(self):

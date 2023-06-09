@@ -1,8 +1,5 @@
-screen_width = 1400
-screen_height = 1000
-
-SCREEN_WIDTH = screen_width
-SCREEN_HEIGHT = screen_height
+SCREEN_WIDTH = 1400
+SCREEN_HEIGHT = 1000
 
 GRAVITY = 0.65
 TILE_SIZE = 64

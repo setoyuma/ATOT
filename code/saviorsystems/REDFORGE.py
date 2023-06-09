@@ -296,10 +296,10 @@ class Camera():
 		velocity_x = player.velocity.x
 
 		
-		if player_x < screen_width / 4 and velocity_x < 0 and self.level.level_topleft.left < 0:
+		if player_x < SCREEN_WIDTH / 4 and velocity_x < 0 and self.level.level_topleft.left < 0:
 			self.level.world_shift.x = CHARACTERS[player.character]["SPEED"]
 			player.speed = 0
-		elif player_x > screen_width - (screen_width / 4) and velocity_x > 0 and self.level.level_bottomright.right > SCREEN_WIDTH:
+		elif player_x > SCREEN_WIDTH - (SCREEN_WIDTH / 4) and velocity_x > 0 and self.level.level_bottomright.right > SCREEN_WIDTH:
 			self.level.world_shift.x = -CHARACTERS[player.character]["SPEED"]
 			player.speed = 0
 		else:
@@ -312,9 +312,9 @@ class Camera():
 		player_y = player.rect.centery
 		velocity_y = player.velocity.y
 
-		if player_y < screen_height / 4 and velocity_y < 0:
+		if player_y < SCREEN_HEIGHT / 4 and velocity_y < 0:
 			self.level.world_shift.y = 8
-		elif player_y > screen_height - (screen_height / 4) and velocity_y > 0:
+		elif player_y > SCREEN_HEIGHT - (SCREEN_HEIGHT / 4) and velocity_y > 0:
 			self.level.world_shift.y = -8
 		else:
 			self.level.world_shift.y = 0

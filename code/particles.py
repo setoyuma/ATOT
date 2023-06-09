@@ -1,6 +1,4 @@
-import pygame
-
-from saviorsystems.REDFORGE import import_folder
+from saviorsystems.REDFORGE import *
 
 class ParticleEffect(pygame.sprite.Sprite):
 	def __init__(self, pos, type):

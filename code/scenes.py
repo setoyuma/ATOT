@@ -1,3 +1,5 @@
+from saviorsystems.REDFORGE import *
+
 from game_data import levels
 from level import Level
 
@@ -5,7 +7,6 @@ from CONSTANTS import *
 
 from projectile import Projectile
 
-from saviorsystems.REDFORGE import *
 
 class Scene:
 	def __init__(self, game,):
