@@ -29,9 +29,6 @@ class Player(Entity):
 			full_path = character_path + animation
 			self.animations[animation] = scale_images(import_folder(full_path), self.size)
 
-	def import_dust_run_particles(self):
-		self.dust_run_particles = import_folder('../assets/character/dust_particles/run')
-
 	def animate(self):
 		animation = self.animations[self.status]
 

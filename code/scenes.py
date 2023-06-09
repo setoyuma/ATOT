@@ -80,7 +80,6 @@ class Launcher(Scene):
 			button.draw()
 
 		self.game.draw_fps()
-
 class WorldScene(Scene):
 	def __init__(self, game, level_data):
 		super().__init__(game)
@@ -110,8 +109,9 @@ class WorldScene(Scene):
 				if event.button == 1:
 					self.game.projectiles.append(
 						Projectile(
+							"fireball",  #type can be any spell in ../assets/spells/
 							self.game.player.rect.center,
-							20,
+							48,
 							10, 
 							10, 
 							self.game.level.terrain, 
