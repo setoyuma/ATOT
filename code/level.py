@@ -191,6 +191,21 @@ class Level:
 
 		self.particles = [particle for particle in self.particles if not particle.is_expired()]
 
+	def projectile_collisions(self):
+		for projectile in self.projectiles.sprites():
+			for enemy in self.enemy_layer.sprites():
+				if projectile.rect.colliderect(enemy.rect):
+					if projectile.rect.centerx > enemy.rect.centerx:
+						projectile.kill()
+						enemy.rect.x -= 30
+						enemy.health -= 10
+						print("enemy hit with projectile on right")
+					elif projectile.rect.centerx < enemy.rect.centerx:
+						projectile.kill()
+						enemy.rect.x += 30
+						enemy.health -= 10
+						print("enemy hit with projectile on right")
+
 	def constraint_handler(self):
 		self.constraints.update(self.world_shift)
 	
@@ -231,7 +246,7 @@ class Level:
 		# for sprite in self.constraints.sprites():
 		# 	pygame.draw.rect(self.display_surface, "yellow", sprite.rect)
 		
-		for sprite in self.last_room_triggers.sprites():
+		for sprite in self.constraints.sprites():
 			pygame.draw.rect(self.display_surface, "yellow", sprite.rect)
 
 		# effects
@@ -246,4 +261,5 @@ class Level:
 		self.player.physics.apply_gravity(self.player, GRAVITY)
 		self.player.physics.vertical_movement_collision(self.player, self.terrain)
 
+		self.projectile_collisions()
 

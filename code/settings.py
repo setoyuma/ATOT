@@ -20,6 +20,7 @@ ENEMIES = {
 	"sepparition": {
 		"SPEED": 1,
 		"GRAVITY": False,
+		"HEALTH": 40,
 	}
 }
 

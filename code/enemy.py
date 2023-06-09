@@ -15,6 +15,7 @@ class Enemy(Entity):
 		# stats
 		self.stats = ENEMIES[self.enemy_type]
 		self.speed = self.stats["SPEED"]
+		self.health = ENEMIES[self.enemy_type]["HEALTH"]
 
 		# status
 		self.status = 'run'
@@ -29,7 +30,6 @@ class Enemy(Entity):
 
 		# physics
 		self.physics = Physics()
-
 
 	def import_character_assets(self):
 		character_path = f'../assets/enemy/{self.enemy_type}/'
@@ -77,16 +77,31 @@ class Enemy(Entity):
 					self.direction = "up"
 				else:
 					pass
+					
+				if self.rect.right >= sprite.rect.left:
+					self.rect.right = sprite.rect.left
+				elif self.rect.left <= sprite.rect.right:
+					self.rect.left = sprite.rect.right
 		
 		match self.direction:
 			case "right":
-				self.rect.x += self.speed
+				self.velocity.x = self.speed
+				self.facing_right = False
 			case "left":
-				self.rect.x -= self.speed
+				self.velocity.x = -self.speed
+				self.facing_right = True
 			# case "up":
-			# 	self.rect.y -= self.speed
+				# self.velocity.y = -self.speed
 			# case "down":
-			# 	self.rect.y += self.speed
+				# self.velocity.y = self.speed
+
+	def take_knockback(self, knockback:int, damage:int):
+		if self.velocity.x < 0:
+			self.velocity.x += knockback
+			self.health -= damage
+		elif self.velocity.x > 0:
+			self.velocity.x += knockback
+			self.health -= damage
 
 	def update(self, world_shift):
 		# self.get_direction()
@@ -94,6 +109,8 @@ class Enemy(Entity):
 		self.patrol()
 		self.get_status()
 		self.animate()
+
+		print(self.velocity.x)
 
 		self.physics.horizontal_movement_collision(self, self.terrain_tiles)
 		if self.stats["GRAVITY"] == True:
