@@ -85,7 +85,6 @@ class Player(Entity):
 
 	def on_screen_check(self):
 		if self.rect.x >= self.game.level.level_bottomright.x:
-			print("ok")
 			self.rect.x = self.game.level.level_bottomright.x
 		elif self.rect.x <= self.game.level.level_topleft.x:
 			self.rect.x = self.game.level.level_topleft.x

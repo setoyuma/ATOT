@@ -37,3 +37,4 @@ if __name__ == '__main__':
 	game = Game()
 	game.scenes = [Launcher(game)]
 	game.run()
+	print(pygame.version.ver)

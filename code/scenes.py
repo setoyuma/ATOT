@@ -142,12 +142,14 @@ class WorldScene(Scene):
 						self.events = False
 		""" LEVEL CHANGING """
 		# print(f"next room triggered: {self.game.level.next_room_triggered}")
-		# print(f"last room triggered: {self.game.level.last_room_triggered}")
+		# print(f"last room triggered from scenes: {self.game.level.last_room_triggered}")
 		if self.game.level.next_room_triggered:
 			self.game.current_level += 1
+			self.game.scenes = [WorldScene(self.game, levels[self.game.current_level])]
 		
 		if self.game.level.last_room_triggered:
-			self.game.current_level += 1
+			self.game.current_level -= 1
+			self.game.scenes = [WorldScene(self.game, levels[self.game.current_level])]
 
 	def draw(self):
 		self.game.screen.fill("black")

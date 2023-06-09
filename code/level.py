@@ -28,8 +28,8 @@ class Level:
 		self.next_room_triggers = pygame.sprite.Group()  # Level Triggers sprites group
 		self.last_room_triggers = pygame.sprite.Group()  # Level Triggers sprites group
 		self.player_layer = pygame.sprite.GroupSingle()  # Player sprite group
-		self.enemy_layer = pygame.sprite.GroupSingle()  # Enemy sprite group
-		self.projectiles = pygame.sprite.GroupSingle()  # Projectile sprite group
+		self.enemy_layer = pygame.sprite.Group()  # Enemy sprite group
+		self.projectiles = pygame.sprite.Group()  # Projectile sprite group
 
 		# Terrain layout
 		terrain_layout = import_csv_layout(level_data['terrain'])  # Load Terrain layout from CSV
@@ -182,7 +182,7 @@ class Level:
 		# Handle the particles in the level
 		# Torch particles
 		for torch in self.torches.sprites():
-			self.particles.append(Particle(torch.rect.centerx, torch.rect.centery, '', 3, (255, 255, 255), 'torch'))
+			self.particles.append(Particle(torch.rect.centerx, torch.rect.centery, '', 3, (0, 255, 255), 'torch'))
 
 		# Draw and update particles
 		for particle in self.particles:
@@ -233,8 +233,6 @@ class Level:
 		
 		for sprite in self.last_room_triggers.sprites():
 			pygame.draw.rect(self.display_surface, "yellow", sprite.rect)
-
-		print(self.game.current_level)
 
 		# effects
 		self.light_handler()

@@ -161,8 +161,8 @@ class Particle():
 		# Generate a random direction vector within the specified angle range
 		angle_degrees = random.uniform(start_angle_degrees, end_angle_degrees)
 		angle_radians = math.radians(angle_degrees)
-		dx = math.cos(angle_radians) * random.randint(0,3)
-		dy = math.sin(angle_radians) * random.randint(0,3)
+		dx = math.cos(angle_radians) * random.randint(0,1) 
+		dy = math.sin(angle_radians) * random.randint(0,1)
 		return dx, dy
 
 	def set_type(self) -> str:
@@ -173,6 +173,7 @@ class Particle():
 				self.timer = random.uniform(1, 3)  # Timer for the particle's lifespan
 			case _:
 				direction = 'up'  # For other types, set direction as 'right'
+				self.timer = random.uniform(1, 3)  # Timer for the particle's lifespan
 		return direction
 
 	def set_direction(self, direction:str, velocity:int):
@@ -181,6 +182,8 @@ class Particle():
 		match direction:
 			case "up":
 				self.vel.y = -velocity  # Set the upward velocity
+				if self.type == 'torch':
+					self.vel.x = random.randint(-5, 5)  # Set the upward velocity
 			
 			case "down":
 				self.vel.y = velocity  # Set the downward velocity
