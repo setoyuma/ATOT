@@ -1,4 +1,4 @@
-from saviorsystems.REDFORGE import *
+from BLACKFORGE2 import *
 
 class Projectile(pygame.sprite.Sprite):
 	def __init__(self, type:str, pos:tuple, size:int, speed:int, damage:int, terrain_sprites:pygame.sprite.Group, groups:pygame.sprite.Group, offset:pygame.math.Vector2):

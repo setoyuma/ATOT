@@ -2,11 +2,13 @@ notes = {
 	"Launcher" : "Added patch notes section, and character list.",
 	"Game" : "Added decoration tiles and level system."
 }
-
+SCREEN_WIDTH = 1400
+SCREEN_HEIGHT = 800
+SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
 FPS = 60
-TILE_SIZE = 16
-WORLD_BRIGHTNESS = 200
-GRAVITY = 0.45
+TILE_SIZE = 64
+WORLD_BRIGHTNESS = 120
+GRAVITY = 0.68
 
 # character paths
 ALRYN_PATH = '../assets/character/alryn/'
@@ -19,6 +21,23 @@ MOSS_SENTINEL = '../assets/enemy/mossSent/'
 BG_COLOR = '#060C17'
 PLAYER_COLOR = '#C4F7FF'
 TILE_COLOR = '#94D7F2'
+
+""" CHARACTER STATS """
+CHARACTERS = {
+	"ALRYN": {
+		"SPEED": 7,
+		"JUMPFORCE": -15,
+	}
+}
+
+ENEMIES = {
+	"sepparition": {
+		"SPEED": 1,
+		"GRAVITY": False,
+		"HEALTH": 40,
+		"AGGRO RANGE": (500,500),
+	}
+}
 
 # camera
 CAMERA_BORDERS = {

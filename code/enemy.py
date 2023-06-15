@@ -1,8 +1,11 @@
-from saviorsystems.REDFORGE import *
+from BLACKFORGE2 import *
+
+from CONSTANTS import *
 
 class Enemy(Entity):
-	def __init__(self, enemy_type:str, size:int, position:tuple, terrain_tiles:pygame.sprite.Group, constraint_tiles:pygame.sprite.Group, groups:list):
+	def __init__(self, game, enemy_type:str, size:int, position:tuple, terrain_tiles:pygame.sprite.Group, constraint_tiles:pygame.sprite.Group, groups:list):
 		super().__init__(size, position, ENEMIES[enemy_type]["SPEED"], groups)
+		self.game = game
 		self.enemy_type = enemy_type
 		self.import_character_assets()
 		self.frame_index = 0
@@ -13,20 +16,30 @@ class Enemy(Entity):
 		self.constraints = constraint_tiles
 
 		# stats
+		self.flying = not ENEMIES[self.enemy_type]["GRAVITY"]
 		self.stats = ENEMIES[self.enemy_type]
 		self.speed = self.stats["SPEED"]
 		self.health = ENEMIES[self.enemy_type]["HEALTH"]
 
+		# timers
+		self.change_direction_timer = 80
+
 		# status
 		self.status = 'run'
+		self.hit = False
+		self.aggro_range = pygame.Rect(self.rect.center, ENEMIES[self.enemy_type]["AGGRO RANGE"])
 		self.aggro = False  # Used to check aggro
-		self.direction = "right"
 		self.directions = [
 			"up",
 			"down",
 			"left",
 			"right",
+			"up-left",
+			"up-right",
+			"down-left",
+			"down-right",
 		]
+		self.direction = self.get_direction()
 
 		# physics
 		self.physics = Physics()
@@ -59,30 +72,47 @@ class Enemy(Entity):
 			print("player in aggro range")
 
 	def get_direction(self):
-		if self.stats["GRAVITY"]:
-			self.direction = random.choice(("right", "left"))
+		if not self.flying:
+			return random.choice(("right", "left"))
 		else:
-			self.direction = random.choice(self.directions)
+			return random.choice(self.directions)
+			# self.direction = random.choice(self.directions)
 
-	def patrol(self):
-		for sprite in self.constraints.sprites():
-			if self.rect.colliderect(sprite.rect):
-				if self.direction == "right":
-					self.direction = "left"
-				elif self.direction == "left":
-					self.direction = "right"
-				elif self.direction == "up":
-					self.direction = "down"
-				elif self.direction == "down":
-					self.direction = "up"
-				else:
-					pass
-					
-				if self.rect.right >= sprite.rect.left:
-					self.rect.right = sprite.rect.left
-				elif self.rect.left <= sprite.rect.right:
-					self.rect.left = sprite.rect.right
+	def approach(self, player, world_shift):
+		# set vector equal to entity's position
+		player_vector = pygame.math.Vector2(player.rect.center)
+		enemy_vector = pygame.math.Vector2(self.rect.center)
 		
+		# get distance between the vectors
+		distance = self.get_vector_distance(player_vector, enemy_vector)
+
+		print(distance)
+
+		# determine direction to go if there is distance to be traveled
+		if distance > 0:
+			self.velocity = (player_vector - enemy_vector).normalize()
+		# else:
+		# 	self.direction = self.get_direction()
+		
+		# update velocity and position 
+		self.velocity = self.velocity * self.speed
+		self.position += self.velocity
+
+		# apply updated position to rect
+		self.rect.centerx = self.position.x + world_shift.x
+		self.rect.centery = self.position.y + world_shift.y
+
+	def get_vector_distance(self, v1, v2):
+		return(v1 - v2).magnitude()
+
+	def manage_aggro(self, world_shift):
+		self.aggro_range.center = self.rect.center
+		if self.game.level.player.rect.colliderect(self.aggro_range):
+			print("player in aggro range")
+			# self.approach(self.game.level.player, world_shift)
+		pygame.draw.rect(pygame.display.get_surface(), "blue", self.aggro_range)
+	
+	def move(self):
 		match self.direction:
 			case "right":
 				self.velocity.x = self.speed
@@ -90,30 +120,59 @@ class Enemy(Entity):
 			case "left":
 				self.velocity.x = -self.speed
 				self.facing_right = True
-			# case "up":
-				# self.velocity.y = -self.speed
-			# case "down":
-				# self.velocity.y = self.speed
+			case "up":
+				self.velocity.y = -self.speed
+			case "down":
+				self.velocity.y = self.speed
+			# Diagonals
+			case "up-left":
+				self.velocity.x = -self.speed
+				self.velocity.y = -self.speed
+			case "up-right":
+				self.velocity.x = self.speed
+				self.velocity.y = self.speed
+			case "down-left":
+				self.velocity.x = -self.speed
+				self.velocity.y = self.speed
+			case "down-right":
+				self.velocity.x = self.speed
+				self.velocity.y = self.speed
+			case "stop":
+				self.velocity.x = 0
+				self.velocity.y = 0
 
 	def take_knockback(self, knockback:int, damage:int):
 		if self.velocity.x < 0:
+			self.hit = True
 			self.velocity.x += knockback
 			self.health -= damage
 		elif self.velocity.x > 0:
+			self.hit = True
 			self.velocity.x += knockback
 			self.health -= damage
+		else:
+			self.hit = False
 
 	def update(self, world_shift):
-		# self.get_direction()
-		self.rect.x += world_shift.x
-		self.patrol()
+		print(self.change_direction_timer)
+		# AGGRO
+		self.manage_aggro(world_shift)
+		self.rect.x += world_shift.x  # account for camera offset
+		self.rect.y += world_shift.y  # account for camera offset
+		self.rect.y += self.velocity.y
+		self.move()
 		self.get_status()
 		self.animate()
-
-		print(self.velocity.x)
 
 		self.physics.horizontal_movement_collision(self, self.terrain_tiles)
 		if self.stats["GRAVITY"] == True:
 			self.physics.apply_gravity(self, GRAVITY)
 		self.physics.vertical_movement_collision(self, self.terrain_tiles)
+
+		self.change_direction_timer -= 1
+		if self.change_direction_timer <= 0:
+			self.direction = self.get_direction()
+			self.change_direction_timer = 80
+
+
 
