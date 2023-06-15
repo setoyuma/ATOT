@@ -13,10 +13,10 @@ class Camera():
 		self.interpolation = interpolation
 
 	def horizontal_scroll(self):
-		self.level_scroll.x += (self.player.rect.centerx - self.level_scroll.x - (SCREEN_SIZE[0]//2 - self.player.size.x)) / self.interpolation
+		self.level_scroll.x += (self.player.rect.centerx - self.level_scroll.x - (HALF_WIDTH - self.player.size.x)) / self.interpolation
 
 	def vertical_scroll(self):
-		self.level_scroll.y += ((self.player.rect.centery - 80) - self.level_scroll.y - (SCREEN_SIZE[1]//2 - self.player.size.y)) / self.interpolation
+		self.level_scroll.y += ((self.player.rect.centery - 80) - self.level_scroll.y - (HALF_HEIGHT - self.player.size.y)) / self.interpolation
 
 	def update_position(self):
 		self.horizontal_scroll()
@@ -31,7 +31,7 @@ class Player(Entity):
 		self.frame_index = 0
 		self.animation_speed = 0.25
 		self.image = self.animations['idle'][self.frame_index]
-		self.rect = self.image.get_rect(topleft = position)
+		self.rect = self.image.get_rect(topleft=position)
 		self.projectiles = []
 
 		# player stats
@@ -44,13 +44,10 @@ class Player(Entity):
 		self.attacking = False
 		self.dashing = False
 
-	""" PLAYER ASSETS """
 	def import_character_assets(self):
-		character_path = '../assets/character/'
 		self.animations = {'idle':[],'run':[],'jump':[],'fall':[]}
-
 		for animation in self.animations.keys():
-			full_path = character_path + animation
+			full_path = CHAR_PATH + animation
 			self.animations[animation] = scale_images(import_folder(full_path), self.size)
 
 	def animate(self):
@@ -62,8 +59,8 @@ class Player(Entity):
 			self.frame_index = 0
 
 		image = animation[int(self.frame_index)]
+
 		if self.facing_right:
-			# self.image = image
 			flipped_image = pygame.transform.flip(image,False,False)
 			self.image = flipped_image
 		else:
@@ -81,11 +78,11 @@ class Player(Entity):
 			self.velocity.x = -self.speed
 		else:
 			self.velocity.x = 0
-		
+
 		# the Entity class has atttributes to verify where a collision is happening.
 		if keys[pygame.K_SPACE] and self.collide_bottom:
 			self.velocity.y = self.jump_force
-	
+
 		if self.attacking:
 			self.attack()
 
@@ -98,18 +95,14 @@ class Player(Entity):
 	def attack(self):
 		if self.facing_right:
 			hitbox = pygame.Rect(
-				(
-				(self.rect.x + 40) - self.game.camera.level_scroll.x, 
-				(self.rect.y + 25) - self.game.camera.level_scroll.y
-				), 
+				((self.rect.x + 40) - self.game.camera.level_scroll.x, 
+				 (self.rect.y + 25) - self.game.camera.level_scroll.y), 
 				(60, 40)
 				)
 		elif not self.facing_right:
 			hitbox = pygame.Rect(
-				(
-				(self.rect.x - 13) - self.game.camera.level_scroll.x, 
-				(self.rect.y + 25) - self.game.camera.level_scroll.y
-				), 
+				((self.rect.x - 13) - self.game.camera.level_scroll.x, 
+				 (self.rect.y + 25) - self.game.camera.level_scroll.y), 
 				(60, 40)
 				)
 		pygame.draw.rect(pygame.display.get_surface(), "red", hitbox)
@@ -153,7 +146,6 @@ class Player(Entity):
 			self.dash_timer -= 1
 
 		if self.dash_timer <= 0 or not self.dashing:
-			# print("dash timer reset")
 			self.dashing = False
 			self.dash_timer = 10
 
@@ -163,40 +155,9 @@ class Level():
 		self.level_data = level_data
 		self.display_surface = surface
 
-		# Lighting
 		self.light_list = []
-
-		# particles
 		self.particles = []
-
-		self.terrain = pygame.sprite.Group()  # Terrain sprites group
-		self.lights = pygame.sprite.Group()  # light sprites group
-		self.projectiles = pygame.sprite.Group()  # projectiles sprites group
-		self.particles = pygame.sprite.Group()  # particles sprites group
-		self.foreground = pygame.sprite.Group()  #  Foreground group
-		self.background = pygame.sprite.Group()  # Background sprites group
-		self.constraints = pygame.sprite.Group()  # Constraint sprites group
-
-		# Terrain layout
-		terrain_layout = import_csv_layout(self.level_data['terrain'])
-		self.create_tile_group(terrain_layout, 'terrain', 64)
-
-		# light layout
-		light_layout = import_csv_layout(level_data['torch'])  # Load light layout from CSV
-		self.create_tile_group(light_layout, 'light', 64)  # Create light tile sprites
-		
-		# Foreground layout
-		foreground_layout = import_csv_layout(level_data['foreground'])  # Load Foreground layout from CSV
-		self.create_tile_group(foreground_layout, 'foreground', 64)  # Create Foreground tile sprites
-		
-		# Background layout
-		background_layout = import_csv_layout(level_data['background'])  # Load Background layout from CSV
-		self.create_tile_group(background_layout, 'background', 64)  # Create Background tile sprites
-
-		# Player layout
-		player_layout = import_csv_layout(level_data['player'])  # Load Player layout from CSV
-		self.player_setup(player_layout)  # Set up the Player
-
+		self.create_groups()
 		self.world_layers = [
 			self.background,
 			self.terrain,
@@ -205,16 +166,33 @@ class Level():
 			self.game.player_group,
 			self.particles,
 			self.foreground,
-			self.constraints,
+			self.constraints
 		]
 
 		self.calculate_level_size()
-
 		self.level_topleft = self.terrain.sprites()[0].rect
 		self.level_bottomright = self.terrain.sprites()[len(self.terrain)-1].rect
 
 	def create_groups(self):
-		pass
+		self.terrain = pygame.sprite.Group()  # Terrain sprites group
+		self.lights = pygame.sprite.Group()  # light sprites group
+		self.projectiles = pygame.sprite.Group()  # projectiles sprites group
+		self.particles = pygame.sprite.Group()  # particles sprites group
+		self.foreground = pygame.sprite.Group()  #  Foreground group
+		self.background = pygame.sprite.Group()  # Background sprites group
+		self.constraints = pygame.sprite.Group()  # Constraint sprites group
+
+		for layout_name in ["terrain", "foreground", "background"]:
+			layout = import_csv_layout(self.level_data[layout_name])
+			self.create_tile_group(layout, layout_name, 64)
+
+		# light layout
+		light_layout = import_csv_layout(self.level_data['torch'])  # Load light layout from CSV
+		self.create_tile_group(light_layout, 'light', 64)  # Create light tile sprites
+
+		# Player layout
+		player_layout = import_csv_layout(self.level_data['player'])  # Load Player layout from CSV
+		self.player_setup(player_layout)  # Set up the Player
 
 	def calculate_level_size(self):
 		max_right = 0
@@ -302,6 +280,15 @@ class Particle(pygame.sprite.Sprite):
 class Game():
 	def __init__(self):
 		self.setup_pygame()
+		self.setup_world()
+
+	def setup_pygame(self):
+		self.screen = pygame.display.set_mode(SCREEN_SIZE)
+		self.scaled_display = pygame.Surface((SCREEN_SIZE[0]//3, SCREEN_SIZE[1]//3))
+		self.clock = pygame.time.Clock()
+		pygame.display.set_caption("ATOT")
+
+	def setup_world(self):
 		self.current_level = 2
 		self.player_group = pygame.sprite.GroupSingle()
 		self.level = Level(self, levels[self.current_level], self.screen)
@@ -315,12 +302,6 @@ class Game():
 			[0.25, [380, 120, 80, 100]],
 			[0.5, [550, 200, 80, 280]],
 		]
-
-	def setup_pygame(self):
-		self.screen = pygame.display.set_mode(SCREEN_SIZE)
-		self.scaled_display = pygame.Surface((SCREEN_SIZE[0]//3, SCREEN_SIZE[1]//3))
-		self.clock = pygame.time.Clock()
-		pygame.display.set_caption("ATOT")
 
 	def draw_fps(self):
 		fpsCounter = int(self.clock.get_fps())
@@ -369,22 +350,21 @@ class Game():
 	def update_background(self):
 		self.screen.fill([180, 20, 80])
 		# self.scaled_display.fill([180, 20, 80])
-		for object in self.background_objects:
-			object_rect = pygame.Rect(
-				object[1][0] - self.camera.level_scroll.x * object[0], 
-				object[1][1], 
-				object[1][2], 
-				object[1][3]
+		for obj in self.background_objects:
+			obj_rect = pygame.Rect(
+				obj[1][0] - self.camera.level_scroll.x * obj[0], 
+				obj[1][1], 
+				obj[1][2], 
+				obj[1][3]
 			)
-			if object[0] == 0.25:
-				pygame.draw.rect(self.screen, [0, 0, 125], object_rect)
-			elif object[0] == 0.5:
-				pygame.draw.rect(self.screen, [9, 91, 85], object_rect)
+			if obj[0] == 0.25:
+				pygame.draw.rect(self.screen, [0, 0, 125], obj_rect)
+			elif obj[0] == 0.5:
+				pygame.draw.rect(self.screen, [9, 91, 85], obj_rect)
 
 	def update_mouse_particles(self):
-		self.particles.append(
-			Particle(self, (self.mouse_pos[0], self.mouse_pos[1]), (random.randint(0,20) / 10 - 1, -2), random.randint(6,12), self.level.particles)
-		)
+		mx, my = self.mouse_pos
+		self.particles.append(Particle(self, (mx, my), (random.randint(0,20) / 10 - 1, -2), random.randint(6,12), self.level.particles))
 		
 		for particle in self.particles:
 			particle.position.x += particle.velocity.x
