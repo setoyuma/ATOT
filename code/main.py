@@ -1,7 +1,6 @@
 import random
 
 from projectile import Projectile
-from particle import Particle
 from game_data import levels
 from BLACKFORGE2 import *
 from CONSTANTS import*
@@ -92,9 +91,9 @@ class Player(Entity):
 
 	def dash(self):
 		if self.dashing and self.facing_right and not self.collide_bottom:
-			self.velocity.x += 5.3
+			self.velocity.x += self.speed * 2
 		elif self.dashing and not self.facing_right and not self.collide_bottom:
-			self.velocity.x -= 5.3
+			self.velocity.x -= self.speed * 2
 
 	def attack(self):
 		if self.facing_right:
@@ -136,7 +135,6 @@ class Player(Entity):
 		surface.blit(self.image, (self.rect.x-self.game.camera.level_scroll.x, self.rect.y-self.game.camera.level_scroll.y))
 
 	def update(self, surface:pygame.Surface, terrain:pygame.sprite.Group):
-		# self.draw(surface)
 		self.move()
 		self.on_screen_check()
 		self.get_status()
@@ -174,6 +172,7 @@ class Level():
 		self.terrain = pygame.sprite.Group()  # Terrain sprites group
 		self.lights = pygame.sprite.Group()  # light sprites group
 		self.projectiles = pygame.sprite.Group()  # projectiles sprites group
+		self.particles = pygame.sprite.Group()  # particles sprites group
 		self.foreground = pygame.sprite.Group()  #  Foreground group
 		self.background = pygame.sprite.Group()  # Background sprites group
 		self.constraints = pygame.sprite.Group()  # Constraint sprites group
@@ -204,6 +203,7 @@ class Level():
 			self.lights,
 			self.projectiles,
 			self.game.player_group,
+			self.particles,
 			self.foreground,
 			self.constraints,
 		]
@@ -269,20 +269,6 @@ class Level():
 			light.apply_lighting(self.display_surface, light.light_layer, light_source_list=self.lightes)
 			break
 	
-	def particle_handler(self):
-		# Handle the particles in the level
-		# light particles
-
-		for light in self.lights.sprites():
-			self.particles.append(Particle(light.rect.centerx, light.rect.centery, '', 3, [0,255,255], 'light'))
-
-		# Draw and update particles
-		for particle in self.particles:
-			particle.update(self.camera)
-			particle.draw(self.display_surface, self.camera)
-
-		self.particles = [particle for particle in self.particles if not particle.is_expired()]
-
 	def draw_level(self, surface:pygame.Surface):
 		for layer in self.world_layers:			
 			for sprite in layer.sprites():
@@ -290,11 +276,28 @@ class Level():
 
 	def update_level(self):
 		self.light_handler()
-		self.particle_handler()
 
 	def show_level_markers(self, surface:pygame.Surface, colors:list):
 		pygame.draw.rect(surface, colors[0], self.level_topleft)
 		pygame.draw.rect(surface, colors[1], self.level_bottomright)
+
+class Particle(pygame.sprite.Sprite):
+	def __init__(self, game, position:tuple, velocity:tuple, radius:int, groups):
+		super().__init__(groups)
+		self.game = game
+		self.position = pygame.math.Vector2(position)
+		self.velocity = pygame.math.Vector2(velocity)
+		self.radius = radius
+		self.image = pygame.Surface((self.radius, self.radius))
+		self.image.set_colorkey([0,0,0])
+		self.rect = pygame.Rect(self.position, (self.radius, self.radius))
+
+	def emit(self):
+		self.position.x += self.velocity.x
+		self.position.y += self.velocity.y
+		self.radius -= 0.1
+		self.velocity.y += 0.2
+		pygame.draw.circle(self.game.screen, "white", [int(self.position.x), int(self.position.y)], int(self.radius))
 
 class Game():
 	def __init__(self):
@@ -303,6 +306,9 @@ class Game():
 		self.player_group = pygame.sprite.GroupSingle()
 		self.level = Level(self, levels[self.current_level], self.screen)
 		self.camera = Camera(self, 20)
+		self.world_brightness = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
+		self.world_brightness.convert_alpha()
+		self.world_brightness.fill([WORLD_BRIGHTNESS, WORLD_BRIGHTNESS, WORLD_BRIGHTNESS])
 		self.particles = []
 		self.background_objects = [
 			[0.25, [100, 250, 80, 300]],
@@ -322,6 +328,8 @@ class Game():
 
 	def send_frame(self):
 		self.clock.tick(FPS)
+		self.screen.blit(self.world_brightness, (0,0), special_flags=BLEND_RGB_MULT)
+		self.update_mouse_particles()
 		# self.screen.blit(pygame.transform.scale(self.scaled_display, (SCREEN_SIZE[0], SCREEN_SIZE[1])), (0,0))
 		pygame.display.flip()
 
@@ -358,12 +366,6 @@ class Game():
 				if event.key == pygame.K_LSHIFT:
 					self.player.dashing = False
 
-	def glow_surface(self, radius, color):
-		surface = pygame.Surface((radius * 2, radius * 2))
-		pygame.draw.circle(surface, color, (radius, radius), radius)
-		surface.set_colorkey([0,0,0])
-		return surface
-
 	def update_background(self):
 		self.screen.fill([180, 20, 80])
 		# self.scaled_display.fill([180, 20, 80])
@@ -380,40 +382,51 @@ class Game():
 				pygame.draw.rect(self.screen, [9, 91, 85], object_rect)
 
 	def update_mouse_particles(self):
-		self.particles.append([[self.mouse_pos[0], self.mouse_pos[1]], [random.randint(0,20) / 10 - 1, -2], random.randint(6,12)])
+		self.particles.append(
+			Particle(self, (self.mouse_pos[0], self.mouse_pos[1]), (random.randint(0,20) / 10 - 1, -2), random.randint(6,12), self.level.particles)
+		)
 		
 		for particle in self.particles:
-			particle[0][0] += particle[1][0]
-			particle[0][1] += particle[1][1]
-			particle[2] -= 0.1
-			particle[1][1] += 0.2
+			particle.position.x += particle.velocity.x
+			particle.position.y += particle.velocity.y
+			particle.radius -= 0.1
+			particle.velocity.y += 0.2
 		
-			pygame.draw.circle(self.screen, "white", [int(particle[0][0]), int(particle[0][1])], int(particle[2]))
-			if particle[2] <= 0:
+			pygame.draw.circle(self.screen, "white", [int(particle.position.x), int(particle.position.y)], int(particle.radius))
+			if particle.radius <= 0:
 				self.particles.remove(particle)
 
-			glow_radius = particle[2] * 2
-			surf = self.glow_surface(glow_radius, [20,20,20])
-			pos = (int(particle[0][0] - glow_radius), int(particle[0][1] - glow_radius))
+			glow_radius = particle.radius * 2
+			surf = glow_surface(glow_radius, [20,20,20])
+			pos = (int(particle.position.x - glow_radius), int(particle.position.y - glow_radius))
+			
 			self.screen.blit(surf, pos, special_flags=BLEND_RGB_ADD)
 
 	def run(self):
 		self.running = True
 		while self.running:
+			self.handle_events()
+
 			for projectile in self.player.projectiles:
 				projectile.update(self.camera.level_scroll)
 
 			self.handle_events()
 			self.mouse_pos = pygame.mouse.get_pos()
-			self.update_mouse_particles()
 			self.camera.update_position()
 			self.update_background()
 			self.level.update_level()
-			self.player.update(self.screen, self.level.terrain)
 
 			self.level.draw_level(self.screen)
+			self.player.update(self.screen, self.level.terrain)
 			self.draw_fps()
 			self.send_frame()
+
+def glow_surface(radius, color):
+		surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+		surface.convert_alpha()
+		pygame.draw.circle(surface, color, (radius, radius), radius)
+		surface.set_colorkey([0,0,0])
+		return surface
 
 if __name__ == "__main__":
 	game = Game()
