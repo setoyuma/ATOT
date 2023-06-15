@@ -1,5 +1,4 @@
 from BLACKFORGE2 import *
-
 from CONSTANTS import *
 
 class Enemy(Entity):

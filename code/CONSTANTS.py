@@ -2,20 +2,26 @@ notes = {
 	"Launcher" : "Added patch notes section, and character list.",
 	"Game" : "Added decoration tiles and level system."
 }
+
+# screen
+FPS = 60
+
 SCREEN_WIDTH = 1400
 SCREEN_HEIGHT = 800
 SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
-FPS = 60
+
+HALF_WIDTH = SCREEN_WIDTH // 2
+HALF_HEIGHT = SCREEN_HEIGHT // 2
+CENTER = (HALF_WIDTH, HALF_HEIGHT)
+
+# world
 TILE_SIZE = 64
 WORLD_BRIGHTNESS = 120
 GRAVITY = 0.68
 
-# character paths
-ALRYN_PATH = '../assets/character/alryn/'
-BUNNY_PATH = '../assets/character/agravaine/'
-
-# enemy paths
-MOSS_SENTINEL = '../assets/enemy/mossSent/'
+# path shortcuts
+CHAR_PATH = '../assets/character/'
+ENEMY_PATH = '../assets/enemy/'
 
 # colors 
 BG_COLOR = '#060C17'
