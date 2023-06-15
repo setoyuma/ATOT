@@ -1,3 +1,5 @@
+import numpy as np
+
 notes = {
 	"Launcher" : "Added patch notes section, and character list.",
 	"Game" : "Added decoration tiles and level system."
@@ -31,6 +33,15 @@ ENEMY_PATH = '../assets/enemy/'
 BG_COLOR = '#060C17'
 PLAYER_COLOR = '#C4F7FF'
 TILE_COLOR = '#94D7F2'
+
+# particle datatype
+particle_dtype = np.dtype([
+	('position', float, (2,)),  # x, y
+	('velocity', float, (2,)),  # vx, vy
+	('color', float, (4,)),     # RGBA
+	('size', float),            # Particle size
+	('lifespan', float),        # Lifespan
+])
 
 """ CHARACTER STATS """
 CHARACTERS = {

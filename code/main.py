@@ -1,3 +1,4 @@
+import numpy as np
 import random
 
 from projectile import Projectile
@@ -278,7 +279,6 @@ class Level():
 					self.game.player = Player(self.game, "ALRYN", 96, (x, y), 2, self.game.player_group)
 
 	def respawn(self):
-		print(SCREEN_HEIGHT + 100)
 		if self.game.player.rect.bottom >= self.level_height + 300:
 			self.game.player.rect.x = self.player_spawn.x
 			self.game.player.rect.y = self.player_spawn.y
@@ -304,32 +304,83 @@ class Level():
 		pygame.draw.rect(surface, colors[0], self.level_topleft)
 		pygame.draw.rect(surface, colors[1], self.level_bottomright)
 
-class Particle(pygame.sprite.Sprite):
-	def __init__(self, game, color:list, position:tuple, velocity:tuple, radius:int, groups):
-		super().__init__(groups)
-		self.game = game
-		self.color = color
-		self.position = pygame.math.Vector2(position)
-		self.velocity = pygame.math.Vector2(velocity)
-		self.radius = radius
-		self.image = pygame.Surface((self.radius, self.radius))
-		self.image.set_colorkey([0,0,0])
-		self.rect = pygame.Rect(self.position, (self.radius, self.radius))
 
-	def emit(self):
-		self.position.x += self.velocity.x
-		self.position.y += self.velocity.y
-		self.radius -= 0.1
-		self.velocity.y += 0.2
-		pygame.draw.circle(self.game.screen, self.color, [int(self.position.x), int(self.position.y)], int(self.radius))
+class ParticleSystem2D:
+	def __init__(self, game, system_position, N, lifespan, color, size, system_velocity=np.array([0,0]), image=None):
+		self.game = game
+		self.system_position = system_position
+		self.lifespan = lifespan
+		self.image = image
+		self.color = color
+		self.size = size
+		self.system_velocity = system_velocity
+		self.particles = np.empty(N, dtype=particle_dtype)
+		if N != 0:
+			self.emit(N, system_position)
+
+	def emit(self, num_particles, pos):
+		# Check if we have enough "dead" particles to reuse
+		dead_particles = np.where(self.particles['lifespan'] <= 0)[0]
+		num_reuse = min(num_particles, len(dead_particles))
+
+		# Reuse dead particles
+		if num_reuse > 0:
+			self.particles['position'][dead_particles[:num_reuse]] = pos
+			self.particles['velocity'][dead_particles[:num_reuse]] = np.random.uniform(-1, 1, (num_reuse, 2))
+			self.particles['color'][dead_particles[:num_reuse]] = np.random.uniform(0, 1, (num_reuse, 4))
+			self.particles['size'][dead_particles[:num_reuse]] = np.random.uniform(self.size, self.size, num_reuse)
+			self.particles['lifespan'][dead_particles[:num_reuse]] = np.random.uniform(self.lifespan, self.lifespan, num_reuse)
+
+		# If we still need to emit more particles, append them to the end of the array
+		if num_particles > num_reuse:
+			new_particles = np.zeros(num_particles - num_reuse, dtype=self.particles.dtype)
+			new_particles['position'] = pos
+			new_particles['velocity'] = np.random.uniform(-1, 1, (num_particles - num_reuse, 2))
+			new_particles['color'] = np.random.uniform(0, 1, (num_particles - num_reuse, 4))
+			new_particles['size'] = np.random.uniform(self.size, self.size, num_particles - num_reuse)
+			new_particles['lifespan'] = np.random.uniform(self.lifespan, self.lifespan, num_particles - num_reuse)
+			self.particles = np.concatenate((self.particles, new_particles))
+
+	def update(self):
+		"""
+		old_system_position = np.copy(self.system_position)
+		#self.system_position = pygame.mouse.get_pos()
+		shift = self.system_position - old_system_position
+		self.particles['position'] += shift
+		"""
+
+		# Update particles position with their velocity
+		self.particles['position'] += self.particles['velocity']
+
+		# Then update all particles with system's velocity
+		self.particles['position'] += self.system_velocity
+
+		self.particles['lifespan'] -= 1.0
+
+		# Create a mask of "alive" particles
+		alive_mask = self.particles['lifespan'] > 0
+
+		# Create a new array of particles that only includes alive particles
+		self.particles = self.particles[alive_mask]
+
+	def draw(self):
+		for particle in self.particles:
+			int_position = [int(x) for x in particle["position"]]
+			size = self.size
+			pygame.draw.circle(self.game.screen, self.color, int_position, size)
+			surf = glow_surface(size*2, (50,50,50), 50)
+			offset_pos = (int_position[0] - size*2, int_position[1] - size*2)
+			self.game.screen.blit(surf, offset_pos, special_flags=BLEND_RGB_ADD)
+
 
 class Game():
 	def __init__(self):
 		self.setup_pygame()
 		self.setup_world()
+		self.mouse_particles = ParticleSystem2D(self, pygame.mouse.get_pos(), N=50, lifespan=100, color=(60,237,5), size=3)
 
 	def setup_pygame(self):
-		self.screen = pygame.display.set_mode(SCREEN_SIZE)
+		self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.SCALED)
 		self.scaled_display = pygame.Surface((SCREEN_SIZE[0]//3, SCREEN_SIZE[1]//3))
 		self.clock = pygame.time.Clock()
 		pygame.display.set_caption("ATOT")
@@ -342,7 +393,6 @@ class Game():
 		self.world_brightness = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
 		self.world_brightness.convert_alpha()
 		self.world_brightness.fill([WORLD_BRIGHTNESS, WORLD_BRIGHTNESS, WORLD_BRIGHTNESS])
-		self.particles = []
 		self.background_objects = [
 			[0.25, [100, 250, 80, 300]],
 			[0.25, [380, 120, 80, 100]],
@@ -356,7 +406,9 @@ class Game():
 	def send_frame(self):
 		self.clock.tick(FPS)
 		self.screen.blit(self.world_brightness, (0,0), special_flags=BLEND_RGB_MULT)
-		self.update_mouse_particles()
+		self.mouse_particles.update()
+		self.mouse_particles.emit(1, self.mouse_pos)
+		self.mouse_particles.draw()
 		self.level.light_handler()
 		# self.screen.blit(pygame.transform.scale(self.scaled_display, (SCREEN_SIZE[0], SCREEN_SIZE[1])), (0,0))
 		pygame.display.flip()
@@ -408,20 +460,6 @@ class Game():
 				pygame.draw.rect(self.screen, [0, 0, 125], obj_rect)
 			elif obj[0] == 0.5:
 				pygame.draw.rect(self.screen, [9, 91, 85], obj_rect)
-
-	def update_mouse_particles(self):
-		mx, my = self.mouse_pos
-		self.particles.append(Particle(self, [255,255,255], (mx, my), (random.randint(0,20) / 10 - 1, -2), random.randint(6,12), self.level.particles))
-		
-		for particle in self.particles:
-			particle.emit()
-			if particle.radius <= 0:
-				self.particles.remove(particle)
-			glow_radius = particle.radius * 2
-			surf = glow_surface(glow_radius, [0,50,100], 100)
-			pos = (int(particle.position.x - glow_radius), int(particle.position.y - glow_radius))
-			
-			self.screen.blit(surf, pos, special_flags=BLEND_RGB_ADD)
 
 	def run(self):
 		self.running = True
