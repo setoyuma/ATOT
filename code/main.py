@@ -161,10 +161,46 @@ class Level():
 		self.world_layers = [
 			self.background,
 			self.terrain,
-			self.lights,
 			self.projectiles,
 			self.game.player_group,
 			self.particles,
+			self.lights,
+			self.foreground,
+			self.constraints
+		]
+
+		self.calculate_level_size()
+		self.level_topleft = self.terrain.sprites()[0].rect
+		self.level_bottomright = self.terrain.sprites()[len(self.terrain)-1].rect
+
+	def create_groups(self):
+		self.terrain = pygame.sprite.Group()  # Terrain sprites group
+		self.lights = pygame.sprite.Group()  # light sprites group
+		self.projectiles = pygame.sprite.Group()  # projectiles sprites group
+		self.particles = pygame.sprite.Group()  # particles sprites group
+		self.foreground = pygame.sprite.Group()  #  Foreground group
+		self.background = pygame.sprite.Group()  # Background sprites group
+		self.constraints = pygame.sprite.Group()  # Constraint sprites group
+
+		for layout_name in ["terrain", "foreground", "background"]:
+			layout = import_csv_layout(self.level_data[layout_name])
+			self.create_tile_group(layout, layout_name, 64)
+
+		# light layout
+		light_layout = import_csv_layout(self.level_data['torch'])  # Load light layout from CSV
+		self.create_tile_group(light_layout, 'light', 64)  # Create light tile sprites
+
+		# Player layout
+		player_layout = import_csv_layout(self.level_data['player'])  # Load Player layout from CSV
+		self.player_setup(player_layout)  # Set up the Player
+
+		self.world_layers = [
+			self.background,
+			self.terrain,
+			self.projectiles,
+			self.game.player_group,
+			self.particles,
+			self.lights,
 			self.foreground,
 			self.constraints
 		]
@@ -227,9 +263,9 @@ class Level():
 							sprite = StaticTile((x, y), [self.foreground], tile_list[int(value)])
 						case 'background':
 							sprite = StaticTile((x, y), [self.background], tile_list[int(value)])
-						# case 'light':
-						# 	self.light_list.append(Light(50, "teal", 15, SCREEN_WIDTH, SCREEN_HEIGHT, WORLD_BRIGHTNESS))
-						# 	light = StaticTile((x, y), self.lightes, tile_list[int(value)])
+						case 'light':
+							self.light_list.append([[x,y], 100, 30])
+							light = StaticTile((x, y), self.lights, tile_list[int(value)])
 
 	def player_setup(self, layout):
 		# Set up the player based on the layout
@@ -238,14 +274,23 @@ class Level():
 				x = col_index * TILE_SIZE
 				y = row_index * TILE_SIZE
 				if val == '0':
+					self.player_spawn = pygame.math.Vector2(x,y)
 					self.game.player = Player(self.game, "ALRYN", 96, (x, y), 2, self.game.player_group)
+
+	def respawn(self):
+		print(SCREEN_HEIGHT + 100)
+		if self.game.player.rect.bottom >= self.level_height + 300:
+			self.game.player.rect.x = self.player_spawn.x
+			self.game.player.rect.y = self.player_spawn.y
 
 	""" HANDLERS """
 	def light_handler(self):
 		for light in self.light_list:
-			light.world_light()
-			light.apply_lighting(self.display_surface, light.light_layer, light_source_list=self.lightes)
-			break
+			surf = glow_surface(light[1], [0,50,100], light[2])
+			pos = (int((light[0][0] - self.game.camera.level_scroll.x) - light[1]), int((light[0][1] - self.game.camera.level_scroll.y) - light[1]))
+			self.game.screen.blit(surf, pos, special_flags=BLEND_RGB_ADD)
+			# light.world_light()
+			# light.apply_lighting(self.display_surface, light.light_layer, light_source_list=self.lights)
 	
 	def draw_level(self, surface:pygame.Surface):
 		for layer in self.world_layers:			
@@ -253,16 +298,17 @@ class Level():
 				surface.blit(sprite.image, (sprite.rect.x - self.game.camera.level_scroll.x, sprite.rect.y - self.game.camera.level_scroll.y))
 
 	def update_level(self):
-		self.light_handler()
+		self.respawn()
 
 	def show_level_markers(self, surface:pygame.Surface, colors:list):
 		pygame.draw.rect(surface, colors[0], self.level_topleft)
 		pygame.draw.rect(surface, colors[1], self.level_bottomright)
 
 class Particle(pygame.sprite.Sprite):
-	def __init__(self, game, position:tuple, velocity:tuple, radius:int, groups):
+	def __init__(self, game, color:list, position:tuple, velocity:tuple, radius:int, groups):
 		super().__init__(groups)
 		self.game = game
+		self.color = color
 		self.position = pygame.math.Vector2(position)
 		self.velocity = pygame.math.Vector2(velocity)
 		self.radius = radius
@@ -275,7 +321,7 @@ class Particle(pygame.sprite.Sprite):
 		self.position.y += self.velocity.y
 		self.radius -= 0.1
 		self.velocity.y += 0.2
-		pygame.draw.circle(self.game.screen, "white", [int(self.position.x), int(self.position.y)], int(self.radius))
+		pygame.draw.circle(self.game.screen, self.color, [int(self.position.x), int(self.position.y)], int(self.radius))
 
 class Game():
 	def __init__(self):
@@ -311,6 +357,7 @@ class Game():
 		self.clock.tick(FPS)
 		self.screen.blit(self.world_brightness, (0,0), special_flags=BLEND_RGB_MULT)
 		self.update_mouse_particles()
+		self.level.light_handler()
 		# self.screen.blit(pygame.transform.scale(self.scaled_display, (SCREEN_SIZE[0], SCREEN_SIZE[1])), (0,0))
 		pygame.display.flip()
 
@@ -364,20 +411,14 @@ class Game():
 
 	def update_mouse_particles(self):
 		mx, my = self.mouse_pos
-		self.particles.append(Particle(self, (mx, my), (random.randint(0,20) / 10 - 1, -2), random.randint(6,12), self.level.particles))
+		self.particles.append(Particle(self, [255,255,255], (mx, my), (random.randint(0,20) / 10 - 1, -2), random.randint(6,12), self.level.particles))
 		
 		for particle in self.particles:
-			particle.position.x += particle.velocity.x
-			particle.position.y += particle.velocity.y
-			particle.radius -= 0.1
-			particle.velocity.y += 0.2
-		
-			pygame.draw.circle(self.screen, "white", [int(particle.position.x), int(particle.position.y)], int(particle.radius))
+			particle.emit()
 			if particle.radius <= 0:
 				self.particles.remove(particle)
-
 			glow_radius = particle.radius * 2
-			surf = glow_surface(glow_radius, [20,20,20])
+			surf = glow_surface(glow_radius, [0,50,100], 100)
 			pos = (int(particle.position.x - glow_radius), int(particle.position.y - glow_radius))
 			
 			self.screen.blit(surf, pos, special_flags=BLEND_RGB_ADD)
@@ -401,12 +442,13 @@ class Game():
 			self.draw_fps()
 			self.send_frame()
 
-def glow_surface(radius, color):
-		surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
-		surface.convert_alpha()
-		pygame.draw.circle(surface, color, (radius, radius), radius)
-		surface.set_colorkey([0,0,0])
-		return surface
+def glow_surface(radius, color, intensity):
+	intensity = intensity/100
+	surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+	surface.convert_alpha()
+	pygame.draw.circle(surface, [intensity * value for value in color], (radius, radius), radius)
+	surface.set_colorkey([0,0,0])
+	return surface
 
 if __name__ == "__main__":
 	game = Game()

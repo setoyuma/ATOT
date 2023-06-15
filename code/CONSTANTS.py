@@ -6,6 +6,10 @@ notes = {
 # screen
 FPS = 60
 
+COLORS = {
+	"red"
+}
+
 SCREEN_WIDTH = 1400
 SCREEN_HEIGHT = 800
 SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
