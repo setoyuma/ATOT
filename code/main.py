@@ -6,7 +6,44 @@ from game_data import levels
 from BLACKFORGE2.FORGE import *
 from CONSTANTS import*
 
+class UI():
+	def __init__(self, game, surface):
+		self.game = game
+		self.display = surface
 
+		self.player_hud = get_image('../assets/ui/HUD/player_hud.png')
+		self.player_hud = scale_images([self.player_hud], (320,320))[0]
+	
+	def update_player_HUD(self):
+		# under bars
+		health_under_bar = pygame.Rect((SCREEN_WIDTH-315, 165), (310, 32))
+		pygame.draw.rect(self.display, [0,0,0], health_under_bar)
+		
+		magick_under_bar = pygame.Rect((SCREEN_WIDTH-85, 202), (80, 16))
+		pygame.draw.rect(self.display, [0,0,0], magick_under_bar)
+		
+		spell_shard_1_socket = pygame.Rect((SCREEN_WIDTH-300, 204), (20, 18))
+		pygame.draw.rect(self.display, [0,0,0], spell_shard_1_socket)
+		
+		spell_shard_2_socket = pygame.Rect((SCREEN_WIDTH-274, 204), (20, 18))
+		pygame.draw.rect(self.display, [0,0,0], spell_shard_2_socket)
+
+		magick_bar = pygame.Rect((SCREEN_WIDTH-80, 202), (66 * self.game.player.magick/self.game.player.magick_scale, 16))
+		pygame.draw.rect(self.display, [0,150,200], magick_bar)
+		# bars
+		health_bar = pygame.Rect((SCREEN_WIDTH-315, 165), (310 * self.game.player.health/self.game.player.health_scale, 32))
+		pygame.draw.rect(self.display, [50,0,0], health_bar)
+	
+		
+		if self.game.player.spell_shards > 0:
+			spell_shard_1 = pygame.Rect((SCREEN_WIDTH-300, 205), (30 * self.game.player.spell_shards/2, 16))
+			pygame.draw.rect(self.display, [0,150,200], spell_shard_1)
+		
+		if self.game.player.spell_shards == 2:
+			spell_shard_2 = pygame.Rect((SCREEN_WIDTH-274, 205), (20 * self.game.player.spell_shards/2, 16))
+			pygame.draw.rect(self.display, [0,150,200], spell_shard_2)
+		
+		self.display.blit(self.player_hud, (SCREEN_WIDTH-320,0))
 
 class Enemy(Entity):
 	def __init__(self, game, enemy_type, size, position, speed, groups):
@@ -66,10 +103,18 @@ class Player(Entity):
 		self.projectiles = []
 
 		# player stats
+		self.health = 100
+		self.magick = 50
+		self.spell_shards = 0
 		self.dash_distance = 50
 		self.dash_timer = 20
 		self.dash_counter = 1
 		self.jump_force = CHARACTERS[self.character]["JUMPFORCE"]
+
+		# stat scales
+		self.health_scale = 100
+		self.magick_scale = 50
+		self.spell_shard_scale = 2
 
 		# player status
 		self.status = 'idle'
@@ -219,6 +264,10 @@ class Player(Entity):
 			self.dash_timer = 10
 		if self.collide_bottom:
 			self.dashing = False
+
+		# items
+		if self.spell_shards > 2:
+			self.spell_shards = 2
 
 class Level():
 	def __init__(self, game, level_data, surface):
@@ -472,10 +521,10 @@ class Game():
 		self.current_level = 1
 		self.player_group = pygame.sprite.GroupSingle()
 		self.level = Level(self, levels[self.current_level], self.screen)
-
 		self.enemy = Enemy(self, "moss", 96, (self.player.rect.x + 100, self.player.rect.y - 100), 1, self.level.projectiles)
-
 		self.camera = Camera(self, 100, 20)
+		self.ui = UI(self, self.screen)
+
 		self.world_brightness = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
 		self.world_brightness.convert_alpha()
 		self.world_brightness.fill([WORLD_BRIGHTNESS, WORLD_BRIGHTNESS, WORLD_BRIGHTNESS])
@@ -527,6 +576,14 @@ class Game():
 				if event.key == pygame.K_f:
 					pygame.display.toggle_fullscreen()
 				
+				# player hud testing
+				if event.key == pygame.K_h:
+					self.player.health -= 10
+				if event.key == pygame.K_m:
+					self.player.magick -= 5
+				if event.key == pygame.K_s:
+					self.player.spell_shards += 1
+
 			# key released
 			elif event.type == pygame.KEYUP:
 				if event.key == pygame.K_LSHIFT:
@@ -577,8 +634,7 @@ class Game():
 				if self.player.true_hitbox.colliderect(self.enemy.rect):
 					self.enemy.take_damage(1, self.player, self.enemy.rect.center-self.camera.level_scroll)
 			
-			self.current_level += 1
-
+			self.ui.update_player_HUD()
 			self.send_frame()
 
 			# print(self.camera.level_scroll)
