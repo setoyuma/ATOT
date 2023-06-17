@@ -360,7 +360,7 @@ class Level():
 				y = row_index * TILE_SIZE
 				if val == '0':
 					self.player_spawn = pygame.math.Vector2(x,y)
-					self.game.player = Player(self.game, "ALRYN", 96, (x, y), 25, self.game.player_group)
+					self.game.player = Player(self.game, "ALRYN", 96, (x, y), CHARACTERS["ALRYN"]["SPEED"], self.game.player_group)
 
 	def respawn(self):
 		if self.game.player.rect.bottom >= self.level_height + 300:
@@ -522,17 +522,12 @@ class Game():
 		self.player_group = pygame.sprite.GroupSingle()
 		self.level = Level(self, levels[self.current_level], self.screen)
 		self.enemy = Enemy(self, "moss", 96, (self.player.rect.x + 100, self.player.rect.y - 100), 1, self.level.projectiles)
-		self.camera = Camera(self, 100, 20)
+		self.camera = Camera(self, 100, 40)
 		self.ui = UI(self, self.screen)
 
 		self.world_brightness = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
 		self.world_brightness.convert_alpha()
 		self.world_brightness.fill([WORLD_BRIGHTNESS, WORLD_BRIGHTNESS, WORLD_BRIGHTNESS])
-		self.background_objects = [
-			[0.25, [100, 250, 80, 300]],
-			[0.25, [380, 120, 80, 100]],
-			[0.5, [550, 200, 80, 280]],
-		]
 
 	def draw_fps(self):
 		fpsCounter = int(self.clock.get_fps())
@@ -600,7 +595,7 @@ class Game():
 			midground,
 			foreground,
 		]
-		full_background = scale_images(full_background, SCREEN_SIZE)
+		full_background = scale_images(full_background, (self.level.level_width, self.level.level_height))
 		self.screen.blit(full_background[0], (0,0)-self.camera.level_scroll * 0.25)
 		self.screen.blit(full_background[1], (0,0)-self.camera.level_scroll * 0.5)
 		self.screen.blit(full_background[2], (0,0)-self.camera.level_scroll * 0.8)

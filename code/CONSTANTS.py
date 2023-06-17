@@ -49,8 +49,8 @@ particle_dtype = np.dtype([
 """ CHARACTER STATS """
 CHARACTERS = {
 	"ALRYN": {
-		"SPEED": 7,
-		"JUMPFORCE": -9,
+		"SPEED": 20,
+		"JUMPFORCE": -10,
 	}
 }
 
