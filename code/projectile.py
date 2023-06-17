@@ -1,28 +1,26 @@
 from BLACKFORGE2 import *
 
 class Projectile(pygame.sprite.Sprite):
-	def __init__(self, type:str, pos:tuple, size:int, speed:int, damage:int, terrain_sprites:pygame.sprite.Group, groups:pygame.sprite.Group, offset:pygame.math.Vector2):
+	def __init__(self, game, type:str, pos:tuple, size:int, speed:int, damage:int, terrain_sprites:pygame.sprite.Group, groups:pygame.sprite.Group, offset:pygame.math.Vector2):
 		super().__init__(groups)
+		self.game = game
 		self.pos = pos
 		self.type = type
-		# print(self.pos)
 		self.size = pygame.math.Vector2(size,size)
 		self.rect = pygame.Rect(pos[0], pos[1], self.size.x, self.size.y)
 		self.speed = speed
 		self.damage = damage
+		self.targeted = False
 		self.terrain = terrain_sprites
-		mx, my = pygame.mouse.get_pos()
 		self.import_assets()
-		# print(mx, my)
-		# print(pos)
+
+		mx, my = pygame.mouse.get_pos()
 		self.dir = (mx - pos[0], my - pos[1])
 		length = math.hypot(*self.dir)
 		if length == 0.0:
 			self.dir = (0, -1)
 		else:
 			self.dir = (self.dir[0]/length, self.dir[1]/length)
-		# print(self.dir)
-		# print("\n")
 
 		self.angle = math.degrees(math.atan2(-self.dir[1], self.dir[0]))
 
@@ -47,8 +45,11 @@ class Projectile(pygame.sprite.Sprite):
 			self.frame_index = 0
 
 		image = animation[int(self.frame_index)]
-		self.image = image
-		self.image = pygame.transform.rotate(self.image, self.angle)
+		if self.targeted:
+			self.image = image
+			self.image = pygame.transform.rotate(self.image, self.angle)
+		else:
+			self.image = image
 
 	def check_collisions(self):
 		for sprite in self.terrain.sprites():
@@ -56,8 +57,12 @@ class Projectile(pygame.sprite.Sprite):
 				self.kill()
 
 	def update(self, offset):
-		self.check_collisions()
-		self.pos = (self.pos[0]+self.dir[0]*self.speed + offset.x, 
-					self.pos[1]+self.dir[1]*self.speed + offset.y)
-		self.rect.center = self.pos
+		# self.check_collisions()
+		self.pos = (
+			self.pos[0]+self.dir[0]*self.speed + offset.x * self.game.dt,
+			self.pos[1]+self.dir[1]*self.speed + offset.y * self.game.dt
+			)
+		self.rect.x += self.pos[0]
+		self.rect.y += self.pos[1]
+		print(self.pos)
 		self.animate()

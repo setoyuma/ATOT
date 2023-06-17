@@ -1,4 +1,6 @@
+from BLACKFORGE2 import *
 import numpy as np
+
 
 notes = {
 	"Launcher" : "Added patch notes section, and character list.",
@@ -6,7 +8,7 @@ notes = {
 }
 
 # screen
-FPS = 60
+FPS = 144
 
 COLORS = {
 	"red"
@@ -22,8 +24,8 @@ CENTER = (HALF_WIDTH, HALF_HEIGHT)
 
 # world
 TILE_SIZE = 64
-WORLD_BRIGHTNESS = 150
-GRAVITY = 0.68
+WORLD_BRIGHTNESS = 255
+GRAVITY = 30
 
 # path shortcuts
 CHAR_PATH = '../assets/character/'
@@ -41,13 +43,14 @@ particle_dtype = np.dtype([
 	('color', float, (4,)),     # RGBA
 	('size', float),            # Particle size
 	('lifespan', float),        # Lifespan
+	('rect', pygame.Rect)		# Rect
 ])
 
 """ CHARACTER STATS """
 CHARACTERS = {
 	"ALRYN": {
 		"SPEED": 7,
-		"JUMPFORCE": -15,
+		"JUMPFORCE": -9,
 	}
 }
 
@@ -71,8 +74,8 @@ CAMERA_BORDERS = {
 FRAME_DURATIONS = {
 	'jump': 0.02,
 	'fall': 0.04,
-	'idle': 0.05,
-	'run': 0.12,
+	'idle': 0.08,
+	'run': .055,
 	'wallJump': 0.05,
-	'attack': 0.05
+	'attack': 0.045
 }

@@ -1,27 +1,59 @@
 import numpy as np
-import random
+import random, time
 
 from projectile import Projectile
 from game_data import levels
-from BLACKFORGE2 import *
+from BLACKFORGE2.FORGE import *
 from CONSTANTS import*
 
-class Camera():
-	def __init__(self, game, interpolation:int):
+
+
+class Enemy(Entity):
+	def __init__(self, game, enemy_type, size, position, speed, groups):
+		super().__init__(size, position, speed, groups)
 		self.game = game
-		self.player = self.game.player
-		self.level_scroll = pygame.math.Vector2()
-		self.interpolation = interpolation
+		self.enemy_type = enemy_type
 
-	def horizontal_scroll(self):
-		self.level_scroll.x += (self.player.rect.centerx - self.level_scroll.x - (HALF_WIDTH - self.player.size.x)) / self.interpolation
+		self.hit = False
+		self.damage_taken = False
 
-	def vertical_scroll(self):
-		self.level_scroll.y += ((self.player.rect.centery - 80) - self.level_scroll.y - (HALF_HEIGHT - self.player.size.y)) / self.interpolation
+		self.health = 100
 
-	def update_position(self):
-		self.horizontal_scroll()
-		self.vertical_scroll()
+		# the time it will travel in seconds
+		self.knockback_distance = 0.1
+
+	def take_damage(self, damage:int, damage_source, hit_location:tuple):
+		self.hit = True
+		self.damage_source = damage_source
+		self.health -= damage
+		self.damage_taken = True
+
+	def knockback(self):
+		if self.facing_right and self.hit and self.knockback_distance > 0:
+			self.velocity.x = 8
+		if not self.facing_right and self.hit and self.knockback_distance > 0:
+			self.velocity.x = 8
+
+	def update(self, terrain):
+		self.physics.horizontal_movement_collision(self, terrain)
+		self.physics.apply_gravity(self, GRAVITY, self.game.dt)
+		self.physics.vertical_movement_collision(self, terrain)
+
+		if self.hit:
+			self.knockback()
+			self.knockback_distance -= 1 * self.game.dt
+		else:
+			self.velocity.x = 0
+		
+		if self.knockback_distance <= 0:
+			self.hit = False
+			self.damage_taken = False
+			self.knockback_distance = 0.1
+
+		# print(self.hit)
+		# print(self.velocity.x)
+		# print(self.knockback_distance)
+		# print(self.knockback_distance)
 
 class Player(Entity):
 	def __init__(self, game, character:str, size:int, position:tuple, speed:int, group:pygame.sprite.Group()):
@@ -29,14 +61,13 @@ class Player(Entity):
 		self.game = game
 		self.character = character
 		self.import_character_assets()
-		self.frame_index = 0
-		self.animation_speed = 0.25
-		self.image = self.animations['idle'][self.frame_index]
+	
 		self.rect = self.image.get_rect(topleft=position)
 		self.projectiles = []
 
 		# player stats
-		self.dash_timer = 10
+		self.dash_distance = 50
+		self.dash_timer = 20
 		self.dash_counter = 1
 		self.jump_force = CHARACTERS[self.character]["JUMPFORCE"]
 
@@ -45,40 +76,55 @@ class Player(Entity):
 		self.attacking = False
 		self.dashing = False
 
+		# animation
+		self.animation = self.animations[self.status]
+		self.image = self.animation.animation[0]
+
 	def import_character_assets(self):
-		self.animations = {'idle':[],'run':[],'jump':[],'fall':[]}
-		for animation in self.animations.keys():
-			full_path = CHAR_PATH + animation
-			self.animations[animation] = scale_images(import_folder(full_path), self.size)
+		self.animations = {}
+		self.animation_keys = {'idle':[],'run':[],'jump':[],'fall':[], 'attack':[]} 
+		for key in self.animation_keys:
+			full_path = CHAR_PATH + key
+			original_images = import_folder(full_path)
+			scaled_images = scale_images(original_images, self.size)
+			if key in ["idle", "run"]:
+				loop = True
+			else:
+				loop = False
+			animation = Animator(self.game, scaled_images, FRAME_DURATIONS[key], loop)
+			self.animations[key] = animation
 
-	def animate(self):
-		animation = self.animations[self.status]
-
-		# loop over frame index 
-		self.frame_index += self.animation_speed
-		if self.frame_index >= len(animation):
-			self.frame_index = 0
-
-		image = animation[int(self.frame_index)]
-
+	def update_animation(self):
+		self.animation = self.animations[self.status]
+		if self.animation.done and not self.animation.loop:
+			if self.status in self.animation_keys:
+				self.status = "idle"
+				self.animation.reset()
+				pass
+		
 		if self.facing_right:
-			flipped_image = pygame.transform.flip(image,False,False)
+			flipped_image = pygame.transform.flip(self.animation.update(self.game.dt),False,False)
 			self.image = flipped_image
 		else:
-			flipped_image = pygame.transform.flip(image,True,False)
+			flipped_image = pygame.transform.flip(self.animation.update(self.game.dt),True,False)
 			self.image = flipped_image
 
 	def move(self):
 		keys = pygame.key.get_pressed()
 
-		if keys[pygame.K_d]:
+		if keys[pygame.K_d] and not self.dashing and self.game.playable:
 			self.facing_right = True
-			self.velocity.x = self.speed
-		elif keys[pygame.K_a]:
+			self.velocity.x = self.speed * self.game.dt
+		elif keys[pygame.K_a] and not self.dashing and self.game.playable:
 			self.facing_right = False
-			self.velocity.x = -self.speed
+			self.velocity.x = -self.speed * self.game.dt
 		else:
 			self.velocity.x = 0
+
+		if keys[pygame.K_LSHIFT] and self.dash_counter > 0 and self.game.playable:
+			self.dash_point = (self.rect.x, self.rect.y)
+			self.dashing = True
+			self.dash_counter -= 1
 
 		# the Entity class has atttributes to verify where a collision is happening.
 		if keys[pygame.K_SPACE] and self.collide_bottom:
@@ -89,24 +135,39 @@ class Player(Entity):
 
 	def dash(self):
 		if self.dashing and self.facing_right and not self.collide_bottom:
-			self.velocity.x += self.speed * 2
+			self.velocity.x += self.dash_distance * self.game.dt
+			marker = pygame.Rect(self.dash_point, (40,40))
+			# pygame.draw.rect(self.game.screen, "white", marker)
+
 		elif self.dashing and not self.facing_right and not self.collide_bottom:
-			self.velocity.x -= self.speed * 2
+			self.velocity.x -= self.dash_distance * self.game.dt
+			marker = pygame.Rect(self.dash_point, (40,40))
+			# pygame.draw.rect(self.game.screen, "white", marker)
 
 	def attack(self):
 		if self.facing_right:
-			hitbox = pygame.Rect(
+			self.true_hitbox = pygame.Rect(
+				(self.rect.x + 40, 
+				self.rect.y + 25), 
+				(60, 40)
+				)
+			self.hitbox = pygame.Rect(
 				((self.rect.x + 40) - self.game.camera.level_scroll.x, 
 				 (self.rect.y + 25) - self.game.camera.level_scroll.y), 
 				(60, 40)
 				)
 		elif not self.facing_right:
-			hitbox = pygame.Rect(
+			self.true_hitbox = pygame.Rect(
+				(self.rect.x - 13, 
+				self.rect.y + 25), 
+				(60, 40)
+				)
+			self.hitbox = pygame.Rect(
 				((self.rect.x - 13) - self.game.camera.level_scroll.x, 
 				 (self.rect.y + 25) - self.game.camera.level_scroll.y), 
 				(60, 40)
 				)
-		pygame.draw.rect(pygame.display.get_surface(), "red", hitbox)
+		pygame.draw.rect(pygame.display.get_surface(), "red", self.hitbox)
 
 	def get_status(self):
 		if self.velocity.y < 0:
@@ -118,6 +179,8 @@ class Player(Entity):
 				self.status = 'run'
 			else:
 				self.status = 'idle'
+		if self.attacking:
+			self.status = 'attack'
 	
 	def on_screen_check(self):
 		if self.rect.x >= self.game.level.level_bottomright.x:
@@ -132,11 +195,13 @@ class Player(Entity):
 		self.move()
 		self.on_screen_check()
 		self.get_status()
-		self.animate()
+		# self.animate()
+		self.update_animation()
 		self.dash()
-		self.rect.x += self.velocity.x
-		self.physics.horizontal_movement_collision(self, terrain)  
-		self.physics.apply_gravity(self, GRAVITY) 
+
+		self.rect.x * self.game.dt
+		self.physics.horizontal_movement_collision(self, terrain)
+		self.physics.apply_gravity(self, GRAVITY, self.game.dt)
 		self.physics.vertical_movement_collision(self, terrain)
 
 		# dashing
@@ -145,10 +210,15 @@ class Player(Entity):
 
 		if self.dashing and self.dash_timer > 0:
 			self.dash_timer -= 1
+			blur_surface = pygame.transform.box_blur(self.image, 4, True)
+			self.image = blur_surface
+			# self.game.screen.blit(blur_surface, self.rect.topleft-self.game.camera.level_scroll)
 
 		if self.dash_timer <= 0 or not self.dashing:
 			self.dashing = False
 			self.dash_timer = 10
+		if self.collide_bottom:
+			self.dashing = False
 
 class Level():
 	def __init__(self, game, level_data, surface):
@@ -159,20 +229,6 @@ class Level():
 		self.light_list = []
 		self.particles = []
 		self.create_groups()
-		self.world_layers = [
-			self.background,
-			self.terrain,
-			self.projectiles,
-			self.game.player_group,
-			self.particles,
-			self.lights,
-			self.foreground,
-			self.constraints
-		]
-
-		self.calculate_level_size()
-		self.level_topleft = self.terrain.sprites()[0].rect
-		self.level_bottomright = self.terrain.sprites()[len(self.terrain)-1].rect
 
 	def create_groups(self):
 		self.terrain = pygame.sprite.Group()  # Terrain sprites group
@@ -196,40 +252,19 @@ class Level():
 		self.player_setup(player_layout)  # Set up the Player
 
 		self.world_layers = [
-			self.background,
+			# self.background,
 			self.terrain,
 			self.projectiles,
 			self.game.player_group,
 			self.particles,
-			self.lights,
-			self.foreground,
-			self.constraints
+			# self.lights,
+			# self.foreground,
+			# self.constraints
 		]
 
 		self.calculate_level_size()
 		self.level_topleft = self.terrain.sprites()[0].rect
 		self.level_bottomright = self.terrain.sprites()[len(self.terrain)-1].rect
-
-	def create_groups(self):
-		self.terrain = pygame.sprite.Group()  # Terrain sprites group
-		self.lights = pygame.sprite.Group()  # light sprites group
-		self.projectiles = pygame.sprite.Group()  # projectiles sprites group
-		self.particles = pygame.sprite.Group()  # particles sprites group
-		self.foreground = pygame.sprite.Group()  #  Foreground group
-		self.background = pygame.sprite.Group()  # Background sprites group
-		self.constraints = pygame.sprite.Group()  # Constraint sprites group
-
-		for layout_name in ["terrain", "foreground", "background"]:
-			layout = import_csv_layout(self.level_data[layout_name])
-			self.create_tile_group(layout, layout_name, 64)
-
-		# light layout
-		light_layout = import_csv_layout(self.level_data['torch'])  # Load light layout from CSV
-		self.create_tile_group(light_layout, 'light', 64)  # Create light tile sprites
-
-		# Player layout
-		player_layout = import_csv_layout(self.level_data['player'])  # Load Player layout from CSV
-		self.player_setup(player_layout)  # Set up the Player
 
 	def calculate_level_size(self):
 		max_right = 0
@@ -276,18 +311,21 @@ class Level():
 				y = row_index * TILE_SIZE
 				if val == '0':
 					self.player_spawn = pygame.math.Vector2(x,y)
-					self.game.player = Player(self.game, "ALRYN", 96, (x, y), 2, self.game.player_group)
+					self.game.player = Player(self.game, "ALRYN", 96, (x, y), 25, self.game.player_group)
 
 	def respawn(self):
 		if self.game.player.rect.bottom >= self.level_height + 300:
 			self.game.player.rect.x = self.player_spawn.x
 			self.game.player.rect.y = self.player_spawn.y
+			self.game.playable = False
+		if self.game.player.collide_bottom:
+			self.game.playable = True
 
 	""" HANDLERS """
 	def light_handler(self):
 		for light in self.light_list:
 			surf = glow_surface(light[1], [0,50,100], light[2])
-			pos = (int((light[0][0] - self.game.camera.level_scroll.x) - light[1]), int((light[0][1] - self.game.camera.level_scroll.y) - light[1]))
+			pos = (int((light[0][0] - self.game.camera.level_scroll.x) - (light[1] - 30)), int((light[0][1] - self.game.camera.level_scroll.y) - light[1]/2))
 			self.game.screen.blit(surf, pos, special_flags=BLEND_RGB_ADD)
 			# light.world_light()
 			# light.apply_lighting(self.display_surface, light.light_layer, light_source_list=self.lights)
@@ -304,9 +342,8 @@ class Level():
 		pygame.draw.rect(surface, colors[0], self.level_topleft)
 		pygame.draw.rect(surface, colors[1], self.level_bottomright)
 
-
-class ParticleSystem2D:
-	def __init__(self, game, system_position, N, lifespan, color, size, system_velocity=np.array([0,0]), image=None):
+class ParticleSystem2D():
+	def __init__(self, game, system_position, N, lifespan, color, size, system_velocity=np.array([0,0]), glow=False, gravity=False, physics=False, image=None):
 		self.game = game
 		self.system_position = system_position
 		self.lifespan = lifespan
@@ -315,8 +352,19 @@ class ParticleSystem2D:
 		self.size = size
 		self.system_velocity = system_velocity
 		self.particles = np.empty(N, dtype=particle_dtype)
+		self.particle_rects = []
 		if N != 0:
 			self.emit(N, system_position)
+
+		self.glow = glow
+		self.gravity = gravity
+		# physics and state variables
+		self.physics = physics
+		self.physics_class = Physics()
+		self.collide_left = False
+		self.collide_right = False
+		self.collide_top = False
+		self.collide_bottom = False
 
 	def emit(self, num_particles, pos):
 		# Check if we have enough "dead" particles to reuse
@@ -331,6 +379,9 @@ class ParticleSystem2D:
 			self.particles['size'][dead_particles[:num_reuse]] = np.random.uniform(self.size, self.size, num_reuse)
 			self.particles['lifespan'][dead_particles[:num_reuse]] = np.random.uniform(self.lifespan, self.lifespan, num_reuse)
 
+			for _ in range(num_reuse):
+				self.particle_rects.append(pygame.Rect(self.particles['position'][0][0], self.particles['position'][0][1], self.size, self.size))
+
 		# If we still need to emit more particles, append them to the end of the array
 		if num_particles > num_reuse:
 			new_particles = np.zeros(num_particles - num_reuse, dtype=self.particles.dtype)
@@ -339,9 +390,14 @@ class ParticleSystem2D:
 			new_particles['color'] = np.random.uniform(0, 1, (num_particles - num_reuse, 4))
 			new_particles['size'] = np.random.uniform(self.size, self.size, num_particles - num_reuse)
 			new_particles['lifespan'] = np.random.uniform(self.lifespan, self.lifespan, num_particles - num_reuse)
+
+			for _ in range(num_particles - num_reuse):
+				pass
+				# self.particle_rects.append(pygame.Rect(self.particles['position'][0][0], self.particles['position'][0][1], self.size, self.size))
+
 			self.particles = np.concatenate((self.particles, new_particles))
 
-	def update(self):
+	def update(self, terrain=[]):
 		"""
 		old_system_position = np.copy(self.system_position)
 		#self.system_position = pygame.mouse.get_pos()
@@ -352,8 +408,14 @@ class ParticleSystem2D:
 		# Update particles position with their velocity
 		self.particles['position'] += self.particles['velocity']
 
+		# Apply gravity if enabled
+		if self.gravity:
+			gravity_acceleration = np.array([0, 0.1])  # Adjust the value as needed
+			self.particles['velocity'] += gravity_acceleration
+
 		# Then update all particles with system's velocity
 		self.particles['position'] += self.system_velocity
+
 
 		self.particles['lifespan'] -= 1.0
 
@@ -363,33 +425,57 @@ class ParticleSystem2D:
 		# Create a new array of particles that only includes alive particles
 		self.particles = self.particles[alive_mask]
 
-	def draw(self):
+		if self.physics:
+			self.create_rect(show_rect=False)
+
+	def particle_handler(self):
+		# dash particles
+		if self.dashing:
+			self.player_paticles.emit(1, self.rect.center)
+
+	def create_rect(self, show_rect=False):
 		for particle in self.particles:
 			int_position = [int(x) for x in particle["position"]]
+			self.rect = pygame.Rect((int_position[0], int_position[1]), (self.size*2, self.size*2))
+			if show_rect:
+				pygame.draw.rect(pygame.display.get_surface(), "green", self.rect)
+			if self.collide_bottom:
+				self.rect.bottom = 500
+
+	def draw(self):
+		for particle in self.particles:
+			int_position = [int(x) for x in particle["position"]] - self.game.camera.level_scroll
 			size = self.size
 			pygame.draw.circle(self.game.screen, self.color, int_position, size)
-			surf = glow_surface(size*2, (50,50,50), 50)
-			offset_pos = (int_position[0] - size*2, int_position[1] - size*2)
-			self.game.screen.blit(surf, offset_pos, special_flags=BLEND_RGB_ADD)
-
+			if self.glow:
+				surf = glow_surface(size*2, (50,50,50), 50)
+				offset_pos = (int_position[0] - size*2, int_position[1] - size*2)
+				self.game.screen.blit(surf, offset_pos, special_flags=BLEND_RGB_ADD)
+			else:
+				pass
 
 class Game():
 	def __init__(self):
 		self.setup_pygame()
 		self.setup_world()
-		self.mouse_particles = ParticleSystem2D(self, pygame.mouse.get_pos(), N=50, lifespan=100, color=(60,237,5), size=3)
+		self.player_particles = ParticleSystem2D(self, pygame.mouse.get_pos(), N=1, lifespan=60, color=(255,255,255), size=3, glow=False, gravity=True, physics=False)
+		self.playable = False
 
 	def setup_pygame(self):
 		self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.SCALED)
 		self.scaled_display = pygame.Surface((SCREEN_SIZE[0]//3, SCREEN_SIZE[1]//3))
 		self.clock = pygame.time.Clock()
 		pygame.display.set_caption("ATOT")
+		pygame.display.toggle_fullscreen()
 
 	def setup_world(self):
-		self.current_level = 2
+		self.current_level = 1
 		self.player_group = pygame.sprite.GroupSingle()
 		self.level = Level(self, levels[self.current_level], self.screen)
-		self.camera = Camera(self, 20)
+
+		self.enemy = Enemy(self, "moss", 96, (self.player.rect.x + 100, self.player.rect.y - 100), 1, self.level.projectiles)
+
+		self.camera = Camera(self, 100, 20)
 		self.world_brightness = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
 		self.world_brightness.convert_alpha()
 		self.world_brightness.fill([WORLD_BRIGHTNESS, WORLD_BRIGHTNESS, WORLD_BRIGHTNESS])
@@ -406,12 +492,15 @@ class Game():
 	def send_frame(self):
 		self.clock.tick(FPS)
 		self.screen.blit(self.world_brightness, (0,0), special_flags=BLEND_RGB_MULT)
-		self.mouse_particles.update()
-		self.mouse_particles.emit(1, self.mouse_pos)
-		self.mouse_particles.draw()
-		self.level.light_handler()
+		if self.player.dashing:
+			self.player_particles.emit(1, self.player.rect.center)
+		self.player_particles.update(self.level.terrain)
+		self.player_particles.draw()
+		# self.level.light_handler()
 		# self.screen.blit(pygame.transform.scale(self.scaled_display, (SCREEN_SIZE[0], SCREEN_SIZE[1])), (0,0))
 		pygame.display.flip()
+		self.dt = self.clock.tick(FPS)/1000.0
+		self.playable = True
 
 	def handle_events(self):
 		for event in pygame.event.get():
@@ -437,48 +526,94 @@ class Game():
 			elif event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_f:
 					pygame.display.toggle_fullscreen()
-				elif event.key == pygame.K_LSHIFT and self.player.dash_counter > 0:
-					self.player.dashing = True
-					self.player.dash_counter -= 1
-
+				
 			# key released
 			elif event.type == pygame.KEYUP:
 				if event.key == pygame.K_LSHIFT:
 					self.player.dashing = False
 
 	def update_background(self):
-		self.screen.fill([180, 20, 80])
-		# self.scaled_display.fill([180, 20, 80])
-		for obj in self.background_objects:
-			obj_rect = pygame.Rect(
-				obj[1][0] - self.camera.level_scroll.x * obj[0], 
-				obj[1][1], 
-				obj[1][2], 
-				obj[1][3]
-			)
-			if obj[0] == 0.25:
-				pygame.draw.rect(self.screen, [0, 0, 125], obj_rect)
-			elif obj[0] == 0.5:
-				pygame.draw.rect(self.screen, [9, 91, 85], obj_rect)
+		self.screen.fill([55, 55, 92])
+		
+		background = get_image('../assets/background.png')
+		midground = get_image('../assets/midground.png')
+		foreground = get_image('../assets/foreground.png')
+		full_background = [
+			background,
+			midground,
+			foreground,
+		]
+		full_background = scale_images(full_background, SCREEN_SIZE)
+		self.screen.blit(full_background[0], (0,0)-self.camera.level_scroll * 0.25)
+		self.screen.blit(full_background[1], (0,0)-self.camera.level_scroll * 0.5)
+		self.screen.blit(full_background[2], (0,0)-self.camera.level_scroll * 0.8)
 
 	def run(self):
 		self.running = True
+		self.last_time = time.time()
 		while self.running:
+			self.dt = time.time() - self.last_time
+			self.last_time = time.time()
 			self.handle_events()
 
 			for projectile in self.player.projectiles:
 				projectile.update(self.camera.level_scroll)
 
-			self.handle_events()
 			self.mouse_pos = pygame.mouse.get_pos()
+			
 			self.camera.update_position()
 			self.update_background()
 			self.level.update_level()
 
 			self.level.draw_level(self.screen)
 			self.player.update(self.screen, self.level.terrain)
+			self.enemy.update(self.level.terrain)
 			self.draw_fps()
+
+			# self.mouse_rect = pygame.Rect((self.mouse_pos[0]-16, self.mouse_pos[1]-16), (32,32))
+			# pygame.draw.rect(self.screen, "green", self.mouse_rect)
+
+			if self.player.attacking:
+				if self.player.true_hitbox.colliderect(self.enemy.rect):
+					self.enemy.take_damage(1, self.player, self.enemy.rect.center-self.camera.level_scroll)
+			
+			self.current_level += 1
+
 			self.send_frame()
+
+			# print(self.camera.level_scroll)
+
+class Camera():
+	def __init__(self, game, scroll_speed:int, interpolation:int):
+		self.game = game
+		self.player = self.game.player
+		self.level_scroll = pygame.math.Vector2()
+		self.scroll_speed = scroll_speed
+		self.interpolation = interpolation
+
+	def horizontal_scroll(self):
+		self.level_scroll.x += ((self.player.rect.centerx - self.level_scroll.x - (HALF_WIDTH - self.player.size.x)) / self.interpolation) * self.game.dt * self.scroll_speed
+
+	def vertical_scroll(self):
+		self.level_scroll.y += (((self.player.rect.centery - 180) - self.level_scroll.y - (HALF_HEIGHT - self.player.size.y)) / self.interpolation) * self.game.dt * self.scroll_speed
+
+	def pan_cinematic(self):
+		pass
+
+	def update_position(self):
+		self.horizontal_scroll()
+		self.vertical_scroll()
+
+		# constrain camera movement
+		if self.game.level.level_topleft.left + self.level_scroll.x < 0:
+			self.level_scroll.x = 0
+		elif self.game.level.level_bottomright.right - self.level_scroll.x < SCREEN_WIDTH:
+			self.level_scroll.x = self.game.level.level_width - SCREEN_WIDTH
+		
+		if self.game.level.level_topleft.top - self.level_scroll.y > 0:
+			self.level_scroll.y = 0
+		elif self.game.level.level_bottomright.bottom - self.level_scroll.y < SCREEN_HEIGHT:
+			self.level_scroll.y = self.game.level.level_height - SCREEN_HEIGHT
 
 def glow_surface(radius, color, intensity):
 	intensity = intensity/100
