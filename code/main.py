@@ -107,7 +107,7 @@ class Player(Entity):
 		self.magick = 50
 		self.spell_shards = 0
 		self.dash_distance = 50
-		self.dash_timer = 20
+		self.dash_timer = 4
 		self.dash_counter = 1
 		self.jump_force = CHARACTERS[self.character]["JUMPFORCE"]
 
@@ -236,6 +236,10 @@ class Player(Entity):
 	def draw(self, surface:pygame.Surface):
 		surface.blit(self.image, (self.rect.x-self.game.camera.level_scroll.x, self.rect.y-self.game.camera.level_scroll.y))
 
+	def apply_gravity(self, gravity_value, delta_time):
+		self.velocity.y += gravity_value * delta_time
+		self.rect.y += self.velocity.y
+
 	def update(self, surface:pygame.Surface, terrain:pygame.sprite.Group):
 		self.move()
 		self.on_screen_check()
@@ -246,7 +250,7 @@ class Player(Entity):
 
 		self.rect.x * self.game.dt
 		self.physics.horizontal_movement_collision(self, terrain)
-		self.physics.apply_gravity(self, GRAVITY, self.game.dt)
+		self.apply_gravity(GRAVITY, self.game.dt)
 		self.physics.vertical_movement_collision(self, terrain)
 
 		# dashing
@@ -261,7 +265,7 @@ class Player(Entity):
 
 		if self.dash_timer <= 0 or not self.dashing:
 			self.dashing = False
-			self.dash_timer = 10
+			self.dash_timer = 4
 		if self.collide_bottom:
 			self.dashing = False
 
@@ -518,7 +522,7 @@ class Game():
 		pygame.display.toggle_fullscreen()
 
 	def setup_world(self):
-		self.current_level = 1
+		self.current_level = 2
 		self.player_group = pygame.sprite.GroupSingle()
 		self.level = Level(self, levels[self.current_level], self.screen)
 		self.enemy = Enemy(self, "moss", 96, (self.player.rect.x + 100, self.player.rect.y - 100), 1, self.level.projectiles)
@@ -543,7 +547,6 @@ class Game():
 		# self.level.light_handler()
 		# self.screen.blit(pygame.transform.scale(self.scaled_display, (SCREEN_SIZE[0], SCREEN_SIZE[1])), (0,0))
 		pygame.display.flip()
-		self.dt = self.clock.tick(FPS)/1000.0
 		self.playable = True
 
 	def handle_events(self):
