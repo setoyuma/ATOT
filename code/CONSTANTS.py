@@ -7,8 +7,9 @@ notes = {
 	"Game" : "Added decoration tiles and level system."
 }
 
-# screen
-FPS = 144
+FPS = 60
+# FPS = 30
+# FPS = 10
 
 COLORS = {
 	"red"
@@ -25,7 +26,7 @@ CENTER = (HALF_WIDTH, HALF_HEIGHT)
 # world
 TILE_SIZE = 64
 WORLD_BRIGHTNESS = 255
-GRAVITY = 30
+GRAVITY = 0.65
 
 # path shortcuts
 CHAR_PATH = '../assets/character/'
@@ -49,8 +50,8 @@ particle_dtype = np.dtype([
 """ CHARACTER STATS """
 CHARACTERS = {
 	"ALRYN": {
-		"SPEED": 20,
-		"JUMPFORCE": -10,
+		"SPEED": 3,
+		"JUMPFORCE": 15,
 	}
 }
 

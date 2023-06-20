@@ -3,7 +3,7 @@ import random, time
 
 from projectile import Projectile
 from game_data import levels
-from BLACKFORGE2.FORGE import *
+from BLACKFORGE2 import *
 from CONSTANTS import*
 
 class UI():
@@ -106,7 +106,7 @@ class Player(Entity):
 		self.health = 100
 		self.magick = 50
 		self.spell_shards = 0
-		self.dash_distance = 50
+		self.dash_distance = 8
 		self.dash_timer = 4
 		self.dash_counter = 1
 		self.jump_force = CHARACTERS[self.character]["JUMPFORCE"]
@@ -154,15 +154,18 @@ class Player(Entity):
 			flipped_image = pygame.transform.flip(self.animation.update(self.game.dt),True,False)
 			self.image = flipped_image
 
-	def move(self):
+	def jump(self, dt):
+		self.velocity.y = -self.jump_force
+
+	def move(self, dt):
 		keys = pygame.key.get_pressed()
 
 		if keys[pygame.K_d] and not self.dashing and self.game.playable:
 			self.facing_right = True
-			self.velocity.x = self.speed * self.game.dt
+			self.velocity.x = self.speed
 		elif keys[pygame.K_a] and not self.dashing and self.game.playable:
 			self.facing_right = False
-			self.velocity.x = -self.speed * self.game.dt
+			self.velocity.x = -self.speed
 		else:
 			self.velocity.x = 0
 
@@ -171,21 +174,20 @@ class Player(Entity):
 			self.dashing = True
 			self.dash_counter -= 1
 
-		# the Entity class has atttributes to verify where a collision is happening.
 		if keys[pygame.K_SPACE] and self.collide_bottom:
-			self.velocity.y = self.jump_force
+			self.jump(dt)
 
 		if self.attacking:
 			self.attack()
 
-	def dash(self):
+	def dash(self, dt):
 		if self.dashing and self.facing_right and not self.collide_bottom:
-			self.velocity.x += self.dash_distance * self.game.dt
+			self.velocity.x = self.dash_distance * dt
 			marker = pygame.Rect(self.dash_point, (40,40))
 			# pygame.draw.rect(self.game.screen, "white", marker)
 
 		elif self.dashing and not self.facing_right and not self.collide_bottom:
-			self.velocity.x -= self.dash_distance * self.game.dt
+			self.velocity.x = -self.dash_distance * dt
 			marker = pygame.Rect(self.dash_point, (40,40))
 			# pygame.draw.rect(self.game.screen, "white", marker)
 
@@ -236,22 +238,23 @@ class Player(Entity):
 	def draw(self, surface:pygame.Surface):
 		surface.blit(self.image, (self.rect.x-self.game.camera.level_scroll.x, self.rect.y-self.game.camera.level_scroll.y))
 
-	def apply_gravity(self, gravity_value, delta_time):
-		self.velocity.y += gravity_value * delta_time
-		self.rect.y += self.velocity.y
+	def apply_gravity(self, entity, gravity_value, delta_time):
+		entity.velocity.y += gravity_value * delta_time
 
-	def update(self, surface:pygame.Surface, terrain:pygame.sprite.Group):
-		self.move()
+	def update(self, dt, surface:pygame.Surface, terrain:pygame.sprite.Group):
+		self.move(dt)
 		self.on_screen_check()
 		self.get_status()
-		# self.animate()
 		self.update_animation()
-		self.dash()
 
-		self.rect.x * self.game.dt
+		self.dash(dt)
+		self.rect.x += self.velocity.x * dt
 		self.physics.horizontal_movement_collision(self, terrain)
-		self.apply_gravity(GRAVITY, self.game.dt)
+		self.apply_gravity(self, GRAVITY, dt)
+		self.rect.y += self.velocity.y * dt
 		self.physics.vertical_movement_collision(self, terrain)
+
+		print("VEL Y",self.velocity.y)
 
 		# dashing
 		if not self.dashing and self.dash_counter <= 0 and self.collide_bottom:
@@ -261,7 +264,6 @@ class Player(Entity):
 			self.dash_timer -= 1
 			blur_surface = pygame.transform.box_blur(self.image, 4, True)
 			self.image = blur_surface
-			# self.game.screen.blit(blur_surface, self.rect.topleft-self.game.camera.level_scroll)
 
 		if self.dash_timer <= 0 or not self.dashing:
 			self.dashing = False
@@ -519,14 +521,14 @@ class Game():
 		self.scaled_display = pygame.Surface((SCREEN_SIZE[0]//3, SCREEN_SIZE[1]//3))
 		self.clock = pygame.time.Clock()
 		pygame.display.set_caption("ATOT")
-		pygame.display.toggle_fullscreen()
+		# pygame.display.toggle_fullscreen()
 
 	def setup_world(self):
-		self.current_level = 2
+		self.current_level = 1
 		self.player_group = pygame.sprite.GroupSingle()
 		self.level = Level(self, levels[self.current_level], self.screen)
 		self.enemy = Enemy(self, "moss", 96, (self.player.rect.x + 100, self.player.rect.y - 100), 1, self.level.projectiles)
-		self.camera = Camera(self, 100, 40)
+		self.camera = Camera(self, 10, 100)
 		self.ui = UI(self, self.screen)
 
 		self.world_brightness = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
@@ -538,7 +540,6 @@ class Game():
 		draw_text(self.screen, f"FPS: {fpsCounter}", [900, 20])
 
 	def send_frame(self):
-		self.clock.tick(FPS)
 		self.screen.blit(self.world_brightness, (0,0), special_flags=BLEND_RGB_MULT)
 		if self.player.dashing:
 			self.player_particles.emit(1, self.player.rect.center)
@@ -547,6 +548,7 @@ class Game():
 		# self.level.light_handler()
 		# self.screen.blit(pygame.transform.scale(self.scaled_display, (SCREEN_SIZE[0], SCREEN_SIZE[1])), (0,0))
 		pygame.display.flip()
+		self.clock.tick(FPS)
 		self.playable = True
 
 	def handle_events(self):
@@ -607,8 +609,10 @@ class Game():
 		self.running = True
 		self.last_time = time.time()
 		while self.running:
-			self.dt = time.time() - self.last_time
-			self.last_time = time.time()
+			self.dt = time.time() - self.last_time  # calculate the time difference
+			self.dt *= 60.0   # scale the dt by the target framerate for consistency
+			self.last_time = time.time()  # reset the last_time with the current time
+			
 			self.handle_events()
 
 			for projectile in self.player.projectiles:
@@ -621,7 +625,7 @@ class Game():
 			self.level.update_level()
 
 			self.level.draw_level(self.screen)
-			self.player.update(self.screen, self.level.terrain)
+			self.player.update(self.dt, self.screen, self.level.terrain)
 			self.enemy.update(self.level.terrain)
 			self.draw_fps()
 
@@ -635,8 +639,6 @@ class Game():
 			self.ui.update_player_HUD()
 			self.send_frame()
 
-			# print(self.camera.level_scroll)
-
 class Camera():
 	def __init__(self, game, scroll_speed:int, interpolation:int):
 		self.game = game
@@ -646,10 +648,10 @@ class Camera():
 		self.interpolation = interpolation
 
 	def horizontal_scroll(self):
-		self.level_scroll.x += ((self.player.rect.centerx - self.level_scroll.x - (HALF_WIDTH - self.player.size.x)) / self.interpolation) * self.game.dt * self.scroll_speed
+		self.level_scroll.x += ((self.player.rect.centerx - self.level_scroll.x - (HALF_WIDTH - self.player.size.x)) / self.interpolation * self.scroll_speed)
 
 	def vertical_scroll(self):
-		self.level_scroll.y += (((self.player.rect.centery - 180) - self.level_scroll.y - (HALF_HEIGHT - self.player.size.y)) / self.interpolation) * self.game.dt * self.scroll_speed
+		self.level_scroll.y += (((self.player.rect.centery - 180) - self.level_scroll.y - (HALF_HEIGHT - self.player.size.y)) / self.interpolation * self.scroll_speed)
 
 	def pan_cinematic(self):
 		pass
