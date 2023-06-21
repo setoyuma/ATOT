@@ -106,7 +106,7 @@ class Player(Entity):
 		self.health = 100
 		self.magick = 50
 		self.spell_shards = 0
-		self.dash_distance = 8
+		self.dash_distance = 30
 		self.dash_timer = 4
 		self.dash_counter = 1
 		self.jump_force = CHARACTERS[self.character]["JUMPFORCE"]
@@ -181,15 +181,18 @@ class Player(Entity):
 			self.attack()
 
 	def dash(self, dt):
+		frame_scale = self.game.current_fps / 60.0
+		adjusted_dash_distance = self.dash_distance * frame_scale
+
 		if self.dashing and self.facing_right and not self.collide_bottom:
-			self.velocity.x = self.dash_distance * dt
-			marker = pygame.Rect(self.dash_point, (40,40))
-			# pygame.draw.rect(self.game.screen, "white", marker)
+			self.velocity.x += adjusted_dash_distance
+			marker = pygame.Rect(self.dash_point - self.game.camera.level_scroll, (40,40))
+			pygame.draw.rect(self.game.screen, "white", marker)
 
 		elif self.dashing and not self.facing_right and not self.collide_bottom:
-			self.velocity.x = -self.dash_distance * dt
-			marker = pygame.Rect(self.dash_point, (40,40))
-			# pygame.draw.rect(self.game.screen, "white", marker)
+			self.velocity.x += -adjusted_dash_distance
+			marker = pygame.Rect(self.dash_point - self.game.camera.level_scroll, (40,40))
+			pygame.draw.rect(self.game.screen, "white", marker)
 
 	def attack(self):
 		if self.facing_right:
@@ -243,18 +246,16 @@ class Player(Entity):
 
 	def update(self, dt, surface:pygame.Surface, terrain:pygame.sprite.Group):
 		self.move(dt)
+		self.dash(dt)
 		self.on_screen_check()
 		self.get_status()
 		self.update_animation()
 
-		self.dash(dt)
 		self.rect.x += self.velocity.x * dt
 		self.physics.horizontal_movement_collision(self, terrain)
 		self.apply_gravity(self, GRAVITY, dt)
 		self.rect.y += self.velocity.y * dt
 		self.physics.vertical_movement_collision(self, terrain)
-
-		print("VEL Y",self.velocity.y)
 
 		# dashing
 		if not self.dashing and self.dash_counter <= 0 and self.collide_bottom:
@@ -612,6 +613,7 @@ class Game():
 			self.dt = time.time() - self.last_time  # calculate the time difference
 			self.dt *= 60.0   # scale the dt by the target framerate for consistency
 			self.last_time = time.time()  # reset the last_time with the current time
+			self.current_fps = self.clock.get_fps()
 			
 			self.handle_events()
 
