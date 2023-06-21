@@ -71,9 +71,11 @@ class Enemy(Entity):
 		if not self.facing_right and self.hit and self.knockback_distance > 0:
 			self.velocity.x = 8
 
-	def update(self, terrain):
+	def update(self, dt, terrain):
+		self.rect.x += self.velocity.x * dt
 		self.physics.horizontal_movement_collision(self, terrain)
 		self.physics.apply_gravity(self, GRAVITY, self.game.dt)
+		self.rect.y += self.velocity.y * dt
 		self.physics.vertical_movement_collision(self, terrain)
 
 		if self.hit:
@@ -525,7 +527,7 @@ class Game():
 		# pygame.display.toggle_fullscreen()
 
 	def setup_world(self):
-		self.current_level = 1
+		self.current_level = 2
 		self.player_group = pygame.sprite.GroupSingle()
 		self.level = Level(self, levels[self.current_level], self.screen)
 		self.enemy = Enemy(self, "moss", 96, (self.player.rect.x + 100, self.player.rect.y - 100), 1, self.level.projectiles)
@@ -628,7 +630,7 @@ class Game():
 
 			self.level.draw_level(self.screen)
 			self.player.update(self.dt, self.screen, self.level.terrain)
-			self.enemy.update(self.level.terrain)
+			self.enemy.update(self.dt, self.level.terrain)
 			self.draw_fps()
 
 			# self.mouse_rect = pygame.Rect((self.mouse_pos[0]-16, self.mouse_pos[1]-16), (32,32))
