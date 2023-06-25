@@ -300,7 +300,7 @@ class Player(Entity):
 			self.velocity.x += adjusted_dash_distance * dt
 			marker = pygame.Rect(self.dash_point - self.game.camera.level_scroll, (40,40))
 			for i in range(int(self.dash_timer)):
-				self.particles.append(Particle(self.game, [255,255,255], self.rect.center, (0, -1), 8, [pygame.sprite.Group()], glow=True, physics=True))
+				self.particles.append(Particle(self.game, [255,255,255], self.rect.center, (0, -1), 8, [pygame.sprite.Group()], ))
 
 			pygame.draw.rect(self.game.screen, "white", marker)
 
@@ -308,7 +308,7 @@ class Player(Entity):
 			self.velocity.x += -adjusted_dash_distance * dt
 			marker = pygame.Rect(self.dash_point - self.game.camera.level_scroll, (40,40))
 			for i in range(int(self.dash_timer)):
-				self.particles.append(Particle(self.game, [255,255,255], self.rect.center, (0, -1), 8, [pygame.sprite.Group()], glow=True))
+				self.particles.append(Particle(self.game, [255,255,255], self.rect.center, (0, -1), 8, [pygame.sprite.Group()], ))
 				
 			pygame.draw.rect(self.game.screen, "white", marker)
 
@@ -471,8 +471,16 @@ class World():
 				x += 1
 			y += 1
 
+	def respawn(self):
+		if self.game.player.rect.bottom >= self.level_height + 300:
+			self.game.player.rect.x = self.player_spawn.x
+			self.game.player.rect.y = self.player_spawn.y
+			self.game.playable = False
+		if self.game.player.collide_bottom:
+			self.game.playable = True
+
 	def update(self):
-		pass
+		self.respawn()
 
 class UI():
 	def __init__(self, game, surface):
