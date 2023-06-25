@@ -7,7 +7,8 @@ notes = {
 	"Game" : "Added decoration tiles and level system."
 }
 
-FPS = 60
+FPS_SCALE = 75.0
+FPS = 75
 # FPS = 25
 # FPS = 10
 
@@ -15,6 +16,8 @@ COLORS = {
 	"red"
 }
 
+2.7 # chunks visible on screen on x axis -> SCREEN_WIDTH / ( chunk_size * TILE_SIZE)
+1.5 # chunks visible on screen on y axis -> SCREEN_HEIGHT / ( chunk_size * TILE_SIZE)
 
 SCREEN_WIDTH = 1400
 SCREEN_HEIGHT = 800
@@ -26,8 +29,9 @@ CENTER = (HALF_WIDTH, HALF_HEIGHT)
 
 # world
 TILE_SIZE = 64
-WORLD_BRIGHTNESS = 255
-GRAVITY = 0.65
+WORLD_BRIGHTNESS = 180
+GRAVITY = 0.4
+CHUNK_SIZE = 8
 
 # path shortcuts
 CHAR_PATH = '../assets/character/'
@@ -51,7 +55,8 @@ particle_dtype = np.dtype([
 """ CHARACTER STATS """
 CHARACTERS = {
 	"ALRYN": {
-		"SPEED": 8,
+		"SPEED": 6,
+		"JUMPS": 2,
 		"JUMPFORCE": 12,
 	}
 }
@@ -74,10 +79,10 @@ CAMERA_BORDERS = {
 }
 
 FRAME_DURATIONS = {
-	'jump': 0.02,
-	'fall': 0.04,
-	'idle': 0.08,
-	'run': .055,
-	'wallJump': 0.05,
-	'attack': 0.045
+	'jump': 2,
+	'fall': 4,
+	'idle': 5,
+	'run': 4,
+	'wallJump': 5,
+	'attack': 5
 }
