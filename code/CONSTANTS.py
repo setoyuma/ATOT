@@ -8,12 +8,13 @@ notes = {
 }
 
 FPS = 60
-# FPS = 30
+# FPS = 25
 # FPS = 10
 
 COLORS = {
 	"red"
 }
+
 
 SCREEN_WIDTH = 1400
 SCREEN_HEIGHT = 800

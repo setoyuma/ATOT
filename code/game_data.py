@@ -14,6 +14,8 @@ level_01 = {
 		'player': '../levels/01/level_01_player.csv',
 		'enemy': '../levels/01/level_01_enemy.csv',
 		'torch': '../levels/01/level_01_torch.csv',
+		'right_ramps': '../levels/01/level_01_right_ramps.csv',
+		'left_ramps': '../levels/01/level_01_left_ramps.csv',
 		'foreground': '../levels/01/level_01_foreground.csv',
 		'background': '../levels/01/level_01_background.csv',
 		'constraint': '../levels/01/level_01_constraint.csv',

@@ -6,6 +6,40 @@ from game_data import levels
 from BLACKFORGE2 import *
 from CONSTANTS import*
 
+class RampTile(StaticTile):
+	def __init__(self, game, position: tuple, groups: list, surface: pygame.Surface,
+				 left_ramp: bool = False, right_ramp: bool = False):
+		super().__init__(position, groups, surface)
+		self.game = game
+		self.left_ramp = left_ramp
+		self.right_ramp = right_ramp
+
+	def update(self, world_shift):
+		self.rect.x += world_shift.x
+		self.rect.y += world_shift.y
+
+	def check_collision(self, player_rect):
+		if self.left_ramp:
+			ramp_rect = pygame.Rect(self.rect.x, self.rect.y, self.rect.width, self.rect.height // 2)
+			if ramp_rect.colliderect(player_rect):
+				# Adjust player's y-coordinate to match the slope of the ramp
+				player_rect.y = self.rect.y + self.rect.height - (player_rect.x - self.rect.x) - player_rect.height
+				return True
+		elif self.right_ramp:
+			ramp_rect = pygame.Rect(self.rect.x, self.rect.y + self.rect.height // 2, self.rect.width, self.rect.height // 2)
+			if ramp_rect.colliderect(player_rect):
+				# Adjust player's y-coordinate to match the slope of the ramp
+				player_rect.y = self.rect.y + (player_rect.x - self.rect.x)
+				return True
+		else:
+			if self.rect.colliderect(player_rect):
+				return True
+		return False
+
+
+
+
+
 class UI():
 	def __init__(self, game, surface):
 		self.game = game
@@ -59,6 +93,9 @@ class Enemy(Entity):
 		# the time it will travel in seconds
 		self.knockback_distance = 0.1
 
+		# collision area
+		self.collision_area = pygame.Rect(0, 0, TILE_SIZE * 3, TILE_SIZE * 3)
+
 	def take_damage(self, damage:int, damage_source, hit_location:tuple):
 		self.hit = True
 		self.damage_source = damage_source
@@ -100,7 +137,8 @@ class Player(Entity):
 		self.game = game
 		self.character = character
 		self.import_character_assets()
-	
+
+		self.current_x = None
 		self.rect = self.image.get_rect(topleft=position)
 		self.projectiles = []
 
@@ -108,7 +146,7 @@ class Player(Entity):
 		self.health = 100
 		self.magick = 50
 		self.spell_shards = 0
-		self.dash_distance = 30
+		self.dash_distance = 50
 		self.dash_timer = 4
 		self.dash_counter = 1
 		self.jump_force = CHARACTERS[self.character]["JUMPFORCE"]
@@ -126,6 +164,9 @@ class Player(Entity):
 		# animation
 		self.animation = self.animations[self.status]
 		self.image = self.animation.animation[0]
+
+		# collision area
+		self.collision_area = pygame.Rect(self.rect.x, self.rect.y, TILE_SIZE * 3, TILE_SIZE * 3)
 
 	def import_character_assets(self):
 		self.animations = {}
@@ -243,9 +284,6 @@ class Player(Entity):
 	def draw(self, surface:pygame.Surface):
 		surface.blit(self.image, (self.rect.x-self.game.camera.level_scroll.x, self.rect.y-self.game.camera.level_scroll.y))
 
-	def apply_gravity(self, entity, gravity_value, delta_time):
-		entity.velocity.y += gravity_value * delta_time
-
 	def update(self, dt, surface:pygame.Surface, terrain:pygame.sprite.Group):
 		self.move(dt)
 		self.dash(dt)
@@ -255,7 +293,7 @@ class Player(Entity):
 
 		self.rect.x += self.velocity.x * dt
 		self.physics.horizontal_movement_collision(self, terrain)
-		self.apply_gravity(self, GRAVITY, dt)
+		self.physics.apply_gravity(self, GRAVITY, dt)
 		self.rect.y += self.velocity.y * dt
 		self.physics.vertical_movement_collision(self, terrain)
 
@@ -286,10 +324,24 @@ class Level():
 
 		self.light_list = []
 		self.particles = []
+		
+		# tile setup
+		self.tile_index = {}
+		self.create_tile_index()
 		self.create_groups()
+		
+		# game map
+		self.draw_distance = 10
 
+		# print(self.tile_index)
+		# print(self.generate_chunk(150,500))
+
+		# with open(level_data["terrain"], 'r') as f:
+		# 	print(f.read())
+		
 	def create_groups(self):
 		self.terrain = pygame.sprite.Group()  # Terrain sprites group
+		self.ramp_tiles = pygame.sprite.Group()  # Ramp Tile sprites group
 		self.lights = pygame.sprite.Group()  # light sprites group
 		self.projectiles = pygame.sprite.Group()  # projectiles sprites group
 		self.particles = pygame.sprite.Group()  # particles sprites group
@@ -297,7 +349,7 @@ class Level():
 		self.background = pygame.sprite.Group()  # Background sprites group
 		self.constraints = pygame.sprite.Group()  # Constraint sprites group
 
-		for layout_name in ["terrain", "foreground", "background"]:
+		for layout_name in ["terrain", "foreground", "background", "left_ramps", "right_ramps"]:
 			layout = import_csv_layout(self.level_data[layout_name])
 			self.create_tile_group(layout, layout_name, 64)
 
@@ -310,19 +362,25 @@ class Level():
 		self.player_setup(player_layout)  # Set up the Player
 
 		self.world_layers = [
-			# self.background,
+			self.background,
 			self.terrain,
-			self.projectiles,
+			self.ramp_tiles,
+			# self.projectiles,
 			self.game.player_group,
 			self.particles,
-			# self.lights,
-			# self.foreground,
+			self.lights,
+			self.foreground,
 			# self.constraints
 		]
 
 		self.calculate_level_size()
 		self.level_topleft = self.terrain.sprites()[0].rect
 		self.level_bottomright = self.terrain.sprites()[len(self.terrain)-1].rect
+
+	def create_tile_index(self):
+		tile_list = import_cut_graphics('../assets/terrain/Tileset.png', TILE_SIZE)  # Load tile graphics
+		for index, tile in enumerate(tile_list):
+			self.tile_index[index] = tile
 
 	def calculate_level_size(self):
 		max_right = 0
@@ -341,8 +399,6 @@ class Level():
 		self.level_height = max_bottom
 
 	def create_tile_group(self, level_data, tile_type:str, tile_size:int):
-		tile_list = import_cut_graphics('../assets/terrain/Tileset.png', TILE_SIZE)  # Load tile graphics
-
 		for row_index, row in enumerate(level_data):  # iterate over each row
 			for col_index, value in enumerate(row):		# and then over each column
 				if value != '-1':  # here we check if a tile should be placed
@@ -352,14 +408,18 @@ class Level():
 					# use match case to handle different tile types e.g(foreground/background tiles)
 					match tile_type:
 						case 'terrain':
-							sprite = StaticTile((x, y), [self.terrain], tile_list[int(value)])
+							sprite = StaticTile((x, y), [self.terrain], self.tile_index[int(value)])
+						case 'left_ramps':
+							sprite = RampTile(self.game, (x, y), [self.ramp_tiles], self.tile_index[int(value)], left_ramp=True)
+						case 'right_ramps':
+							sprite = RampTile(self.game, (x, y), [self.ramp_tiles], self.tile_index[int(value)], right_ramp=True)
 						case 'foreground':
-							sprite = StaticTile((x, y), [self.foreground], tile_list[int(value)])
+							sprite = StaticTile((x, y), [self.foreground], self.tile_index[int(value)])
 						case 'background':
-							sprite = StaticTile((x, y), [self.background], tile_list[int(value)])
+							sprite = StaticTile((x, y), [self.background], self.tile_index[int(value)])
 						case 'light':
 							self.light_list.append([[x,y], 100, 30])
-							light = StaticTile((x, y), self.lights, tile_list[int(value)])
+							light = StaticTile((x, y), self.lights, self.tile_index[int(value)])
 
 	def player_setup(self, layout):
 		# Set up the player based on the layout
@@ -388,13 +448,56 @@ class Level():
 			# light.world_light()
 			# light.apply_lighting(self.display_surface, light.light_layer, light_source_list=self.lights)
 	
+	def calculate_visible_tiles(self):
+		self.on_screen_tiles = pygame.sprite.Group()
+		self.off_screen_tiles = pygame.sprite.Group()
+
+		for layer in self.world_layers:
+			for tile in layer.sprites():
+				if self.is_tile_on_screen(tile):
+					self.on_screen_tiles.add(tile)
+				else:
+					self.off_screen_tiles.add(tile)
+					self.on_screen_tiles.remove(tile)
+
+		return self.on_screen_tiles
+		return self.off_screen_tiles
+
+	def is_tile_on_screen(self, tile):
+		screen_left = self.game.camera.level_scroll.x
+		screen_right = screen_left + SCREEN_WIDTH
+		screen_top = self.game.camera.level_scroll.y
+		screen_bottom = screen_top + SCREEN_HEIGHT
+
+		tile_top = tile.rect.y + self.draw_distance
+		tile_left = tile.rect.x + self.draw_distance
+		tile_bottom = tile.rect.y + tile.rect.height - self.draw_distance
+		tile_right = tile.rect.x + tile.rect.width - self.draw_distance
+
+		if tile_right >= screen_left and tile_left <= screen_right and tile_bottom >= screen_top and tile_top <= screen_bottom:
+			return True
+
+		return False
+
 	def draw_level(self, surface:pygame.Surface):
-		for layer in self.world_layers:			
-			for sprite in layer.sprites():
-				surface.blit(sprite.image, (sprite.rect.x - self.game.camera.level_scroll.x, sprite.rect.y - self.game.camera.level_scroll.y))
+		# draw on screen tiles
+		for tile in self.on_screen_tiles:
+			if tile in self.ramp_tiles:
+				tile.check_collision(self.game.player.rect)
+			
+			if tile in [self.background, self.foreground, self.lights, self.off_screen_tiles]:
+				tile.rect = 0
+				tile.position = tile.position - self.game.camera.level_scroll
+				surface.blit(tile.image, (tile.position.x, tile.position.y))
+			else:
+				surface.blit(tile.image, (tile.rect.x - self.game.camera.level_scroll.x, tile.rect.y - self.game.camera.level_scroll.y))
 
 	def update_level(self):
+		self.calculate_visible_tiles()
 		self.respawn()
+
+		# print("onscreen:",len(self.on_screen_tiles))
+		# print("offscreen:",len(self.off_screen_tiles))
 
 	def show_level_markers(self, surface:pygame.Surface, colors:list):
 		pygame.draw.rect(surface, colors[0], self.level_topleft)
@@ -607,7 +710,16 @@ class Game():
 		self.screen.blit(full_background[0], (0,0)-self.camera.level_scroll * 0.25)
 		self.screen.blit(full_background[1], (0,0)-self.camera.level_scroll * 0.5)
 		self.screen.blit(full_background[2], (0,0)-self.camera.level_scroll * 0.8)
-
+	
+	def update_foreground(self):
+		pillar = get_image('../assets/melara_pillar.png')
+		
+		full_foreground = [
+			pillar,
+		]
+		full_foreground = scale_images(full_foreground, (320, SCREEN_HEIGHT))
+		self.screen.blit(full_foreground[0], (550, SCREEN_HEIGHT -  full_foreground[0].get_size()[1] + 100)-self.camera.level_scroll * 1.2)
+	
 	def run(self):
 		self.running = True
 		self.last_time = time.time()
@@ -629,6 +741,7 @@ class Game():
 			self.level.update_level()
 
 			self.level.draw_level(self.screen)
+			# self.update_foreground()
 			self.player.update(self.dt, self.screen, self.level.terrain)
 			self.enemy.update(self.dt, self.level.terrain)
 			self.draw_fps()
