@@ -31,7 +31,7 @@ CENTER = (HALF_WIDTH, HALF_HEIGHT)
 TILE_SIZE = 64
 WORLD_BRIGHTNESS = 180
 GRAVITY = 0.4
-CHUNK_SIZE = 8
+CHUNK_SIZE = 20
 
 # path shortcuts
 CHAR_PATH = '../../assets/character/'

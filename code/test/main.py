@@ -395,6 +395,7 @@ class World():
 	def __init__(self, game, world_data):
 		# world config
 		self.game = game
+		self.game_map = {}
 		self.world_data = world_data
 		self.level_topleft = 0
 		self.level_bottomright = 0
@@ -438,6 +439,41 @@ class World():
 		self.terrain = []
 		self.terrain_data = import_csv_layout(world_data['terrain'])
 	
+	def generate_chunk(self, x, y):
+		chunk_data = []
+		for y_pos in range(CHUNK_SIZE):
+			for x_pos in range(CHUNK_SIZE):
+				target_x = x * CHUNK_SIZE + x_pos
+				target_y = y * CHUNK_SIZE + y_pos
+				tile_type = 0 # nothing
+				if target_y > 10:
+					tile_type = 2 # dirt
+				elif target_y == 10:
+					tile_type = 1 # grass
+				elif target_y == 9:
+					if random.randint(1,5) == 1:
+						tile_type = 3 # plant
+				if tile_type != -1:
+					chunk_data.append([[target_x,target_y],tile_type])
+		return chunk_data
+
+	def draw_chunks(self):
+		for y in range(3):
+			for x in range(4):
+				target_x = x - 1 + int(round(self.game.camera.level_scroll.x/(CHUNK_SIZE*TILE_SIZE)))
+				target_y = y - 1 + int(round(self.game.camera.level_scroll.y/(CHUNK_SIZE*TILE_SIZE)))
+				target_chunk = str(target_x) + ';' + str(target_y)
+				if target_chunk not in self.game_map:
+					self.game_map[target_chunk] = self.generate_chunk(target_x,target_y)
+				for tile in self.game_map[target_chunk]:
+					self.game.screen.blit(self.tile_index[tile[1]], (tile[0][0]*TILE_SIZE-self.game.camera.level_scroll.x, tile[0][1]*TILE_SIZE-self.game.camera.level_scroll.y))
+					if tile[1] in [1,2]:
+						self.tile_rects.append(pygame.Rect( 
+							(tile[0][0]*TILE_SIZE, tile[0][1]*TILE_SIZE),
+							(TILE_SIZE,TILE_SIZE)
+								)
+							)
+
 	def generate_player_spawn(self, world_data):
 		self.player_data = import_csv_layout(world_data['player'])
 		y = 0
@@ -481,6 +517,7 @@ class World():
 
 	def update(self):
 		self.respawn()
+		print(len(self.game_map))
 
 class UI():
 	def __init__(self, game, surface):
@@ -626,7 +663,8 @@ class Game():
 
 			# drawing
 			self.update_background()
-			self.world.draw_tiles(self.screen)
+			# self.world.draw_tiles(self.screen)
+			self.world.draw_chunks()
 			self.player.draw(self.screen)
 			self.ui.update_player_HUD()
 
