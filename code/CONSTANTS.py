@@ -134,6 +134,7 @@ SPELLS = {
 SPELL_FRAME_DURATIONS = {
 	'windblade': 2,
 	'fireball': 2,
+	'wind_sparks': 3,
 }
 
 HITSPARK_FRAME_DURATIONS = {

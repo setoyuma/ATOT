@@ -90,8 +90,8 @@ class Particle(pygame.sprite.Sprite):
 			self.game.screen.blit(glow, (self.rect.x - 4, self.rect.y + 3), special_flags=BLEND_RGB_ADD)
 		if self.torch:
 			self.velocity.x = 0.1
+			# self.velocity.y = -float(random.randint(1, 10)) * self.game.dt
 			self.position.x += self.velocity.x * self.game.dt
-			# self.velocity.x += float(random.randint(1, 1)) * self.game.dt
 		else:
 			self.position.x += self.velocity.x * self.game.dt
 		if self.gravity:
@@ -104,7 +104,7 @@ class Particle(pygame.sprite.Sprite):
 
 class Projectile(pygame.sprite.Sprite):
 	
-	def __init__(self, game, position:tuple, projectile_type:str, direction:str):
+	def __init__(self, game, position:tuple, projectile_type:str, direction:str, cast_from:tuple, dist:int):
 		super().__init__()
 		self.game = game
 		self.position = pygame.math.Vector2(position)
@@ -112,61 +112,50 @@ class Projectile(pygame.sprite.Sprite):
 		self.speed = SPELLS[self.projectile_type][1]
 		self.size = pygame.math.Vector2(SPELLS[self.projectile_type][0], SPELLS[self.projectile_type][0])
 		self.direction = direction
+		self.distance = dist
+		self.cast_from = pygame.math.Vector2(cast_from)
+		
+		# status
+		self.status = 'cast'
+		self.collided = False
 
 		# animation
+		self.frame_index = 0
 		self.import_assets()
-		self.animation = self.animations[self.projectile_type]
-		self.image = self.animation.animation[0]
-		self.rect = self.image.get_rect(topleft=self.position)
-
-	def get_speed(self):
-		if self.projectile_type == "normal":
-			return 5
-		elif self.projectile_type == "fast":
-			return 8
-		else:
-			return 5
-
-	def get_size(self):
-		if self.projectile_type == "normal":
-			return (10, 10)
-		elif self.projectile_type == "large":
-			return (20, 20)
-		else:
-			return (10, 10)
+		self.animation = self.animation_keys[self.projectile_type]
+		# self.image = self.animation[0]
+		self.animation_speed = 0.25
+		self.hitbox = pygame.Rect(self.position, self.size)
 
 	def import_assets(self):
-		self.animations = {}
-		self.animation_keys = {'fireball':[],'windblade':[]} 
-		for key in self.animation_keys:
-			full_path = SPELL_PATH + key
+		self.animation_keys = {'fireball':[],'windblade':[], 'wind_sparks':[], 'fire_sparks':[]} 
+
+		for animation in self.animation_keys:
+			full_path = SPELL_PATH + animation
+			
 			original_images = import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
-
-			loop = False
-			self.animator = Animator(self.game, scaled_images, SPELL_FRAME_DURATIONS[key], loop)
-			self.animations[key] = self.animator
-
-	def update_animation(self):
-		self.animation = self.animations[self.projectile_type]
-		if self.animation.done and not self.animation.loop:
-			if self.projectile_type in self.animation_keys:
-				self.projectile_type = self.projectile_type
-				self.animation.reset()
-
+			
+			self.animation_keys[animation] = import_folder(full_path)
+		self.animations = self.animation_keys
+	
+	def animate(self):
+		animation = self.animation_keys[self.projectile_type]
+		self.frame_index += self.animation_speed * self.game.dt
+		if self.frame_index >= len(animation):
+			self.frame_index = 0
 		if self.direction == 'right':
-			flipped_image = pygame.transform.flip(self.animation.update(self.game.dt), False, False)
-			self.image = flipped_image
-		else:
-			flipped_image = pygame.transform.flip(self.animation.update(self.game.dt), True, False)
-			self.image = flipped_image
+			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+		if self.direction == 'left':
+			self.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.size), True, False)
+		self.rect = self.image.get_rect(topleft=self.position)
 
 	def check_collision(self, collideables:list):
 		for object_list in collideables:
 			for obj in object_list:
 				if self.rect.colliderect(obj):
 					self.collided = True
-
+					
 	def create_hitspark_animation(self):
 		hitspark_images = []  # Placeholder list for demonstration
 		hitspark_pos = self.rect.center
@@ -174,21 +163,59 @@ class Projectile(pygame.sprite.Sprite):
 		# ...
 	
 	def draw(self, surface:pygame.Surface):
-		surface.blit(self.image, self.rect.topleft)
+		surface.blit(self.image, self.hitbox.topleft)
 		# pygame.draw.rect(self.game.screen, [0,255,0], self.rect )
+		# pygame.draw.rect(self.game.screen, [0,255,0], self.hitbox )
+
+	def handle_status(self):
+		if self.status == 'hit' or self.collided:
+			match self.projectile_type:
+				case 'windblade':
+					self.projectile_type = 'wind_sparks'
+				case 'fireball':
+					self.projectile_type = 'fire_sparks'
+		
+			if self.frame_index + 1 >= len(self.animations[self.projectile_type]):
+				self.status = 'remove'
 
 	def update(self):
+		self.handle_status()
+		self.animate()
 		match self.direction:
 			case 'right':
-				self.position.x += self.speed * self.game.dt
+				if self.status not in ['hit', 'remove'] and not self.collided:
+					self.position.x += self.speed * self.game.dt
 			case 'left':
-				self.position.x += -self.speed * self.game.dt
+				if self.status not in ['hit', 'remove'] and not self.collided:
+					self.position.x += -self.speed * self.game.dt
 
-		self.rect.center = self.position - self.game.camera.level_scroll
-		self.update_animation()
+		self.hitbox.center = self.position - self.game.camera.level_scroll
+		self.rect.center = self.position
 		self.check_collision([self.game.world.tile_rects, self.game.world.enemy_rects])
 
 """ GAME """
+class Weapon(pygame.sprite.Sprite):
+	def __init__(self,game,player,groups):
+		super().__init__(groups)
+		self.game = game
+		direction = player.status.split('_')[0]
+
+		# graphic
+		full_path = f'../assets/weapons/{player.current_weapon}/{player.current_weapon}.png'
+		self.image = get_image(full_path).convert_alpha()
+		self.image = scale_images([self.image], (32, 32))
+		self.image = self.image[0]
+
+		# placement
+		if player.facing_right:
+			self.rect = self.image.get_rect(midleft = player.rect.midright + pygame.math.Vector2(0,-26))
+		elif not player.facing_right:
+			self.image = pygame.transform.flip(self.image, True, False)
+			self.rect = self.image.get_rect(midright = player.rect.midleft + pygame.math.Vector2(-26,-26))
+
+	def draw(self, surface:pygame.Surface):
+		surface.blit(self.image, self.rect.center - self.game.camera.level_scroll)
+
 class Enemy(Entity):
 
 	def __init__(self, game, enemy_name, size, position, speed, groups):
@@ -495,6 +522,7 @@ class Player(Entity):
 		self.character = character
 		self.import_character_assets()
 		self.particles = []
+		self.weapon_sprite = pygame.sprite.GroupSingle()
 		
 		self.hurtbox = pygame.Rect( self.rect.topleft, (32,96))
 
@@ -548,6 +576,11 @@ class Player(Entity):
 
 		# collision area
 		self.collision_area = pygame.Rect(self.rect.x, self.rect.y, TILE_SIZE * 3, TILE_SIZE * 3)
+
+		""" WEAPONS """
+		self.weapon = []
+		self.current_weapon = 'skolfen'
+		self.weapon_sprite = pygame.sprite.GroupSingle()
 
 	def import_character_assets(self):
 		self.animations = {}
@@ -605,7 +638,7 @@ class Player(Entity):
 
 		# attacks
 		if self.attacking:
-			self.attack()
+			self.create_attack()
 			print(self.attack_rects)
 		else:
 			self.attack_rects = []
@@ -615,43 +648,23 @@ class Player(Entity):
 			self.active_spell = self.bound_spells[self.active_spell_slot-1]
 		print(self.active_spell_slot)
 
-	def attack(self):
-		if self.facing_right:
-			self.true_hitbox = pygame.Rect(
-				(self.rect.x + 40, 
-				self.rect.y + 25), 
-				(60, 40)
-				)
-			self.attack_rects.append(pygame.Rect(
-				((self.rect.x + 40) - self.game.camera.level_scroll.x, 
-				 (self.rect.y + 25) - self.game.camera.level_scroll.y), 
-				(60, 40)
-				))
-		elif not self.facing_right:
-			self.true_hitbox = pygame.Rect(
-				(self.rect.x - 13, 
-				self.rect.y + 25), 
-				(60, 40)
-				)
-			self.attack_rects.append(pygame.Rect(
-				((self.rect.x - 13) - self.game.camera.level_scroll.x, 
-				 (self.rect.y + 25) - self.game.camera.level_scroll.y), 
-				(60, 40)
-				))
+	def create_attack(self):
+		self.weapon.append(
+			Weapon(self.game, self, self.weapon_sprite)
+		)
 
 		if self.attack_duration >= 5:
 			self.attack_duration = 0
+			self.animation.frame_index = 0
 
 		if self.status == 'attack':
-			self.attack_rects = [self.attack_rects[0]]
+		# 	self.attack_rects = [self.attack_rects[0]]
 			self.attack_duration += 0.2 * self.game.dt
 			self.velocity.x = 0
 			
-			# print(self.attack_duration)
+			print(self.attack_duration)
 			if int(self.attack_duration) == self.animations[self.status].frame_duration:
 				self.attacking = False
-				# print(len(self.animations))
-				# print("stop attack")
 				self.attack_duration = 0
 	
 	def show_attacks(self, surface:pygame.Surface):
@@ -1014,13 +1027,10 @@ class World():
 				self.game.playable = True
 
 	def world_FX(self):
-		# if len(self.world_particles) == len(self.torch_positions):
-		# 	pass
-		# else:
 		for index, pos in enumerate(self.torch_positions):
 			for x in range(3):
 				self.world_particles.append(
-					Particle(self.game, random.choice(seto_colors["torch1"]), ((self.torch_positions[index][0][0] + 32) + random.randint(-10, 10), self.torch_positions[index][0][1] + 82), (random.randint(-2,2), -4), 3, [pygame.sprite.Group()], torch=True)
+					Particle(self.game, random.choice(seto_colors["torch1"]), ((self.torch_positions[index][0][0] + 32) + random.randint(-10, 10), self.torch_positions[index][0][1] + 42), (random.randint(-2,2), -4), 3, [pygame.sprite.Group()], torch=True)
 				)
 
 	def update_FX(self, surface:pygame.Surface):
@@ -1097,8 +1107,9 @@ class Game():
 		self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.SCALED)
 		self.scaled_display = pygame.Surface((SCREEN_SIZE[0]//3, SCREEN_SIZE[1]//3))
 		self.clock = pygame.time.Clock()
-		pygame.display.set_caption("ATOT")
-		# pygame.display.toggle_fullscreen()
+		pygame.display.set_caption("A Tale Of Time")
+		pygame.display.set_icon(get_image('../assets/logo.ico'))
+		pygame.display.toggle_fullscreen()
 
 	def setup_world(self):
 		self.world_brightness = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
@@ -1193,11 +1204,11 @@ class Game():
 				if event.key == pygame.K_p: #and self.player.collide_bottom:
 					if self.player.facing_right:
 						self.player.projectiles.append(
-							Projectile(self, self.player.rect.center, self.player.active_spell, 'right')
+							Projectile(self, self.player.rect.center, self.player.active_spell, 'right', self.player.rect.center, 300)
 						)
 					else:
 						self.player.projectiles.append(
-							Projectile(self, self.player.rect.center, self.player.active_spell, 'left')
+							Projectile(self, self.player.rect.center, self.player.active_spell, 'left', self.player.rect.center, 300)
 						)
 				
 				# player hud testing
@@ -1217,8 +1228,6 @@ class Game():
 			self.last_time = time.time()  # reset the last_time with the current time
 			self.current_fps = self.clock.get_fps()
 			
-			# self.screen.fill([55, 55, 92])
-
 			self.handle_events()
 
 			# updates
@@ -1233,26 +1242,31 @@ class Game():
 			self.world.draw_world(self.screen)
 			self.player.stat_bar()
 			self.ui.update_player_HUD()
-			# self.world.draw_enemies(self.screen)
-
+			
+			# handle projectiles
 			for projectile in self.player.projectiles:
 				projectile.draw(self.screen)
 
-			mx, my = pygame.mouse.get_pos()
-			
-			# for i in range(4):
-			# 	self.mouse_particles.append(particle_presets["torch"])
 
-			# for particle in self.mouse_particles:
-			# 	particle.emit()
-			
-			# 	if particle.radius <= 0:
-			# 		self.mouse_particles.remove(particle)
+				if projectile.status == 'remove':
+					self.player.projectiles.remove(projectile)
+				else:
+					if projectile.position.x >= projectile.cast_from.x + projectile.distance:
+						projectile.status = 'hit'				
+					if projectile.position.x <= projectile.cast_from.x - projectile.distance:
+						projectile.status = 'hit'				
 
+
+			if len(self.player.weapon) > 0:
+				for weapon in self.player.weapon:
+					weapon.draw(self.screen)
+					print("shlong john")
+
+					if not self.player.attacking:
+						self.player.weapon.remove(weapon)
+			
 			self.draw_fps()
 			self.send_frame()
-
-			# print(len(self.world.constraint_rects))
 
 class Camera():
 	def __init__(self, game, scroll_speed:int, interpolation:int):
