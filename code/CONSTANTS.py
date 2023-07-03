@@ -82,10 +82,12 @@ ENEMIES = {
 		"EXP": 6,
 		'DAMAGE': 8,
 		"ATTACK_TYPE": 'evergreen_serpent',
-		"SPEED": 3,
+		"SPEED": 2,
 		"RESIST": 3,
+		"ATK_CD": 400,
+		"IFRAMES": 300,
 		"ATK_RAD": 200,
-		"AGR_RNG": 50,
+		"AGR_RNG": 1000,
 		"ATTACKS": {'':[],'evergreen_serpent':[]},
 		"GRAVITY": True,
 	}
@@ -127,8 +129,8 @@ ENEMY_FRAME_DATA = {
 SPELLS = {
 	# type		 size speed
 	'': [0, 0],
-	'windblade': [96, 20],
-	'fireball': [32, 6],
+	'windblade': [96, 20, 4],
+	'fireball': [32, 6, 6],
 }
 
 SPELL_FRAME_DURATIONS = {

@@ -1,4 +1,5 @@
 import random, time
+from math import sin
 from world_data import worlds
 from BLACKFORGE2 import *
 from CONSTANTS import *
@@ -67,6 +68,13 @@ def glow_surface(radius, color, intensity) -> pygame.Surface:
 	surface.set_colorkey([0,0,0])
 	return surface
 
+def sine_wave_value() -> int:
+	value = sin(pygame.time.get_ticks())
+	if value >= 0: 
+		return 255
+	else: 
+		return 0
+
 class Particle(pygame.sprite.Sprite):
 	
 	def __init__(self, game, color:list, position:tuple, velocity:tuple, radius:int, groups, glow=False, gravity=False, torch=False):
@@ -109,8 +117,9 @@ class Projectile(pygame.sprite.Sprite):
 		self.game = game
 		self.position = pygame.math.Vector2(position)
 		self.projectile_type = projectile_type
-		self.speed = SPELLS[self.projectile_type][1]
 		self.size = pygame.math.Vector2(SPELLS[self.projectile_type][0], SPELLS[self.projectile_type][0])
+		self.speed = SPELLS[self.projectile_type][1]
+		self.damage = SPELLS[self.projectile_type][2]
 		self.direction = direction
 		self.distance = dist
 		self.cast_from = pygame.math.Vector2(cast_from)
@@ -125,7 +134,7 @@ class Projectile(pygame.sprite.Sprite):
 		self.animation = self.animation_keys[self.projectile_type]
 		# self.image = self.animation[0]
 		self.animation_speed = 0.25
-		self.hitbox = pygame.Rect(self.position, self.size)
+		self.rect = pygame.Rect(self.position, self.size)
 
 	def import_assets(self):
 		self.animation_keys = {'fireball':[],'windblade':[], 'wind_sparks':[], 'fire_sparks':[]} 
@@ -148,7 +157,6 @@ class Projectile(pygame.sprite.Sprite):
 			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
 		if self.direction == 'left':
 			self.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.size), True, False)
-		self.rect = self.image.get_rect(topleft=self.position)
 
 	def check_collision(self, collideables:list):
 		for object_list in collideables:
@@ -163,7 +171,7 @@ class Projectile(pygame.sprite.Sprite):
 		# ...
 	
 	def draw(self, surface:pygame.Surface):
-		surface.blit(self.image, self.hitbox.topleft)
+		surface.blit(self.image, self.rect.topleft - self.game.camera.level_scroll)
 		# pygame.draw.rect(self.game.screen, [0,255,0], self.rect )
 		# pygame.draw.rect(self.game.screen, [0,255,0], self.hitbox )
 
@@ -189,7 +197,6 @@ class Projectile(pygame.sprite.Sprite):
 				if self.status not in ['hit', 'remove'] and not self.collided:
 					self.position.x += -self.speed * self.game.dt
 
-		self.hitbox.center = self.position - self.game.camera.level_scroll
 		self.rect.center = self.position
 		self.check_collision([self.game.world.tile_rects, self.game.world.enemy_rects])
 
@@ -208,310 +215,206 @@ class Weapon(pygame.sprite.Sprite):
 
 		# placement
 		if player.facing_right:
+			self.hitbox = self.image.get_rect(midleft = player.rect.midright + pygame.math.Vector2(0,-26))
 			self.rect = self.image.get_rect(midleft = player.rect.midright + pygame.math.Vector2(0,-26))
+			self.hitbox.width = TILE_SIZE
 		elif not player.facing_right:
 			self.image = pygame.transform.flip(self.image, True, False)
+			self.hitbox = self.image.get_rect(midleft = player.rect.midright + pygame.math.Vector2(-26,-26))
 			self.rect = self.image.get_rect(midright = player.rect.midleft + pygame.math.Vector2(-26,-26))
+			self.hitbox.width = TILE_SIZE
 
 	def draw(self, surface:pygame.Surface):
+		self.hitbox.topleft = self.rect.topleft - self.game.camera.level_scroll
 		surface.blit(self.image, self.rect.center - self.game.camera.level_scroll)
+		# pygame.draw.rect(self.game.screen, "white", self.hitbox)
+		# pygame.draw.rect(self.game.screen, "white", self.rect)
 
 class Enemy(Entity):
-
-	def __init__(self, game, enemy_name, size, position, speed, groups):
+	
+	def __init__(self, game, enemy_name, speed, size, position, groups):
 		super().__init__(size, position, speed, groups)
-		# config
 		self.game = game
-		self.enemy_name = enemy_name
-		self.import_character_assets()
-		self.particles = []
+		self.grab_stats(enemy_name)
+		self.import_assets(enemy_name)
 
-		directions = [
-			"right",
-			"left",
-			# "up",
-			# "down",
+		self.directions = [
+			'left',
+			'right',
 		]
-		# self.direction = 'right'
-		self.direction = random.choice(directions)
+		self.direction_facing = random.choice(self.directions)
+		self.patrol_timer = 0
 		
-		# stats
-		self.current_attack = ''
-		self.enemy_data = ENEMIES[self.enemy_name]
-		self.health = self.enemy_data['HEALTH']
-		self.exp = self.enemy_data['EXP']
-		self.speed = self.enemy_data['SPEED']
-		self.attack_damage = self.enemy_data['DAMAGE']
-		self.resistance = self.enemy_data['RESIST']
-		self.attack_radius = self.enemy_data['ATK_RAD']
-		self.aggro_range = self.enemy_data['AGR_RNG']
-		self.attack_types = self.enemy_data['ATTACKS'][self.current_attack]
-		
-		# knockback
-		self.knockback_distance = 8
-
-		# stat scales
-		self.health_scale = ENEMIES[self.enemy_name]["HEALTH"]
-
-		# enemy status
-		self.status = 'move'
-		self.attacking = False
-		self.hit = False
-		self.damage_taken = False
+		# status
+		self.vulnerable = True
 		self.can_attack = True
+		self.aggro_rect = pygame.Rect(self.rect.topleft, (self.aggro_range, self.aggro_range))
+
 
 		# animation
-		self.animation = self.animations[self.status]
-		self.image = self.animation.animation[0]
-		self.attack_duration = 0
+		self.status = 'move'
+		self.frame_index = 0
+		self.animation = self.animation_keys[self.status]
+		self.animation_speed = 0.25
 
-		# rectangles
-		# self.rect = self.image.get_rect(topleft=self.position)
-		self.rect = pygame.Rect( self.position, (32, self.image.get_height()) )
-		self.hurtbox = pygame.Rect( self.rect.topleft, (32,96))
-		self.aggro_field = pygame.Rect( (self.rect.x, self.rect.y), (self.aggro_range, self.aggro_range))
+	def grab_stats(self, enemy_name):
+		self.stats = ENEMIES[enemy_name]
+		self.name = self.stats['NAME']
+		self.health = self.stats['HEALTH']
+		self.exp = self.stats['EXP']
+		self.damage = self.stats['DAMAGE']
+		self.attack_type = self.stats['ATTACK_TYPE']
+		self.speed = self.stats['SPEED']
+		self.resistance = self.stats['RESIST']
+		self.attack_cooldown = self.stats['ATK_CD']
+		self.invincibility_duration = self.stats['IFRAMES']
+		self.attack_radius = self.stats['ATK_RAD']
+		self.aggro_range = self.stats['AGR_RNG']
+		self.attacks = self.stats['ATTACKS']
+		self.gravity = self.stats['GRAVITY']
 
-		# collision area
-		self.collision_area = pygame.Rect(self.rect.x, self.rect.y, TILE_SIZE * 3, TILE_SIZE * 3)
-
-	def import_character_assets(self):
-		self.animations = {}
+	def import_assets(self, enemy_name):
 		self.animation_keys = {'move':[],'attack':[]} 
-		for key in self.animation_keys:
-			full_path = ENEMY_PATH + self.enemy_name + '/' + key
+
+		for animation in self.animation_keys:
+			full_path = ENEMY_PATH + enemy_name + '/' + animation
+			
 			original_images = import_folder(full_path)
-			scaled_images = []
+			scaled_images = scale_images(original_images, self.size)
+			
+			self.animation_keys[animation] = import_folder(full_path)
 
-			# scale images before passing to animator
-			match self.enemy_name:
-				case 'rose_sentinel':
-					if key == 'attack':
-						scaled_images.extend(scale_images(original_images, (self.size.x + 75, self.size.y + 65)))
-					elif key == 'move':
-						scaled_images.extend(scale_images(original_images, self.size))
-
-				case _:
-					scaled_images.extend(scale_images(original_images, self.size))
-
-			if key in ["run"]:
-				loop = True
-			else:
-				loop = False
-			self.animator = Animator(self.game, scaled_images, ENEMY_FRAME_DURATIONS[self.enemy_name][key], loop)
-			self.animations[key] = self.animator
-
-	def update_animation(self):
-		self.animation = self.animations[self.status]
-		if self.animation.done and not self.animation.loop:
-			if self.status in self.animation_keys:
-				self.status = "idle"
-				self.animation.reset()
-				pass
-		
-		if self.facing_right:
-			flipped_image = pygame.transform.flip(self.animation.update(self.game.dt),False,False)
-			self.image = flipped_image
-		else:
-			flipped_image = pygame.transform.flip(self.animation.update(self.game.dt),True,False)
-			self.image = flipped_image
-
-	def jump(self, dt):
-		self.velocity.y = -self.jump_force
-		self.jumps -= 1
+		self.animations = self.animation_keys
 	
-	def attack(self):
-		if self.facing_right:
-			self.true_hitbox = pygame.Rect(
-				(self.rect.x + 40, 
-				self.rect.y + 25), 
-				(60, 40)
-				)
-			self.hitbox = pygame.Rect(
-				((self.rect.x + 40) - self.game.camera.level_scroll.x, 
-				 (self.rect.y + 25) - self.game.camera.level_scroll.y), 
-				(60, 40)
-				)
-		elif not self.facing_right:
-			self.true_hitbox = pygame.Rect(
-				(self.rect.x - 13, 
-				self.rect.y + 25), 
-				(60, 40)
-				)
-			self.hitbox = pygame.Rect(
-				((self.rect.x - 13) - self.game.camera.level_scroll.x, 
-				 (self.rect.y + 25) - self.game.camera.level_scroll.y), 
-				(60, 40)
-				)
-		pygame.draw.rect(pygame.display.get_surface(), "red", self.hitbox)
+	def animate(self):
+		animation = self.animation_keys[self.status]
+		self.frame_index += self.animation_speed * self.game.dt
+		if self.frame_index >= len(animation):
+			self.frame_index = 0
+		if self.direction_facing == 'right':
+			self.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.size), True, False)
+		if self.direction_facing == 'left':
+			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
 		
-		if self.attack_duration >= 5:
-			self.attack_duration = 0
+		if not self.vulnerable:
+			self.image.set_alpha(sine_wave_value())
 
+	def actions(self,player):
 		if self.status == 'attack':
-			self.attack_duration += 0.2 * self.game.dt
-			self.velocity.x = 0
-			# print(self.attack_duration)
-			if int(self.attack_duration) == self.animations[self.status].frame_duration:
-				# print(len(self.animations))
-				# print("stop attack")
-				self.attacking = False
-				self.attack_duration = 0
-	
-	def move(self, dt):
-		match self.direction:
-			case 'right':
-				self.facing_right = False
-				self.velocity.x = self.speed * dt
-			case 'left':
-				self.facing_right = True
-				self.velocity.x = -self.speed * dt
-			case 'up':
-				self.velocity.y = -self.speed * dt
-			case 'down':
-				self.velocity.y = self.speed * dt
+			self.attack_time = pygame.time.get_ticks()
+			self.direction = pygame.math.Vector2()
+		elif self.status == 'move':
+			self.direction = self.get_player_distance_direction(player)[1]
+		else:
+			self.direction = pygame.math.Vector2()
 
+		if self.direction.x > 0:
+			self.direction_facing = 'right'
+		elif self.direction.x < 0:
+			self.direction_facing = 'left'
+
+	def move(self):
+		if self.direction.magnitude() != 0:
+			self.direction = self.direction.normalize()
+
+		self.velocity.x = self.direction.x * self.speed * self.game.dt
+		# self.velocity.y = self.direction.y * speed
+
+	def check_constraints(self, contraints:list):
+		for constraint in contraints:
+			if self.rect.colliderect(constraint):
+				if self.direction_facing == 'right':
+					self.direction_facing = 'left'
+					self.rect.x + 10
+				elif self.direction_facing == 'left':
+					self.direction_facing = 'right'
+					self.rect.x - 10
+
+	def get_player_distance_direction(self,player):
+		enemy_vec = pygame.math.Vector2(self.rect.center)
+		player_vec = pygame.math.Vector2(player.rect.center)
+		distance = (player_vec - enemy_vec).magnitude()
+		
+		if self.game.player.rect.colliderect(self.aggro_rect) and distance > 0:
+			direction = (player_vec - enemy_vec).normalize()
+		else:
+			direction = pygame.math.Vector2()
+
+		return (distance,direction)
+	
 	def get_status(self, player):
 		distance = self.get_player_distance_direction(player)[0]
+
 		if distance <= self.attack_radius and self.can_attack:
 			if self.status != 'attack':
 				self.frame_index = 0
 			self.status = 'attack'
-			if self.animation.frame_index >= len(self.animation.animation):
-				self.can_attack = False
 		elif distance <= self.aggro_range:
 			self.status = 'move'
 		else:
 			self.status = 'move'
 
-	def draw(self, surface:pygame.Surface):
-		
-		if self.status == 'attack':
-			match self.enemy_name:
-				case 'rose_sentinel':
-					if not self.facing_right:
-						surface.blit(self.image, (self.rect.x - self.game.camera.level_scroll.x - 10, self.rect.y - self.game.camera.level_scroll.y - TILE_SIZE))
-					else:
-						surface.blit(self.image, (self.rect.x - self.game.camera.level_scroll.x - 50, self.rect.y - self.game.camera.level_scroll.y - TILE_SIZE))
-		if self.status == 'move':
-			match self.enemy_name:
-				case 'rose_sentinel':
-					surface.blit(self.image, (self.rect.x - self.game.camera.level_scroll.x, self.rect.y - self.game.camera.level_scroll.y))
+	def incoming_damage_check(self):
+		for spell in self.game.player.projectiles:
+			if spell.rect.colliderect(self.rect) and self.vulnerable and self.health > 0:
+				self.get_damage(spell.damage)
+		for weapon in self.game.player.weapon:
+			if weapon.rect.colliderect(self.rect) and self.vulnerable and self.health > 0:
+				self.get_damage(weapon.damage)
 
-		for particle in self.particles:
-			particle.emit()
+	def get_damage(self, damage_taken):
+		if self.vulnerable:
+			self.hit_time = pygame.time.get_ticks()
+			self.vulnerable = False
+			self.health -= damage_taken
 
-		# pygame.draw.rect(surface, "white", self.aggro_field)
-		# pygame.draw.rect(surface, "white", self.hurtbox)
-		# pygame.draw.rect(surface, "white", self.rect)
+	def hit_reaction(self):
+		if not self.vulnerable and int(self.direction.x) != 0:
+			self.direction *= -self.resistance
+		elif not self.vulnerable and int(self.direction.x) == 0:
+			if self.direction_facing == 'right':
+				self.direction += (1,1)
+				self.direction *= -self.resistance
+			if self.direction_facing == 'left':
+				self.direction -= (1,1)
+				self.direction *= -self.resistance
 
-	def on_screen_check(self):
-		if self.rect.x >= self.game.world.level_bottomright.x:
-			self.rect.x = self.game.world.level_bottomright.x
-		elif self.rect.x <= self.game.world.level_topleft.x:
-			self.rect.x = self.game.world.level_topleft.x
-
-	def check_aggro(self):
-		if self.aggro_field.colliderect(self.game.player.hurtbox):
-			# print("player in aggro range")
-			self.attacking = True
-			pass
-		else:
-			self.attacking = False
-
-	def get_player_distance_direction(self, player):
-		enemy_vec = pygame.math.Vector2(self.rect.center)
-		player_vec = pygame.math.Vector2(player.rect.center)
-		distance = (player_vec - enemy_vec).magnitude()
-
-		if distance > 0:
-			direction = (player_vec - enemy_vec).normalize()
-		else:
-			direction = pygame.math.Vector2()
-		# print("dist", distance, "dir", direction)
-		return (distance,direction)
-
-	def check_constraints(self, constraints:list):
-		for constraint in constraints:
-			if self.rect.colliderect(constraint):
-				match self.direction:
-					case 'right':
-						self.direction = 'left'
-						self.rect.x -= 10
-					case 'left':
-						self.direction = 'right'
-						self.rect.x += 10
-
-	def check_got_hit(self):
-		for attack_rect in self.game.player.attack_rects:
-			if attack_rect.colliderect(self.hurtbox):
-				print("enemy got hit by player")
-				self.take_damage(10, self.game.player, attack_rect.center)
-				self.game.player.attack_rects = []
-	
-	def take_damage(self, damage:int, damage_source, hit_location:tuple):
-		self.hit = True
-		self.damage_source = damage_source
-		self.health -= damage
-		self.damage_taken = True
-
-	def knockback(self):
-		if self.facing_right and self.hit and self.knockback_distance > 0:
-			self.velocity.x = 8
-		if not self.facing_right and self.hit and self.knockback_distance > 0:
-			self.velocity.x = 8
-
-	def cooldown(self):
+	def cooldowns(self):
+		current_time = pygame.time.get_ticks()
 		if not self.can_attack:
-			current_time = pygame.time.get_ticks()
 			if current_time - self.attack_time >= self.attack_cooldown:
 				self.can_attack = True
 
-	def update(self, dt, surface:pygame.Surface, terrain:list, constraints:list):
-		self.move(dt)
-		self.on_screen_check()
+		if not self.vulnerable:
+			if current_time - self.hit_time >= self.invincibility_duration:
+				self.vulnerable = True
+
+	def status_bar(self):
+		health_bar = pygame.Rect((self.rect.topleft - self.game.camera.level_scroll) - (0, 20), (200 * self.health/100, 8))
+		pygame.draw.rect(self.game.screen, [255,0,0], health_bar)
+	
+	def draw(self, surface:pygame.Surface):
+		surface.blit(self.image, self.rect.topleft - self.game.camera.level_scroll)
+		self.status_bar()
+	 	# show aggro range
+		# self.game.screen.blit(pygame.Surface((self.aggro_range, self.aggro_range)), self.aggro_rect.topleft - self.game.camera.level_scroll)
+
+	def update(self, terrain, constraints):
+		self.actions(self.game.player)
+		self.incoming_damage_check()
+		self.hit_reaction()
+		# self.check_constraints(constraints)
+		self.move()
+		self.animate()
 		self.get_status(self.game.player)
-		self.update_animation()
+		self.cooldowns()
 
-		# check if enemy was hit
-		self.check_got_hit()
-
-		# check aggro
-		self.aggro_field.center = self.rect.topleft
-		self.check_aggro()
-
-		# update hurtbox
-		self.hurtbox.topleft = self.rect.topleft
-		
-		# knockback and damage
-		if self.hit:
-			self.knockback()
-			self.knockback_distance -= 1 * dt
-		
-		if self.knockback_distance <= 0:
-			self.hit = False
-			self.damage_taken = False
-			self.knockback_distance = 8
-
-		# check constraints
-		self.check_constraints(constraints)
-		
-		# adjust the enemy based on collisions and status
 		self.rect, self.game.world.collisions = collision_adjust(self, self.velocity, self.game.dt, terrain)
-		if self.status == 'attack':
-			if self.enemy_name == 'rose_sentinel':
-				pass
-		
+		# collision handling
 		if self.game.world.collisions['bottom']:
 			self.velocity.y = 0
 
-		# particles
-		for particle in self.particles:
-			if particle.radius <= 0:
-				self.particles.remove(particle)
-
-		# draw entity
-		self.draw(surface)
-		pygame.draw.rect(self.game.screen, "blue", self.hurtbox)
+		self.aggro_rect.center = self.rect.center
 
 class Player(Entity):
 
@@ -569,8 +472,9 @@ class Player(Entity):
 		self.heavy_fall = False
 
 		# animation
+		self.frame_index = 0
+		self.animation_speed = 0.25
 		self.animation = self.animations[self.status]
-		self.image = self.animation.animation[0]
 		self.attack_duration = 0
 		self.rect = pygame.Rect( (self.rect.x, self.rect.y), (32, 96) )
 
@@ -583,29 +487,27 @@ class Player(Entity):
 		self.weapon_sprite = pygame.sprite.GroupSingle()
 
 	def import_character_assets(self):
-		self.animations = {}
 		self.animation_keys = {'idle':[],'run':[],'jump':[],'fall':[], 'attack':[], 'roll':[]} 
-		for key in self.animation_keys:
-			full_path = CHAR_PATH + key
+
+		for animation in self.animation_keys:
+			full_path = CHAR_PATH + animation
+			
 			original_images = import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
-			loop = False
-			self.animator = Animator(self.game, scaled_images, FRAME_DURATIONS[key], loop)
-			self.animations[key] = self.animator
+			
+			self.animation_keys[animation] = import_folder(full_path)
 
-	def update_animation(self):
-		self.animation = self.animations[self.status]
-		if self.animation.done and not self.animation.loop:
-			if self.status in self.animation_keys:
-				self.status = "idle"
-				self.animation.reset()
-
+		self.animations = self.animation_keys
+	
+	def animate(self):
+		animation = self.animation_keys[self.status]
+		self.frame_index += self.animation_speed * self.game.dt
+		if self.frame_index >= len(animation):
+			self.frame_index = 0
 		if self.facing_right:
-			flipped_image = pygame.transform.flip(self.animation.update(self.game.dt), False, False)
-			self.image = flipped_image
+			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
 		else:
-			flipped_image = pygame.transform.flip(self.animation.update(self.game.dt), True, False)
-			self.image = flipped_image
+			self.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.size), True, False)
 
 	def jump(self, dt):
 		self.velocity.y = -self.jump_force
@@ -633,15 +535,12 @@ class Player(Entity):
 		if self.jumps <= 0 and self.collide_bottom:
 			self.jumps = CHARACTERS[self.character]["JUMPS"]
 
+		if self.attacking:
+			self.attack_duration += 0.2 * self.game.dt
+			self.velocity.x = 0
+
 		if self.jumping:
 			self.rolling = False
-
-		# attacks
-		if self.attacking:
-			self.create_attack()
-			print(self.attack_rects)
-		else:
-			self.attack_rects = []
 
 	def switch_active_spell(self):
 		if self.active_spell_slot in [1, 2]:
@@ -652,20 +551,6 @@ class Player(Entity):
 		self.weapon.append(
 			Weapon(self.game, self, self.weapon_sprite)
 		)
-
-		if self.attack_duration >= 5:
-			self.attack_duration = 0
-			self.animation.frame_index = 0
-
-		if self.status == 'attack':
-		# 	self.attack_rects = [self.attack_rects[0]]
-			self.attack_duration += 0.2 * self.game.dt
-			self.velocity.x = 0
-			
-			print(self.attack_duration)
-			if int(self.attack_duration) == self.animations[self.status].frame_duration:
-				self.attacking = False
-				self.attack_duration = 0
 	
 	def show_attacks(self, surface:pygame.Surface):
 		for attack_rect in self.attack_rects:
@@ -752,7 +637,7 @@ class Player(Entity):
 		self.dash(dt)
 		self.on_screen_check()
 		self.get_status()
-		self.update_animation()
+		self.animate()
 		
 		# update hurtbox
 		self.hurtbox.center = self.rect.center - self.game.camera.level_scroll
@@ -806,6 +691,15 @@ class Player(Entity):
 		if self.roll_timer < CHARACTERS[self.character]["ROLL COOLDOWN"]:
 			self.roll_timer += 0.1 * dt  # roll cooldown
 		
+		# # attacking
+		# if int(self.attack_duration) > 5:
+		# 	self.attack_duration = 0
+		# 	self.animation.frame_index = 0
+
+		# if int(self.attack_duration) == self.animations[self.status].frame_duration:
+		# 	self.attacking = False
+		# 	self.attack_duration = 0
+
 		# particles
 		for particle in self.particles:
 			if particle.radius <= 0:
@@ -941,15 +835,23 @@ class World():
 
 	def update_enemies(self, dt, surface:pygame.Surface, terrain:list, constraints:list):
 		for enemy in self.enemies:
-			enemy.update(dt, surface, terrain, constraints)
+			enemy.update(terrain, constraints)
+		self.despawn_enemy()
 
 	def spawn_enemies(self):
 		for spawn in self.enemy_spawns:
-			self.enemies.append( 
-				Enemy(self.game, 'rose_sentinel', 96, spawn, 9, [self.game.enemy_sprites])
+			self.enemies.append(
+				Enemy(self.game, 'rose_sentinel', 5, 96, spawn, self.game.enemy_sprites)
 			)
-			break
+			# break
 		
+	def despawn_enemy(self):
+		for enemy in self.enemies:
+			if enemy.health <= 0:
+				enemy.kill()
+				self.enemies.remove(enemy)
+				self.enemy_rects.remove(enemy.rect)
+
 	def generate_enemy_rects(self):
 		for enemy in self.enemies:
 			self.enemy_rects.append(enemy.rect)
@@ -1109,7 +1011,7 @@ class Game():
 		self.clock = pygame.time.Clock()
 		pygame.display.set_caption("A Tale Of Time")
 		pygame.display.set_icon(get_image('../assets/logo.ico'))
-		pygame.display.toggle_fullscreen()
+		# pygame.display.toggle_fullscreen()
 
 	def setup_world(self):
 		self.world_brightness = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
@@ -1121,6 +1023,9 @@ class Game():
 
 		# enemy sprites
 		self.enemy_sprites = pygame.sprite.Group()
+
+		# test Enemy
+		self.Enemy_group = pygame.sprite.Group()
 
 		# create world
 		self.current_world = 1
@@ -1201,6 +1106,9 @@ class Game():
 				# attacking
 				if event.key == pygame.K_o and self.player.collide_bottom:
 					self.player.attacking = True
+					self.player.create_attack()
+
+				# spells
 				if event.key == pygame.K_p: #and self.player.collide_bottom:
 					if self.player.facing_right:
 						self.player.projectiles.append(
@@ -1256,11 +1164,10 @@ class Game():
 					if projectile.position.x <= projectile.cast_from.x - projectile.distance:
 						projectile.status = 'hit'				
 
-
+			# handle weapons
 			if len(self.player.weapon) > 0:
 				for weapon in self.player.weapon:
 					weapon.draw(self.screen)
-					print("shlong john")
 
 					if not self.player.attacking:
 						self.player.weapon.remove(weapon)
