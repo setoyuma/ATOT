@@ -26,7 +26,7 @@ CENTER = (HALF_WIDTH, HALF_HEIGHT)
 
 # world
 TILE_SIZE = 64
-WORLD_BRIGHTNESS = 180
+WORLD_BRIGHTNESS = 120
 GRAVITY = 0.3
 CHUNK_SIZE = 8
 
@@ -40,16 +40,6 @@ ENEMY_PATH = '../assets/enemy/'
 BG_COLOR = '#060C17'
 PLAYER_COLOR = '#C4F7FF'
 TILE_COLOR = '#94D7F2'
-
-# particle datatype
-particle_dtype = np.dtype([
-	('position', float, (2,)),  # x, y
-	('velocity', float, (2,)),  # vx, vy
-	('color', float, (4,)),     # RGBA
-	('size', float),            # Particle size
-	('lifespan', float),        # Lifespan
-	('rect', pygame.Rect)		# Rect
-])
 
 seto_colors = {
 	"torch1": {
@@ -93,53 +83,11 @@ ENEMIES = {
 	}
 }
 
-# camera
-CAMERA_BORDERS = {
-	'left': 400,
-	'right': 400,
-	'top':150,
-	'bottom': 150
-}
-
-FRAME_DURATIONS = {
-	'jump': 2,
-	'fall': 4,
-	'idle': 5,
-	'run': 4,
-	'wallJump': 5,
-	'attack': 5,
-	'roll': 4
-}
-
-ENEMY_FRAME_DURATIONS = {
-	'rose_sentinel': {
-		'move': 8,
-		'attack': 8,
-	}
-}
-
-# active frame data
-ENEMY_FRAME_DATA = {
-	'rose_sentinel': {
-		'evergreen_serpent': 3,
-	},
-}
-
 """ SPELLS """
 SPELLS = {
-	# type		 size speed
+	# type		 size speed damage
 	'': [0, 0],
 	'windblade': [96, 20, 4],
-	'fireball': [32, 6, 6],
+	'fireball': [64, 6, 6],
 }
 
-SPELL_FRAME_DURATIONS = {
-	'windblade': 2,
-	'fireball': 2,
-	'wind_sparks': 3,
-}
-
-HITSPARK_FRAME_DURATIONS = {
-	'fire': 6,
-	'wind': 6,
-}

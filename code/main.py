@@ -291,6 +291,8 @@ class Enemy(Entity):
 		self.frame_index += self.animation_speed * self.game.dt
 		if self.frame_index >= len(animation):
 			self.frame_index = 0
+			if self.status == 'attack':
+				self.can_attack = False
 		if self.direction_facing == 'right':
 			self.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.size), True, False)
 		if self.direction_facing == 'left':
@@ -575,6 +577,7 @@ class Player(Entity):
 		adjusted_dash_distance = self.dash_distance * frame_scale
 
 		if self.dashing and self.facing_right and not self.collide_bottom:
+			self.velocity.y = 0
 			self.velocity.x += adjusted_dash_distance * dt
 			# marker = pygame.Rect(self.dash_point - self.game.camera.level_scroll, (40,40))
 			for i in range(int(self.dash_timer)):
@@ -583,6 +586,7 @@ class Player(Entity):
 			# pygame.draw.rect(self.game.screen, "white", marker)
 
 		elif self.dashing and not self.facing_right and not self.collide_bottom:
+			self.velocity.y = 0
 			self.velocity.x += -adjusted_dash_distance * dt
 			# marker = pygame.Rect(self.dash_point - self.game.camera.level_scroll, (40,40))
 			for i in range(int(self.dash_timer)):
@@ -934,6 +938,10 @@ class World():
 				self.world_particles.append(
 					Particle(self.game, random.choice(seto_colors["torch1"]), ((self.torch_positions[index][0][0] + 32) + random.randint(-10, 10), self.torch_positions[index][0][1] + 42), (random.randint(-2,2), -4), 3, [pygame.sprite.Group()], torch=True)
 				)
+		
+		for index, position in enumerate(self.torch_positions):
+			torch_glow = glow_surface(TILE_SIZE*2, [20,20,40],120)
+			self.game.world_brightness.blit(torch_glow, (position[0] - self.game.camera.level_scroll) - (102, 122), special_flags=pygame.BLEND_RGB_ADD)
 
 	def update_FX(self, surface:pygame.Surface):
 		for particle in self.world_particles:
@@ -945,14 +953,14 @@ class World():
 		# self.spawn_enemies()
 		# draw tiles
 		self.draw_tiles(surface)
-		# draw vfx
 		self.generate_torch_positions()
-		self.world_FX()
 		self.update_FX(surface)
 		# draw player????
 		self.game.player.draw(surface)
 		# draw enemies
 		self.draw_enemies(surface)
+		# draw vfx
+		self.world_FX()
 
 	def update(self):
 		self.respawn()
@@ -966,25 +974,31 @@ class UI():
 		self.player_portrait = get_image('../assets/ui/HUD/alryn_faceset2.png')
 		self.player_hud = scale_images([self.player_hud], (460,100))[0]
 		self.player_portrait = scale_images([self.player_portrait], (87,81))[0]
-	
+		# self.spell_image = get_image()
+		
+	def update_spell_slot(self):
+		spell_slot_1_rect = pygame.Rect((125, SCREEN_HEIGHT - 121), (96,96))
+		spell_1_image = get_image(SPELL_PATH+self.game.player.active_spell+'/'+self.game.player.active_spell+'1'+'.png')
+		spell_1_image = scale_images([spell_1_image], (96,96))
+		spell_1_image = spell_1_image[0]
+		self.display.blit(spell_1_image, spell_slot_1_rect)
+		# pygame.draw.rect(self.display, [0,0,0], spell_slot_1_rect)
+
 	def update_player_HUD(self):
 		# under bars
-		health_under_bar = pygame.Rect((98, 60), (364, 26))
-		pygame.draw.rect(self.display, [0,0,0], health_under_bar)
-		
-		magick_under_bar = pygame.Rect((98, 78), (364, 26))
-		pygame.draw.rect(self.display, [0,0,0], magick_under_bar)
-
+		self.health_under_bar = pygame.Rect((98, 60), (364, 26))
+		self.magick_under_bar = pygame.Rect((98, 78), (364, 26))
 		# bars
-		health_bar = pygame.Rect((98, 60), (364 * self.game.player.health/self.game.player.health_scale, 26))
-		pygame.draw.rect(self.display, [150,0,0], health_bar)
-	
-		magick_bar = pygame.Rect((90, 90), (374 * self.game.player.magick/self.game.player.magick_scale, 14))
-		pygame.draw.rect(self.display, [0,150,200], magick_bar)
+		self.health_bar = pygame.Rect((98, 60), (364 * self.game.player.health/self.game.player.health_scale, 26))
+		self.magick_bar = pygame.Rect((90, 90), (374 * self.game.player.magick/self.game.player.magick_scale, 14))
 		
+		pygame.draw.rect(self.display, [0,0,0], self.health_under_bar)
+		pygame.draw.rect(self.display, [0,0,0], self.magick_under_bar)
+		pygame.draw.rect(self.display, [150,0,0], self.health_bar)
+		pygame.draw.rect(self.display, [0,150,200], self.magick_bar)
 		self.display.blit(self.player_hud, (5,10))
 		self.display.blit(self.player_portrait, (25,10))
-
+		
 		if self.game.player.spell_shards > 0:
 			spell_shard_1 = pygame.transform.scale(get_image('../assets/UI/HUD/HUD_SHARD.png'), (54, 30))
 			self.display.blit(spell_shard_1, (105, 35))
@@ -1011,21 +1025,14 @@ class Game():
 		self.clock = pygame.time.Clock()
 		pygame.display.set_caption("A Tale Of Time")
 		pygame.display.set_icon(get_image('../assets/logo.ico'))
-		# pygame.display.toggle_fullscreen()
+		pygame.display.toggle_fullscreen()
 
 	def setup_world(self):
 		self.world_brightness = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
 		self.world_brightness.convert_alpha()
-		self.world_brightness.fill([WORLD_BRIGHTNESS, WORLD_BRIGHTNESS, WORLD_BRIGHTNESS])
-
-		# ui
-		self.ui = UI(self, self.screen)
 
 		# enemy sprites
 		self.enemy_sprites = pygame.sprite.Group()
-
-		# test Enemy
-		self.Enemy_group = pygame.sprite.Group()
 
 		# create world
 		self.current_world = 1
@@ -1038,6 +1045,9 @@ class Game():
 		# create camera
 		self.camera = Camera(self, 10, 250)
 		
+		# ui
+		self.ui = UI(self, self.screen)
+
 		self.background = get_image('../assets/background.png')
 		self.midground = get_image('../assets/midground.png')
 		self.foreground = get_image('../assets/foreground.png')
@@ -1050,6 +1060,7 @@ class Game():
 
 	def update_background(self):
 		self.screen.fill([55, 55, 92])
+		self.world_brightness.fill([WORLD_BRIGHTNESS, WORLD_BRIGHTNESS, WORLD_BRIGHTNESS])
 		
 		self.screen.blit(self.full_background[0], (0,0)-self.camera.level_scroll * 0.25)
 		self.screen.blit(self.full_background[1], (0,0)-self.camera.level_scroll * 0.5)
@@ -1140,7 +1151,6 @@ class Game():
 
 			# updates
 			self.world.update()
-			# self.world.world_FX()
 			self.world.update_enemies(self.dt, self.screen, self.world.tile_rects, self.world.constraint_rects)
 			self.player.update(self.dt, self.screen, self.world.tile_rects)
 			self.camera.update_position()
@@ -1150,6 +1160,7 @@ class Game():
 			self.world.draw_world(self.screen)
 			self.player.stat_bar()
 			self.ui.update_player_HUD()
+			self.ui.update_spell_slot()
 			
 			# handle projectiles
 			for projectile in self.player.projectiles:
