@@ -1,5 +1,4 @@
 from BLACKFORGE2 import *
-import numpy as np
 
 
 notes = {
@@ -27,7 +26,7 @@ CENTER = (HALF_WIDTH, HALF_HEIGHT)
 # world
 TILE_SIZE = 64
 WORLD_BRIGHTNESS = 180
-GRAVITY = 0.3
+GRAVITY = 0.25
 CHUNK_SIZE = 8
 
 # path shortcuts
@@ -56,7 +55,7 @@ CHARACTERS = {
 	"ALRYN": {
 		"NAME": "Alryn",
 		"HEALTH": 100,
-		"MAGICK": 500,
+		"MAGICK": 120,
 		"SPEED": 6,
 		"JUMPS": 1,
 		"JUMPFORCE": 12,
@@ -73,8 +72,8 @@ CHARACTERS = {
 ENEMIES = {
 	"rose_sentinel": {
 		"NAME": 'Rose Sentinel',
-		"HEALTH": 50,
-		"EXP": 6,
+		"HEALTH": 25,
+		"EXP": 3,
 		'DAMAGE': 8,
 		"ATTACK_TYPE": 'evergreen_serpent',
 		"SPEED": 2,
@@ -85,6 +84,36 @@ ENEMIES = {
 		"AGR_RNG": 1000,
 		"ATTACKS": {'':[],'evergreen_serpent':[]},
 		"GRAVITY": True,
+	},
+	"covenant_follower": {
+		"NAME": 'Covenant Follower',
+		"HEALTH": 15,
+		"EXP": 4,
+		'DAMAGE': 3,
+		"ATTACK_TYPE": 'wrath_of_alwyd',
+		"SPEED": 3,
+		"RESIST": 1,
+		"ATK_CD": 800,
+		"IFRAMES": 300,
+		"ATK_RAD": 500,
+		"AGR_RNG": 1500,
+		"ATTACKS": {'':[],'wrath_of_alwyd':[]},
+		"GRAVITY": True,
+	},
+	"sepparition": {
+		"NAME": 'Sepparition',
+		"HEALTH": 30,
+		"EXP": 8,
+		'DAMAGE': 5,
+		"ATTACK_TYPE": 'soul_sever',
+		"SPEED": 2,
+		"RESIST": 2,
+		"ATK_CD": 500,
+		"IFRAMES": 500,
+		"ATK_RAD": 300,
+		"AGR_RNG": 1100,
+		"ATTACKS": {'':[],'soul_sever':[]},
+		"GRAVITY": False,
 	}
 }
 
@@ -92,8 +121,8 @@ ENEMIES = {
 SPELLS = {
 	# type		 size speed damage MGC
 	'': [0, 0],
-	'windblade': [96, 20, 40, 8],
-	'fireball': [64, 6, 6, 12],
+	'windblade': [96, 20, 5, 4],
+	'fireball': [64, 6, 7, 5],
 }
 
 

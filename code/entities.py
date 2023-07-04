@@ -2,32 +2,30 @@ from BLACKFORGE2 import *
 from CONSTANTS import *
 from projectile import *
 from utils import *
-
+from particle import Particle
 
 class Weapon(pygame.sprite.Sprite):
-	def __init__(self, game, player, groups):
+	def __init__(self,game,player,groups):
 		super().__init__(groups)
 		self.game = game
-		self.image = self.load_and_scale_image(player)
-		self.hitbox, self.rect = self.calculate_hitbox_and_rect(player)
+		direction = player.status.split('_')[0]
 
-	def load_and_scale_image(self, player):
+		# graphic
 		full_path = f'../assets/weapons/{player.current_weapon}/{player.current_weapon}.png'
-		image = get_image(full_path).convert_alpha()
-		image = scale_images([image], (32, 32))
-		image = image[0]
-		if not player.facing_right:
-			image = pygame.transform.flip(image, True, False)
-		return image
+		self.image = get_image(full_path).convert_alpha()
+		self.image = scale_images([self.image], (32, 32))
+		self.image = self.image[0]
 
-	def calculate_hitbox_and_rect(self, player):
-		mid_right = player.rect.midright + pygame.math.Vector2(0,-26)
-		mid_left = player.rect.midleft + pygame.math.Vector2(-26,-26)
-		position = mid_right if player.facing_right else mid_left
-		hitbox = self.image.get_rect(midleft = position)
-		rect = self.image.get_rect(midleft = position)
-		hitbox.width = TILE_SIZE
-		return hitbox, rect
+		# placement
+		if player.facing_right:
+			self.hitbox = self.image.get_rect(midleft = player.rect.midright + pygame.math.Vector2(0,-26))
+			self.rect = self.image.get_rect(midleft = player.rect.midright + pygame.math.Vector2(0,-26))
+			self.hitbox.width = TILE_SIZE
+		elif not player.facing_right:
+			self.image = pygame.transform.flip(self.image, True, False)
+			self.hitbox = self.image.get_rect(midleft = player.rect.midright + pygame.math.Vector2(-26,-26))
+			self.rect = self.image.get_rect(midright = player.rect.midleft + pygame.math.Vector2(-26,-26))
+			self.hitbox.width = TILE_SIZE
 
 	def draw(self, surface:pygame.Surface):
 		self.hitbox.topleft = self.rect.topleft - self.game.camera.level_scroll
@@ -37,6 +35,7 @@ class Weapon(pygame.sprite.Sprite):
 
 
 class Item(Entity):
+
 	def __init__(self, game, item_name, type, size, position, speed, groups):
 		super().__init__(size, position, speed, groups)
 		self.game = game
@@ -168,6 +167,7 @@ class Item(Entity):
 
 
 class Enemy(Entity):
+	
 	def __init__(self, game, enemy_name, speed, size, position, groups):
 		super().__init__(size, position, speed, groups)
 		self.game = game
@@ -184,7 +184,9 @@ class Enemy(Entity):
 		# status
 		self.vulnerable = True
 		self.can_attack = True
+		self.attacking = False
 		self.aggro_rect = pygame.Rect(self.rect.topleft, (self.aggro_range, self.aggro_range))
+
 
 		# animation
 		self.status = 'move'
@@ -230,9 +232,9 @@ class Enemy(Entity):
 				self.can_attack = False
 		if self.direction_facing == 'right':
 			self.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.size), True, False)
-		if self.direction_facing == 'left':
+		elif self.direction_facing == 'left':
 			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
-		
+
 		if not self.vulnerable:
 			self.image.set_alpha(sine_wave_value())
 
@@ -255,7 +257,8 @@ class Enemy(Entity):
 			self.direction = self.direction.normalize()
 
 		self.velocity.x = self.direction.x * self.speed * self.game.dt
-		# self.velocity.y = self.direction.y * speed
+		if not self.gravity:
+			self.velocity.y = self.direction.y * self.speed * self.game.dt
 
 	def check_constraints(self, contraints:list):
 		for constraint in contraints:
@@ -323,8 +326,10 @@ class Enemy(Entity):
 	def cooldowns(self):
 		current_time = pygame.time.get_ticks()
 		if not self.can_attack:
+			self.attacking = True
 			if current_time - self.attack_time >= self.attack_cooldown:
 				self.can_attack = True
+				self.attacking = False
 
 		if not self.vulnerable:
 			if current_time - self.hit_time >= self.invincibility_duration:
@@ -346,9 +351,9 @@ class Enemy(Entity):
 		self.hit_reaction()
 		# self.check_constraints(constraints)
 		self.move()
+		self.cooldowns()
 		self.animate()
 		self.get_status(self.game.player)
-		self.cooldowns()
 
 		self.rect, self.game.world.collisions = collision_adjust(self, self.velocity, self.game.dt, terrain)
 		# collision handling
@@ -361,6 +366,7 @@ class Enemy(Entity):
 
 
 class Player(Entity):
+
 	def __init__(self, game, character, size, position, speed, groups):
 		super().__init__(size, position, speed, groups)
 		# config
@@ -467,58 +473,6 @@ class Player(Entity):
 		if self.jumps > 0:
 			self.velocity.y = -self.jumpforce
 			self.jumps -= 1
-
-	def handle_event(self, event):
-		# button clicked
-		if event.type == pygame.MOUSEBUTTONDOWN:
-			if event.button == 4:  # Mouse wheel up
-				self.active_spell_slot = 2
-				self.switch_active_spell()
-				pass
-			elif event.button == 5:  # Mouse wheel down
-				self.active_spell_slot = 1
-				self.switch_active_spell()
-				pass
-			elif event.button == 1:
-				pass
-
-		elif event.type == pygame.KEYDOWN:
-			# dashing
-			if event.key == pygame.K_LSHIFT and self.dash_counter > 0:
-				pygame.key.set_repeat(0)
-				self.dash_point = (self.rect.x, self.rect.y)
-				self.dashing = True
-				self.dash_counter -= 1
-			
-			# rolling
-			elif event.key == pygame.K_LSHIFT and self.collide_bottom and self.roll_counter > 0 and int(self.roll_cooldown) == CHARACTERS[self.character]["ROLL COOLDOWN"]:
-				self.roll_point = (self.rect.x, self.rect.y)
-				self.rolling = True
-				self.roll_counter -= 1
-
-			# attacking
-			if event.key == pygame.K_o and self.collide_bottom:
-				self.attacking = True
-				self.create_attack()
-
-			# spells
-			elif event.key == pygame.K_p: #and self.collide_bottom:
-				if self.facing_right and self.magick > 0 and self.vulnerable and self.cast_timer == self.cast_cooldown:
-					self.casting = True
-					self.magick -= SPELLS[self.active_spell][3]
-					self.projectiles.append(Projectile(self.game, self.rect.center, self.active_spell, 'right', self.rect.center, 300))
-				if not self.facing_right and self.magick > 0 and self.vulnerable and self.cast_timer == self.cast_cooldown:
-					self.casting = True
-					self.magick -= SPELLS[self.active_spell][3]
-					self.projectiles.append(Projectile(self.game, self.rect.center, self.active_spell, 'left', self.rect.center, 300))
-			
-			# player hud testing
-			if event.key == pygame.K_h:
-				self.health -= 10
-			if event.key == pygame.K_m:
-				self.magick -= 5
-			if event.key == pygame.K_s:
-				self.spell_shards += 1
 
 	def move(self, dt):
 		keys = pygame.key.get_pressed()
@@ -700,6 +654,7 @@ class Player(Entity):
 			blur_surface = pygame.transform.box_blur(self.image, 4, True)
 			self.image = blur_surface
 
+
 		if self.dash_timer <= 0 or not self.dashing:
 			self.dashing = False
 			self.dash_timer = 4
@@ -718,6 +673,15 @@ class Player(Entity):
 		
 		if self.roll_cooldown < CHARACTERS[self.character]["ROLL COOLDOWN"]:
 			self.roll_cooldown += 0.1 * dt  # roll cooldown
+		
+		# # attacking
+		# if int(self.attack_duration) > 5:
+		# 	self.attack_duration = 0
+		# 	self.animation.frame_index = 0
+
+		# if int(self.attack_duration) == self.animations[self.status].frame_duration:
+		# 	self.attacking = False
+		# 	self.attack_duration = 0
 
 		# particles
 		for particle in self.particles:
@@ -732,6 +696,7 @@ class Player(Entity):
 		if self.cast_timer <= 0:
 			self.casting = False
 			self.cast_timer = self.cast_cooldown
+		# print(self.projectiles)
 
 		# items
 		if self.spell_shards > 2:
@@ -740,3 +705,7 @@ class Player(Entity):
 		# stats
 		if self.magick > CHARACTERS[self.character]["MAGICK"]:
 			self.magick = CHARACTERS[self.character]["MAGICK"]
+
+		# draw player
+		# self.show_attacks(surface)
+		self.draw(surface)

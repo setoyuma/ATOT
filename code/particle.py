@@ -3,6 +3,7 @@ from CONSTANTS import *
 
 
 class Particle(pygame.sprite.Sprite):
+	
 	def __init__(self, game, color:list, position:tuple, velocity:tuple, radius:int, groups, glow=False, gravity=False, torch=False):
 		# super().__init__(groups)
 		self.game = game

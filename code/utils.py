@@ -4,6 +4,23 @@ from BLACKFORGE2 import *
 from CONSTANTS import *
 
 
+""" SUPPORT FUNCTIONS/CLASSES """
+_sound_library = {}
+def play_sound(path, stop=None):
+	global _sound_library
+	sound = _sound_library.get(path)
+	if sound == None:
+		canonicalized_path = path.replace('/', sep).replace('\\', sep)
+		sound = pygame.mixer.Sound(canonicalized_path)
+		sound.set_volume(0.3)
+		_sound_library[path] = sound
+	if stop is None:
+		sound.play()
+	elif stop:
+		sound.stop()
+	else:
+		sound.play(6)
+
 def tile_collision_test(rect:pygame.Rect, tiles:list) -> list:
 	""" Returns a list of tiles the given rect is colliding with """
 	tiles_collided_with = []

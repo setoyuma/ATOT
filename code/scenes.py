@@ -75,7 +75,8 @@ class Launcher(Scene):
 		self.game.draw_fps()
 
 
-class World:
+class World():
+
 	def __init__(self, game, world_data):
 		# world config
 		self.game = game
@@ -187,8 +188,8 @@ class World:
 		for row in self.enemy_data:
 			x = 0
 			for index, value in enumerate(row):
-				if int(value) == 0:
-					self.enemy_spawns.append(pygame.math.Vector2(x * TILE_SIZE, y * TILE_SIZE))
+				if int(value) in [0, 1, 2]:
+					self.enemy_spawns.append([pygame.math.Vector2(x * TILE_SIZE, y * TILE_SIZE), int(value)])
 				x += 1
 			y += 1
 
@@ -203,10 +204,19 @@ class World:
 
 	def spawn_enemies(self):
 		for spawn in self.enemy_spawns:
+			match spawn[1]:
+				case 0:
+					enemy_name = 'covenant_follower'
+				case 1:
+					enemy_name = 'rose_sentinel'
+				case 2:
+					enemy_name = 'sepparition'
+			
 			self.enemies.append(
-				Enemy(self.game, 'rose_sentinel', 5, 96, spawn, self.game.enemy_sprites)
+				Enemy(self.game, enemy_name, 5, 96, spawn[0], self.game.enemy_sprites)
 			)
-
+			# break
+		
 	def despawn_enemy(self):
 		for enemy in self.enemies:
 			if enemy.health <= 0:
@@ -216,6 +226,8 @@ class World:
 				for i in range(enemy.exp):
 					position = (enemy.rect.x + random.randint(-50, 50), enemy.rect.y + random.randint(-50, 50))
 					self.world_items.append(Item(self.game, 'magick_shard', 'magick', ITEMS['magick']['magick_shard']["SIZE"], position, 2, self.game.item_group))
+		
+		# print('amount of items', len(self.world_items))
 
 	def generate_enemy_rects(self):
 		for enemy in self.enemies:
@@ -282,10 +294,16 @@ class World:
 
 	def respawn(self):
 		if self.game.player.health <= 0:
-			self.game.player.rect.center = self.player_spawn
+			self.game.player.rect.x = self.player_spawn.x
+			self.game.player.rect.y = self.player_spawn.y
 			self.game.player.health = CHARACTERS[self.game.player.character]["HEALTH"]
-		elif self.game.player.rect.bottom >= self.level_height + 300:
-				self.game.player.rect.center = self.player_spawn
+		else:
+			if self.game.player.rect.bottom >= self.level_height + 300:
+				self.game.player.rect.x = self.player_spawn.x
+				self.game.player.rect.y = self.player_spawn.y
+				self.game.playable = False
+			if self.game.player.collide_bottom:
+				self.game.playable = True
 
 	def world_FX(self):
 		for index, pos in enumerate(self.torch_positions):

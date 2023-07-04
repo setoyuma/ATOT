@@ -33,3 +33,11 @@ worlds = {
 	2 : world_02,
 	3 : world_01,
 }
+
+world_names = {
+	1: 'church_of_melara'
+}
+
+music = {
+	'church_of_melara': 'FrozenWinds'
+}

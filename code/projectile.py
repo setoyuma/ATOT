@@ -3,6 +3,7 @@ from CONSTANTS import *
 
 
 class Projectile(pygame.sprite.Sprite):
+	
 	def __init__(self, game, position:tuple, projectile_type:str, direction:str, cast_from:tuple, dist:int):
 		super().__init__()
 		self.game = game
