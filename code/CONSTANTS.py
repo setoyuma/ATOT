@@ -26,7 +26,7 @@ CENTER = (HALF_WIDTH, HALF_HEIGHT)
 
 # world
 TILE_SIZE = 64
-WORLD_BRIGHTNESS = 120
+WORLD_BRIGHTNESS = 180
 GRAVITY = 0.3
 CHUNK_SIZE = 8
 
@@ -35,6 +35,7 @@ CHAR_PATH = '../assets/character/'
 SPELL_PATH = '../assets/spells/' 
 HITSPARK_PATH = '../assets/spells/hitsparks/' 
 ENEMY_PATH = '../assets/enemy/'
+ITEMS_PATH = '../assets/items/'
 
 # colors 
 BG_COLOR = '#060C17'
@@ -53,15 +54,19 @@ seto_colors = {
 """ CHARACTER STATS """
 CHARACTERS = {
 	"ALRYN": {
+		"NAME": "Alryn",
 		"HEALTH": 100,
-		"MAGICK": 50,
+		"MAGICK": 500,
 		"SPEED": 6,
-		"JUMPS": 2,
+		"JUMPS": 1,
 		"JUMPFORCE": 12,
 		"ROLL SPEED": 8,
 		"ROLL COOLDOWN": 4,
+		"ATK_CD": 800,
+		"CAST_CD": 50,
 		"DASH DIST": 30,
 		"ROLL DIST": 2,
+		"IFRAMES": 300,
 	}
 }
 
@@ -85,9 +90,23 @@ ENEMIES = {
 
 """ SPELLS """
 SPELLS = {
-	# type		 size speed damage
+	# type		 size speed damage MGC
 	'': [0, 0],
-	'windblade': [96, 20, 4],
-	'fireball': [64, 6, 6],
+	'windblade': [96, 20, 40, 8],
+	'fireball': [64, 6, 6, 12],
 }
 
+
+""" ITEMS """
+ITEMS = {
+	'magick': {
+		'magick_shard': {
+			"NAME": "MAGICK SHARD",
+			"ANIM SPEED": 0.45,
+			"SIZE": 32,
+			"RECOV": 6,
+			"TIME": 20,
+			"PICKUP_RAD": 120
+		}
+	}
+}

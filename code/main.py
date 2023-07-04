@@ -75,6 +75,137 @@ def sine_wave_value() -> int:
 	else: 
 		return 0
 
+class Item(Entity):
+
+	def __init__(self, game, item_name, type, size, position, speed, groups):
+		super().__init__(size, position, speed, groups)
+		self.game = game
+		self.type = type
+		self.item_name = item_name
+		self.import_assets()
+		self.get_stats()
+
+		# item status
+		self.status = 'inactive'
+
+		# animation
+		self.frame_index = 0
+		self.animation = self.animation_keys[self.item_name]
+
+	def get_stats(self):
+		self.stats = ITEMS[self.type][self.item_name]
+		self.name = self.stats['NAME']
+		self.animation_speed = self.stats['ANIM SPEED']
+		self.recovery = self.stats['RECOV']
+		self.pickup_radius = self.stats['PICKUP_RAD']
+		self.timer = self.stats['TIME']
+		self.size = pygame.math.Vector2(self.stats['SIZE'], self.stats['SIZE'])
+
+	def import_assets(self):
+		if self.type == 'magick' and 'shard' in self.item_name:
+			self.animation_keys = {'magick_shard':[]} 
+
+		for animation in self.animation_keys:
+			full_path = ITEMS_PATH + self.type + '/' + animation
+			original_images = import_folder(full_path)
+			scaled_images = scale_images(original_images, self.size)
+			
+			self.animation_keys[animation] = import_folder(full_path)
+		self.animations = self.animation_keys
+	
+	def animate(self):
+		animation = self.animation_keys[self.item_name]
+		self.frame_index += self.animation_speed * self.game.dt
+		if self.frame_index >= len(animation):
+			self.frame_index = 0
+			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+		elif self.status == 'decay':
+			self.image.set_alpha(sine_wave_value())
+		else:
+			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+
+	def draw(self, surface:pygame.Surface):
+		surface.blit(self.image, self.rect.topleft - self.game.camera.level_scroll)
+
+	def get_player_distance_direction(self, player):
+		enemy_vec = pygame.math.Vector2(self.rect.center)
+		player_vec = pygame.math.Vector2(player.rect.center)
+		distance = (player_vec - enemy_vec).magnitude()
+		
+		self.pickup_radius_rect = pygame.Rect(self.rect.topleft, (self.pickup_radius, self.pickup_radius))
+
+
+		if self.game.player.rect.colliderect(self.pickup_radius_rect) and distance > 0:
+			direction = (player_vec - enemy_vec).normalize()
+		else:
+			direction = pygame.math.Vector2()
+
+		return (distance,direction)
+	
+	def actions(self, player):
+		if self.status == 'inactive':
+			self.direction = pygame.math.Vector2()
+		elif self.status == 'active':
+			self.direction = self.get_player_distance_direction(player)[1]
+		else:
+			self.direction = pygame.math.Vector2()
+
+		if self.direction.x > 0:
+			self.direction_facing = 'right'
+		elif self.direction.x < 0:
+			self.direction_facing = 'left'
+
+	def move(self):
+		match self.type:
+			case 'magick':
+				if self.direction.magnitude() != 0:
+					self.direction = self.direction.normalize()
+
+				self.velocity.x = self.direction.x * self.speed * self.game.dt
+
+	def get_status(self, surface:pygame.Surface):
+		if self.status == 'inactive':
+			pass
+		elif self.status == 'collected':
+			self.kill()
+
+	def get_pickup_status(self):
+		if self.game.player.rect.colliderect(self.rect):
+			self.status = 'collected'
+
+			match self.type:
+				case 'magick':
+					self.game.player.magick += self.recovery
+					if 'shard' in self.item_name:
+						self.game.player.current_spell_shard_count += 1
+					# print('player gained', self.recovery, 'magick')
+
+					for spell in self.game.player.projectiles:
+						if spell.rect.colliderect(self.rect):
+							pass
+
+	def update(self, surface:pygame.Surface):
+		if self.status not in ['collected', 'inactive']:
+			self.timer -= 0.1 * self.game.dt
+			if self.timer <= self.stats['TIME'] - 12:
+				self.status = 'decay'
+			if self.timer <= 0:
+				self.status = 'despawned'
+				self.timer = self.stats['TIME']
+			
+			self.actions(self.game.player)
+			self.animate()
+			self.get_status(surface)
+			self.get_pickup_status()
+			self.draw(surface)
+
+			self.rect, self.game.world.collisions = collision_adjust(self, self.velocity, self.game.dt, self.game.world.tile_rects)
+			# collision handling
+			if self.game.world.collisions['bottom']:
+				self.velocity.y = 0
+			
+			self.move()
+
 class Particle(pygame.sprite.Sprite):
 	
 	def __init__(self, game, color:list, position:tuple, velocity:tuple, radius:int, groups, glow=False, gravity=False, torch=False):
@@ -356,6 +487,10 @@ class Enemy(Entity):
 		else:
 			self.status = 'move'
 
+	def deal_damage(self):
+		if self.game.player.rect.colliderect(self.rect) and self.game.player.vulnerable and not self.game.player.rolling and self.game.player.health > 0:
+			self.game.player.get_damage(self.damage)
+
 	def incoming_damage_check(self):
 		for spell in self.game.player.projectiles:
 			if spell.rect.colliderect(self.rect) and self.vulnerable and self.health > 0:
@@ -366,8 +501,8 @@ class Enemy(Entity):
 
 	def get_damage(self, damage_taken):
 		if self.vulnerable:
-			self.hit_time = pygame.time.get_ticks()
 			self.vulnerable = False
+			self.hit_time = pygame.time.get_ticks()
 			self.health -= damage_taken
 
 	def hit_reaction(self):
@@ -418,6 +553,8 @@ class Enemy(Entity):
 
 		self.aggro_rect.center = self.rect.center
 
+		self.deal_damage()
+
 class Player(Entity):
 
 	def __init__(self, game, character, size, position, speed, groups):
@@ -425,44 +562,34 @@ class Player(Entity):
 		# config
 		self.game = game
 		self.character = character
+		self.get_stats()
 		self.import_character_assets()
+
 		self.particles = []
+		self.projectiles = []
+		self.airborne_timer = 0
+		self.spell_shards = 0
 		self.weapon_sprite = pygame.sprite.GroupSingle()
 		
 		self.hurtbox = pygame.Rect( self.rect.topleft, (32,96))
-
-		# player stats
-		self.attack_rects = []
-		self.projectiles = []
-		self.airborne_timer = 0
-		self.health = CHARACTERS[self.character]["HEALTH"]
-		self.magick = CHARACTERS[self.character]["MAGICK"]
-		self.spell_shards = 0
-		
 		# movement
 		# dash
-		self.dash_distance = CHARACTERS[self.character]["DASH DIST"]
 		self.dash_timer = 4
 		self.dash_counter = 1
 		# roll
-		self.roll_speed = CHARACTERS[self.character]["ROLL SPEED"]
-		self.roll_distance = CHARACTERS[self.character]["ROLL DIST"]
-		self.roll_timer = CHARACTERS[self.character]["ROLL COOLDOWN"]
 		self.roll_counter = 1
-		# jump
-		self.jumps = CHARACTERS[self.character]["JUMPS"]
-		self.jump_force = CHARACTERS[self.character]["JUMPFORCE"]
-
 		# stat scales
 		self.health_scale = CHARACTERS[self.character]["HEALTH"]
 		self.magick_scale = CHARACTERS[self.character]["MAGICK"]
 		self.spell_shard_scale = 2
 
 		# spells
+		self.cast_timer = self.cast_cooldown
 		self.active_spell_slot = 1
 		self.bound_spells = ['windblade', 'fireball']
 		self.known_spells = []
 		self.active_spell = self.bound_spells[self.active_spell_slot-1]
+		self.current_spell_shard_count = 0
 
 		# player status
 		self.status = 'idle'
@@ -472,6 +599,9 @@ class Player(Entity):
 		self.jumping = False
 		self.in_boss_room = False
 		self.heavy_fall = False
+		self.vulnerable = True
+		self.can_attack = True
+		self.casting = False
 
 		# animation
 		self.frame_index = 0
@@ -487,6 +617,22 @@ class Player(Entity):
 		self.weapon = []
 		self.current_weapon = 'skolfen'
 		self.weapon_sprite = pygame.sprite.GroupSingle()
+
+	def get_stats(self):
+		self.stats = CHARACTERS[self.character]
+		self.name = self.stats['NAME']
+		self.health = self.stats['HEALTH']
+		self.magick = self.stats['MAGICK']
+		self.speed = self.stats['SPEED']
+		self.jumps = self.stats['JUMPS']
+		self.jumpforce = self.stats['JUMPFORCE']
+		self.roll_speed = self.stats['ROLL SPEED']
+		self.roll_cooldown = self.stats['ROLL COOLDOWN']
+		self.attack_cooldown = self.stats['ATK_CD']
+		self.cast_cooldown = self.stats['CAST_CD']
+		self.dash_distance = self.stats['DASH DIST']
+		self.roll_distance = self.stats['ROLL DIST']
+		self.IFRAMES = self.stats['IFRAMES']
 
 	def import_character_assets(self):
 		self.animation_keys = {'idle':[],'run':[],'jump':[],'fall':[], 'attack':[], 'roll':[]} 
@@ -508,12 +654,15 @@ class Player(Entity):
 			self.frame_index = 0
 		if self.facing_right:
 			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+		elif not self.vulnerable:
+			self.image.set_alpha(sine_wave_value())
 		else:
 			self.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.size), True, False)
 
 	def jump(self, dt):
-		self.velocity.y = -self.jump_force
-		self.jumps -= 1
+		if self.jumps > 0:
+			self.velocity.y = -self.jumpforce
+			self.jumps -= 1
 
 	def move(self, dt):
 		keys = pygame.key.get_pressed()
@@ -547,7 +696,6 @@ class Player(Entity):
 	def switch_active_spell(self):
 		if self.active_spell_slot in [1, 2]:
 			self.active_spell = self.bound_spells[self.active_spell_slot-1]
-		print(self.active_spell_slot)
 
 	def create_attack(self):
 		self.weapon.append(
@@ -626,22 +774,42 @@ class Player(Entity):
 			self.rect.x = self.game.world.level_topleft.x
 
 	def stat_bar(self):
-		
-		if int(self.roll_timer) < CHARACTERS[self.character]["ROLL COOLDOWN"] and self.rolling:
-			self.roll_coolown_bar = pygame.Rect((self.rect.left - self.game.camera.level_scroll.x, self.rect.top - self.game.camera.level_scroll.y), ((self.hurtbox.width * self.roll_timer), 8))
+		if int(self.roll_cooldown) < CHARACTERS[self.character]["ROLL COOLDOWN"] and self.rolling:
+			self.roll_coolown_bar = pygame.Rect((self.rect.left - self.game.camera.level_scroll.x, self.rect.top - self.game.camera.level_scroll.y), ((self.hurtbox.width * self.roll_cooldown), 8))
 			pygame.draw.rect(self.game.screen, [80,80,80], self.roll_coolown_bar)
 
 	def update_projectiles(self):
 		for projectile in self.projectiles:
 			projectile.update()
 
+	def incoming_damage_check(self):
+		pass
+		
+	def get_damage(self, damage_taken):
+		if self.vulnerable:
+			self.vulnerable = False
+			self.hit_time = pygame.time.get_ticks()
+			self.health -= damage_taken
+
+	def cooldowns(self):
+		current_time = pygame.time.get_ticks()
+		if not self.can_attack:
+			if current_time - self.attack_time >= self.attack_cooldown:
+				self.can_attack = True
+
+		if not self.vulnerable:
+			if current_time - self.hit_time >= self.IFRAMES:
+				self.vulnerable = True
+
 	def update(self, dt, surface:pygame.Surface, terrain:list):
+		self.incoming_damage_check()
 		self.move(dt)
 		self.roll(dt)
 		self.dash(dt)
 		self.on_screen_check()
 		self.get_status()
 		self.animate()
+		self.cooldowns()
 		
 		# update hurtbox
 		self.hurtbox.center = self.rect.center - self.game.camera.level_scroll
@@ -656,7 +824,7 @@ class Player(Entity):
 			self.jumping = False
 			self.jumps = CHARACTERS[self.character]["JUMPS"]
 		else:
-			self.airborne_timer += 1
+			self.airborne_timer += 1 * dt
 
 		# heavy fall
 		if int(self.velocity.y) >= 20:
@@ -686,14 +854,14 @@ class Player(Entity):
 		if not self.rolling and self.roll_counter <= 0:
 			self.roll_counter = 1
 
-		if self.rolling and self.roll_timer > 0 and self.collide_bottom:
-			self.roll_timer -= 0.2 * dt
+		if self.rolling and self.roll_cooldown > 0 and self.collide_bottom:
+			self.roll_cooldown -= 0.2 * dt
 
-		if self.roll_timer <= 0:
+		if self.roll_cooldown <= 0:
 			self.rolling = False
 		
-		if self.roll_timer < CHARACTERS[self.character]["ROLL COOLDOWN"]:
-			self.roll_timer += 0.1 * dt  # roll cooldown
+		if self.roll_cooldown < CHARACTERS[self.character]["ROLL COOLDOWN"]:
+			self.roll_cooldown += 0.1 * dt  # roll cooldown
 		
 		# # attacking
 		# if int(self.attack_duration) > 5:
@@ -711,11 +879,21 @@ class Player(Entity):
 
 		# projectiles/spells
 		self.update_projectiles()
+		if self.cast_timer > 0 and self.casting:
+			self.cast_timer -= 1 * dt
+
+		if self.cast_timer <= 0:
+			self.casting = False
+			self.cast_timer = self.cast_cooldown
 		# print(self.projectiles)
 
 		# items
 		if self.spell_shards > 2:
 			self.spell_shards = 2
+
+		# stats
+		if self.magick > CHARACTERS[self.character]["MAGICK"]:
+			self.magick = CHARACTERS[self.character]["MAGICK"]
 
 		# draw player
 		# self.show_attacks(surface)
@@ -760,6 +938,9 @@ class World():
 		self.num_of_torches = 0
 		self.world_particles = []
 		self.setup_torches()
+
+		# items
+		self.world_items = []
 
 	def calculate_level_size(self):
 		max_right = 0
@@ -810,6 +991,9 @@ class World():
 			self.terrain_data,
 		]
 	
+	def generate_item_rects(self, world_data):
+		pass
+
 	def generate_player_spawn(self, world_data):
 		self.player_data = import_csv_layout(world_data['player'])
 		y = 0
@@ -855,6 +1039,11 @@ class World():
 				enemy.kill()
 				self.enemies.remove(enemy)
 				self.enemy_rects.remove(enemy.rect)
+				for i in range(enemy.exp):
+					position = (enemy.rect.x + random.randint(-50, 50), enemy.rect.y + random.randint(-50, 50))
+					self.world_items.append(Item(self.game, 'magick_shard', 'magick', ITEMS['magick']['magick_shard']["SIZE"], position, 2, self.game.item_group))
+		
+		# print('amount of items', len(self.world_items))
 
 	def generate_enemy_rects(self):
 		for enemy in self.enemies:
@@ -949,6 +1138,14 @@ class World():
 			if particle.radius <= 0.5:
 				self.world_particles.remove(particle)
 
+	def update_items(self, surface:pygame.Surface):
+		for item in self.world_items:
+			item.status = 'active'
+			item.update(surface)
+
+			if item.status in ['collected', 'despawned']:
+				self.world_items.remove(item)
+
 	def draw_world(self, surface:pygame.Surface):
 		# self.spawn_enemies()
 		# draw tiles
@@ -975,9 +1172,14 @@ class UI():
 		self.player_hud = scale_images([self.player_hud], (460,100))[0]
 		self.player_portrait = scale_images([self.player_portrait], (87,81))[0]
 		# self.spell_image = get_image()
-		
+
+	def update_spell_shard_count(self):
+		spell_shard_img = get_image('../assets/items/magick/magick_shard/magick_shard1.png')
+		self.display.blit(spell_shard_img, (40, 120))
+		draw_text(self.display, f"{self.game.player.current_spell_shard_count}", [25, 150], size=32)
+
 	def update_spell_slot(self):
-		spell_slot_1_rect = pygame.Rect((125, SCREEN_HEIGHT - 121), (96,96))
+		spell_slot_1_rect = pygame.Rect((1, SCREEN_HEIGHT - 121), (96,96))
 		spell_1_image = get_image(SPELL_PATH+self.game.player.active_spell+'/'+self.game.player.active_spell+'1'+'.png')
 		spell_1_image = scale_images([spell_1_image], (96,96))
 		spell_1_image = spell_1_image[0]
@@ -1025,7 +1227,7 @@ class Game():
 		self.clock = pygame.time.Clock()
 		pygame.display.set_caption("A Tale Of Time")
 		pygame.display.set_icon(get_image('../assets/logo.ico'))
-		pygame.display.toggle_fullscreen()
+		# pygame.display.toggle_fullscreen()
 
 	def setup_world(self):
 		self.world_brightness = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
@@ -1047,6 +1249,9 @@ class Game():
 		
 		# ui
 		self.ui = UI(self, self.screen)
+
+		# item test
+		self.item_group = pygame.sprite.Group()
 
 		self.background = get_image('../assets/background.png')
 		self.midground = get_image('../assets/midground.png')
@@ -1109,7 +1314,7 @@ class Game():
 					self.player.dash_counter -= 1
 				
 				# rolling
-				if event.key == pygame.K_LSHIFT and self.player.collide_bottom and self.player.roll_counter > 0 and int(self.player.roll_timer) == CHARACTERS[self.player.character]["ROLL COOLDOWN"]:
+				if event.key == pygame.K_LSHIFT and self.player.collide_bottom and self.player.roll_counter > 0 and int(self.player.roll_cooldown) == CHARACTERS[self.player.character]["ROLL COOLDOWN"]:
 					self.player.roll_point = (self.player.rect.x, self.player.rect.y)
 					self.player.rolling = True
 					self.player.roll_counter -= 1
@@ -1121,11 +1326,15 @@ class Game():
 
 				# spells
 				if event.key == pygame.K_p: #and self.player.collide_bottom:
-					if self.player.facing_right:
+					if self.player.facing_right  and self.player.magick > 0 and self.player.vulnerable and self.player.cast_timer == self.player.cast_cooldown:
+						self.player.casting = True
+						self.player.magick -= SPELLS[self.player.active_spell][3]
 						self.player.projectiles.append(
 							Projectile(self, self.player.rect.center, self.player.active_spell, 'right', self.player.rect.center, 300)
 						)
-					else:
+					if not self.player.facing_right  and self.player.magick > 0 and self.player.vulnerable and self.player.cast_timer == self.player.cast_cooldown:
+						self.player.casting = True
+						self.player.magick -= SPELLS[self.player.active_spell][3]
 						self.player.projectiles.append(
 							Projectile(self, self.player.rect.center, self.player.active_spell, 'left', self.player.rect.center, 300)
 						)
@@ -1161,6 +1370,8 @@ class Game():
 			self.player.stat_bar()
 			self.ui.update_player_HUD()
 			self.ui.update_spell_slot()
+			self.ui.update_spell_shard_count()
+			self.world.update_items(self.screen)
 			
 			# handle projectiles
 			for projectile in self.player.projectiles:
