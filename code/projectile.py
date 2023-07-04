@@ -1,68 +1,92 @@
 from BLACKFORGE2 import *
+from CONSTANTS import *
+
 
 class Projectile(pygame.sprite.Sprite):
-	def __init__(self, game, type:str, pos:tuple, size:int, speed:int, damage:int, terrain_sprites:pygame.sprite.Group, groups:pygame.sprite.Group, offset:pygame.math.Vector2):
-		super().__init__(groups)
+	def __init__(self, game, position:tuple, projectile_type:str, direction:str, cast_from:tuple, dist:int):
+		super().__init__()
 		self.game = game
-		self.pos = pos
-		self.type = type
-		self.size = pygame.math.Vector2(size,size)
-		self.rect = pygame.Rect(pos[0], pos[1], self.size.x, self.size.y)
-		self.speed = speed
-		self.damage = damage
-		self.targeted = False
-		self.terrain = terrain_sprites
-		self.import_assets()
+		self.position = pygame.math.Vector2(position)
+		self.projectile_type = projectile_type
+		self.size = pygame.math.Vector2(SPELLS[self.projectile_type][0], SPELLS[self.projectile_type][0])
+		self.speed = SPELLS[self.projectile_type][1]
+		self.damage = SPELLS[self.projectile_type][2]
+		self.direction = direction
+		self.distance = dist
+		self.cast_from = pygame.math.Vector2(cast_from)
+		
+		# status
+		self.status = 'cast'
+		self.collided = False
 
-		mx, my = pygame.mouse.get_pos()
-		self.dir = (mx - pos[0], my - pos[1])
-		length = math.hypot(*self.dir)
-		if length == 0.0:
-			self.dir = (0, -1)
-		else:
-			self.dir = (self.dir[0]/length, self.dir[1]/length)
-
-		self.angle = math.degrees(math.atan2(-self.dir[1], self.dir[0]))
-
+		# animation
 		self.frame_index = 0
-		self.animation_speed = 0.80
-		self.image = self.animations[self.type][self.frame_index]
+		self.import_assets()
+		self.animation = self.animation_keys[self.projectile_type]
+		# self.image = self.animation[0]
+		self.animation_speed = 0.25
+		self.rect = pygame.Rect(self.position, self.size)
 
 	def import_assets(self):
-		character_path = '../assets/spells/'
-		self.animations = {f'{self.type}':[],}
+		self.animation_keys = {'fireball':[],'windblade':[], 'wind_sparks':[], 'fire_sparks':[]} 
 
-		for animation in self.animations.keys():
-			full_path = character_path + animation
-			self.animations[animation] = scale_images(import_folder(full_path), self.size)
-
+		for animation in self.animation_keys:
+			full_path = SPELL_PATH + animation
+			
+			original_images = import_folder(full_path)
+			scaled_images = scale_images(original_images, self.size)
+			
+			self.animation_keys[animation] = import_folder(full_path)
+		self.animations = self.animation_keys
+	
 	def animate(self):
-		animation = self.animations[self.type]
-
-		# loop over frame index 
-		self.frame_index += self.animation_speed
+		animation = self.animation_keys[self.projectile_type]
+		self.frame_index += self.animation_speed * self.game.dt
 		if self.frame_index >= len(animation):
 			self.frame_index = 0
+		if self.direction == 'right':
+			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+		if self.direction == 'left':
+			self.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.size), True, False)
 
-		image = animation[int(self.frame_index)]
-		if self.targeted:
-			self.image = image
-			self.image = pygame.transform.rotate(self.image, self.angle)
-		else:
-			self.image = image
+	def check_collision(self, collideables:list):
+		for object_list in collideables:
+			for obj in object_list:
+				if self.rect.colliderect(obj):
+					self.collided = True
+					
+	def create_hitspark_animation(self):
+		hitspark_images = []  # Placeholder list for demonstration
+		hitspark_pos = self.rect.center
+		# Create hitspark animation using hitspark_images and hitspark_pos
+		# ...
+	
+	def draw(self, surface:pygame.Surface):
+		surface.blit(self.image, self.rect.topleft - self.game.camera.level_scroll)
+		# pygame.draw.rect(self.game.screen, [0,255,0], self.rect )
+		# pygame.draw.rect(self.game.screen, [0,255,0], self.hitbox )
 
-	def check_collisions(self):
-		for sprite in self.terrain.sprites():
-			if self.rect.colliderect(sprite.rect):
-				self.kill()
+	def handle_status(self):
+		if self.status == 'hit' or self.collided:
+			match self.projectile_type:
+				case 'windblade':
+					self.projectile_type = 'wind_sparks'
+				case 'fireball':
+					self.projectile_type = 'fire_sparks'
+		
+			if self.frame_index + 1 >= len(self.animations[self.projectile_type]):
+				self.status = 'remove'
 
-	def update(self, offset):
-		# self.check_collisions()
-		self.pos = (
-			self.pos[0]+self.dir[0]*self.speed + offset.x * self.game.dt,
-			self.pos[1]+self.dir[1]*self.speed + offset.y * self.game.dt
-			)
-		self.rect.x += self.pos[0]
-		self.rect.y += self.pos[1]
-		print(self.pos)
+	def update(self):
+		self.handle_status()
 		self.animate()
+		match self.direction:
+			case 'right':
+				if self.status not in ['hit', 'remove'] and not self.collided:
+					self.position.x += self.speed * self.game.dt
+			case 'left':
+				if self.status not in ['hit', 'remove'] and not self.collided:
+					self.position.x += -self.speed * self.game.dt
+
+		self.rect.center = self.position
+		self.check_collision([self.game.world.tile_rects, self.game.world.enemy_rects])
