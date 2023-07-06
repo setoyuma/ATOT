@@ -38,6 +38,7 @@ class Item(Entity):
 
 	def __init__(self, game, item_name, type, size, position, speed, groups):
 		super().__init__(size, position, speed, groups)
+		self.entity_type = 'item'
 		self.game = game
 		self.type = type
 		self.item_name = item_name
@@ -170,6 +171,7 @@ class Enemy(Entity):
 	
 	def __init__(self, game, enemy_name, speed, size, position, groups):
 		super().__init__(size, position, speed, groups)
+		self.entity_type = 'enemy'
 		self.game = game
 		self.grab_stats(enemy_name)
 		self.import_assets(enemy_name)
@@ -186,7 +188,12 @@ class Enemy(Entity):
 		self.can_attack = True
 		self.attacking = False
 		self.aggro_rect = pygame.Rect(self.rect.topleft, (self.aggro_range, self.aggro_range))
-
+		if self.name in ['Covenant Follower']:
+			self.cast_range_rect = pygame.Rect(self.rect.topleft, (self.cast_range, self.cast_range))
+			self.cast_timer = 0
+		# vfx
+		self.spells = []
+		self.particles = []
 
 		# animation
 		self.status = 'move'
@@ -194,8 +201,11 @@ class Enemy(Entity):
 		self.animation = self.animation_keys[self.status]
 		self.animation_speed = 0.25
 
+		self.hurtbox = pygame.Rect(self.rect.center, (64, 64))
+
 	def grab_stats(self, enemy_name):
 		self.stats = ENEMIES[enemy_name]
+		self.size = pygame.math.Vector2(self.stats['SPRITE SIZE'], self.stats['SPRITE SIZE'])
 		self.name = self.stats['NAME']
 		self.health = self.stats['HEALTH']
 		self.exp = self.stats['EXP']
@@ -209,6 +219,9 @@ class Enemy(Entity):
 		self.aggro_range = self.stats['AGR_RNG']
 		self.attacks = self.stats['ATTACKS']
 		self.gravity = self.stats['GRAVITY']
+
+		if self.name in ['Covenant Follower']:
+			self.cast_range = self.stats['CAST_RNG']
 
 	def import_assets(self, enemy_name):
 		self.animation_keys = {'move':[],'attack':[]} 
@@ -235,6 +248,10 @@ class Enemy(Entity):
 		elif self.direction_facing == 'left':
 			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
 
+		if self.name in ['Covenant Follower']:
+			if self.attacking and self.status == 'attack':
+				self.frame_index = len(self.animation)
+
 		if not self.vulnerable:
 			self.image.set_alpha(sine_wave_value())
 
@@ -251,6 +268,31 @@ class Enemy(Entity):
 			self.direction_facing = 'right'
 		elif self.direction.x < 0:
 			self.direction_facing = 'left'
+
+	def attack(self):
+		if self.name in ['Covenant Follower']:
+			if self.game.player.rect.colliderect(self.cast_range_rect) and self.facing_right:
+				self.spells.append(
+					Projectile(
+						self.game,
+						(self.rect.right + 5, self.rect.top), 
+						'wrath_of_alwyd', 
+						'right', 
+						(self.rect.right + 5, self.rect.top), 
+						300
+					)
+				)
+			if self.game.player.rect.colliderect(self.cast_range_rect) and not self.facing_right:
+				self.spells.append(
+					Projectile(
+						self.game,
+						(self.rect.left - 5, self.rect.top), 
+						'wrath_of_alwyd', 
+						'left', 
+						(self.rect.left - 5, self.rect.top), 
+						300
+					)
+				)
 
 	def move(self):
 		if self.direction.magnitude() != 0:
@@ -296,8 +338,9 @@ class Enemy(Entity):
 
 	def deal_damage(self):
 		if self.game.player.rect.colliderect(self.rect) and self.game.player.vulnerable and not self.game.player.rolling and self.game.player.health > 0:
-			self.game.player.get_damage(self.damage)
-
+			if self.name in ['Rose Sentinel', 'Sepparition', 'Covenant Follower']:
+				self.game.player.get_damage(self.damage)
+		
 	def incoming_damage_check(self):
 		for spell in self.game.player.projectiles:
 			if spell.rect.colliderect(self.rect) and self.vulnerable and self.health > 0:
@@ -327,6 +370,8 @@ class Enemy(Entity):
 		current_time = pygame.time.get_ticks()
 		if not self.can_attack:
 			self.attacking = True
+			self.animation_speed = 0.15
+			self.status = 'attack'
 			if current_time - self.attack_time >= self.attack_cooldown:
 				self.can_attack = True
 				self.attacking = False
@@ -340,11 +385,24 @@ class Enemy(Entity):
 		pygame.draw.rect(self.game.screen, [255,0,0], health_bar)
 	
 	def draw(self, surface:pygame.Surface):
-		surface.blit(self.image, self.rect.topleft - self.game.camera.level_scroll)
+		surface.blit(self.image, self.hurtbox.topleft - self.game.camera.level_scroll)
 		self.status_bar()
+		
+		# show cast range
+		# if self.name in ['Covenant Follower']:
+		# 	self.game.screen.blit(pygame.Surface((self.cast_range, self.cast_range)), self.cast_range_rect.topleft - self.game.camera.level_scroll)
+
 	 	# show aggro range
 		# self.game.screen.blit(pygame.Surface((self.aggro_range, self.aggro_range)), self.aggro_rect.topleft - self.game.camera.level_scroll)
 
+	def update_spells(self, player):
+		for spell in self.spells:
+			spell.update()
+			if spell.rect.colliderect(player.rect):
+				spell.collided = True
+				spell.status = 'hit'
+				player.get_damage(spell.damage)
+			
 	def update(self, terrain, constraints):
 		self.actions(self.game.player)
 		self.incoming_damage_check()
@@ -355,14 +413,36 @@ class Enemy(Entity):
 		self.animate()
 		self.get_status(self.game.player)
 
+		if self.direction.x > 0:
+			self.facing_right = True
+		if self.direction.x < 0:
+			self.facing_right = False
+		
+
 		self.rect, self.game.world.collisions = collision_adjust(self, self.velocity, self.game.dt, terrain)
+		
+		self.hurtbox.topleft = self.rect.topleft
+		
 		# collision handling
 		if self.game.world.collisions['bottom']:
 			self.velocity.y = 0
 
 		self.aggro_rect.center = self.rect.center
-
+		if self.name in ['Covenant Follower']:
+			self.cast_range_rect.center = self.rect.center
 		self.deal_damage()
+
+		self.update_spells(self.game.player)
+
+		if self.name in ['Covenant Follower'] and self.attacking:
+				self.cast_timer += 1
+		else:
+			self.cast_timer = 0
+
+		if round(int(self.cast_timer)) == len(self.animation):
+			self.attack()
+
+
 
 
 class Player(Entity):
@@ -370,6 +450,7 @@ class Player(Entity):
 	def __init__(self, game, character, size, position, speed, groups):
 		super().__init__(size, position, speed, groups)
 		# config
+		self.entity_type = 'player'
 		self.game = game
 		self.character = character
 		self.get_stats()
@@ -588,9 +669,14 @@ class Player(Entity):
 			self.roll_coolown_bar = pygame.Rect((self.rect.left - self.game.camera.level_scroll.x, self.rect.top - self.game.camera.level_scroll.y), ((self.hurtbox.width * self.roll_cooldown), 8))
 			pygame.draw.rect(self.game.screen, [80,80,80], self.roll_coolown_bar)
 
-	def update_projectiles(self):
+	def update_projectiles(self, collideables:list):
 		for projectile in self.projectiles:
 			projectile.update()
+			for object_list in collideables:
+				for obj in object_list:
+					if projectile.rect.colliderect(obj):
+						projectile.collided = True
+						projectile.status = 'hit'
 
 	def incoming_damage_check(self):
 		pass
@@ -629,6 +715,7 @@ class Player(Entity):
 
 		# collision handling
 		if self.game.world.collisions['bottom']:
+			self.collide_bottom = True
 			self.velocity.y = 0
 			self.airborne_timer = 0
 			self.jumping = False
@@ -637,7 +724,7 @@ class Player(Entity):
 			self.airborne_timer += 1 * dt
 
 		# heavy fall
-		if int(self.velocity.y) >= 20:
+		if int(self.velocity.y) >= 30:
 			self.heavy_fall = True
 
 		if self.game.world.collisions['bottom'] and self.heavy_fall:
@@ -689,7 +776,7 @@ class Player(Entity):
 				self.particles.remove(particle)
 
 		# projectiles/spells
-		self.update_projectiles()
+		self.update_projectiles([self.game.world.enemy_rects])
 		if self.cast_timer > 0 and self.casting:
 			self.cast_timer -= 1 * dt
 

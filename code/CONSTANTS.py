@@ -25,8 +25,8 @@ CENTER = (HALF_WIDTH, HALF_HEIGHT)
 
 # world
 TILE_SIZE = 64
-WORLD_BRIGHTNESS = 180
-GRAVITY = 0.25
+WORLD_BRIGHTNESS = 160
+GRAVITY = 0.6
 CHUNK_SIZE = 8
 
 # path shortcuts
@@ -58,7 +58,7 @@ CHARACTERS = {
 		"MAGICK": 120,
 		"SPEED": 6,
 		"JUMPS": 1,
-		"JUMPFORCE": 12,
+		"JUMPFORCE": 16,
 		"ROLL SPEED": 8,
 		"ROLL COOLDOWN": 4,
 		"ATK_CD": 800,
@@ -71,6 +71,7 @@ CHARACTERS = {
 
 ENEMIES = {
 	"rose_sentinel": {
+		"SPRITE SIZE": 96,
 		"NAME": 'Rose Sentinel',
 		"HEALTH": 25,
 		"EXP": 3,
@@ -86,21 +87,24 @@ ENEMIES = {
 		"GRAVITY": True,
 	},
 	"covenant_follower": {
+		"SPRITE SIZE": 96,
 		"NAME": 'Covenant Follower',
 		"HEALTH": 15,
 		"EXP": 4,
 		'DAMAGE': 3,
 		"ATTACK_TYPE": 'wrath_of_alwyd',
-		"SPEED": 3,
+		"SPEED": 2,
 		"RESIST": 1,
 		"ATK_CD": 800,
 		"IFRAMES": 300,
 		"ATK_RAD": 500,
 		"AGR_RNG": 1500,
+		"CAST_RNG": 600,
 		"ATTACKS": {'':[],'wrath_of_alwyd':[]},
 		"GRAVITY": True,
 	},
 	"sepparition": {
+		"SPRITE SIZE": 160,
 		"NAME": 'Sepparition',
 		"HEALTH": 30,
 		"EXP": 8,
@@ -121,8 +125,9 @@ ENEMIES = {
 SPELLS = {
 	# type		 size speed damage MGC
 	'': [0, 0],
-	'windblade': [96, 20, 5, 4],
-	'fireball': [64, 6, 7, 5],
+	'windblade': [96, 20, 500, 4],
+	'fireball': [64, 10, 7, 5],
+	'wrath_of_alwyd': [72, 15, 8, 10],
 }
 
 

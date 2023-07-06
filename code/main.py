@@ -65,6 +65,8 @@ class Game():
 			# "torch": Particle(self, random.choice(seto_colors), ((mx + random.randint(-20, 20)) + self.camera.level_scroll.x, my + random.randint(-20, 20) + self.camera.level_scroll.y), (0, -4), 3, [pygame.sprite.Group()]),
 		}
 
+		self.particles = []
+
 		self.show_fps = False
 
 	def setup_pygame(self):
@@ -84,7 +86,7 @@ class Game():
 		self.enemy_sprites = pygame.sprite.Group()
 
 		# create world
-		self.current_world = 1
+		self.current_world = 3
 		self.world = World(self, worlds[self.current_world])
 
 		# create player
@@ -92,7 +94,7 @@ class Game():
 		self.player = Player(self, "ALRYN", 96, self.world.player_spawn, CHARACTERS["ALRYN"]["SPEED"], [self.player_sprite_group])
 
 		# create camera
-		self.camera = Camera(self, 10, 250)
+		self.camera = Camera(self, 10, 225)
 		
 		# ui
 		self.ui = UI(self, self.screen)
@@ -149,6 +151,19 @@ class Game():
 					self.player.switch_active_spell()
 					pass
 				elif event.button == 1:
+					for i in range(10):
+						self.particles.append(
+							Particle(
+								self,
+								[255,255,255],
+								(self.mx, self.my) + self.camera.level_scroll,
+								(random.randint(-10,10), random.randint(-10,10)),
+								20,
+								[],
+								gravity=True,
+								physics=True
+							)
+						)
 					pass
 
 			# button released
@@ -215,6 +230,7 @@ class Game():
 			self.last_time = time.time()  # reset the last_time with the current time
 			self.current_fps = self.clock.get_fps()
 			
+			self.mx, self.my = pygame.mouse.get_pos()
 			self.handle_events()
 
 			# updates
@@ -231,8 +247,16 @@ class Game():
 			self.ui.update_spell_slot()
 			self.ui.update_spell_shard_count()
 			self.world.update_items(self.screen)
+			self.world.update_FX(self.screen)
 			
-			# handle projectiles
+			
+			for p in self.particles:
+				p.emit()
+
+				if p.radius <= 0.1:
+					self.particles.remove(p)
+
+			# handle player projectiles
 			for projectile in self.player.projectiles:
 				projectile.draw(self.screen)
 
@@ -244,6 +268,20 @@ class Game():
 						projectile.status = 'hit'				
 					if projectile.position.x <= projectile.cast_from.x - projectile.distance:
 						projectile.status = 'hit'				
+
+			# handle enemy projectiles
+			for enemy in self.world.enemies:
+				if enemy.name in ['Covenant Follower']:
+					for projectile in enemy.spells:
+						projectile.draw(self.screen)
+
+						if projectile.status == 'remove':
+							enemy.spells.remove(projectile)
+						else:
+							if projectile.position.x >= projectile.cast_from.x + projectile.distance:
+								projectile.status = 'hit'				
+							if projectile.position.x <= projectile.cast_from.x - projectile.distance:
+								projectile.status = 'hit'
 
 			# handle weapons
 			if len(self.player.weapon) > 0:

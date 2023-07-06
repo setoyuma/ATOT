@@ -47,27 +47,28 @@ def collision_adjust(entity, velocity:pygame.math.Vector2, dt:float, tiles:list)
 	tiles_collided_with = tile_collision_test(rect, [tiles])
 	for tile in tiles_collided_with:
 		if velocity.x > 0:
-			rect.right = tile.left
 			collision_types['right'] = True
+			rect.right = tile.left
 		elif velocity.x < 0:
-			rect.left = tile.right
 			collision_types['left'] = True
+			rect.left = tile.right
 	
 	# adjust the entity based on gravity before checking vertical collisions
-	entity.physics.apply_gravity(entity, GRAVITY, entity.game.dt)
+	if entity.entity_type in ['player', 'enemy', 'item']:
+		entity.physics.apply_gravity(entity, GRAVITY, entity.game.dt)
 
 	# y axis
 	rect.y += velocity.y * dt
 	tiles_collided_with = tile_collision_test(rect, [tiles])
 	for tile in tiles_collided_with:
-		if velocity.y <= 0:
-			rect.top = tile.bottom
-			collision_types['top'] = True
-			entity.collide_top = True
-		elif velocity.y > 0:
+		if velocity.y > 0:
 			rect.bottom = tile.top
 			collision_types['bottom'] = True
 			entity.collide_bottom = True
+		elif velocity.y <= 0:
+			rect.top = tile.bottom
+			collision_types['top'] = True
+			entity.collide_top = True
 	
 	# check for bumping head
 	if collision_types['top'] and velocity.y < 1:

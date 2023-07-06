@@ -3,7 +3,7 @@ from CONSTANTS import *
 from entities import *
 from particle import *
 from utils import *
-
+from world_data import world_names
 
 class Scene:
 	def __init__(self, game,):
@@ -83,6 +83,9 @@ class World():
 		self.world_data = world_data
 		self.level_topleft = 0
 		self.level_bottomright = 0
+
+		self.constraint_data = None
+		self.torch_data = None
 		
 		# player setup
 		self.player_spawn = self.generate_player_spawn(self.world_data)
@@ -140,28 +143,47 @@ class World():
 
 	def create_layer_lists(self, world_data):
 		self.terrain = []
-		self.terrain_data = import_csv_layout(world_data['terrain'])
+		self.layer_data = []
+		self.background_positions = []
+		if 'background' in world_data:
+			self.background_data = import_csv_layout(world_data['background'])
+			self.layer_data.append(self.background_data)
+		else:
+			pass
+		if 'terrain' in world_data:
+			self.terrain_data = import_csv_layout(world_data['terrain'])
+			self.layer_data.append(self.terrain_data)
+		else:
+			pass
 		
 		self.constraints = []
-		self.constraint_data = import_csv_layout(world_data['constraint'])
+		if 'constraint' in world_data:
+			self.constraint_data = import_csv_layout(world_data['constraint'])
+			self.layer_data.append(self.constraint_data)
+		else:
+			pass
 		
 		self.torch_positions = []
-		self.torch_data = import_csv_layout(world_data['torch'])
-		
-		self.background_positions = []
-		self.background_data = import_csv_layout(world_data['background'])
-		
+		if 'torch' in world_data:
+			self.torch_data = import_csv_layout(world_data['torch'])
+			self.layer_data.append(self.torch_data)
+		else:
+			pass
 		self.foreground_positions = []
-		self.foreground_data = import_csv_layout(world_data['foreground'])
+		if 'foreground' in world_data:
+			self.foreground_data = import_csv_layout(world_data['foreground'])
+			self.layer_data.append(self.foreground_data)
+		else:
+			pass
 
 
-		self.layer_data = [
-			self.background_data,
-			self.terrain_data,
-			self.player_data,  # i need to draw the player at this point  ( i fix later )
-			self.foreground_data,
-			self.torch_data,
-		]
+		# self.layer_data = [
+		# 	self.background_data,
+		# 	self.terrain_data,
+		# 	self.player_data,  # i need to draw the player at this point  ( i fix later )
+		# 	self.foreground_data,
+		# 	self.torch_data,
+		# ]
 
 		self.collision_tile_data = [
 			self.terrain_data,
@@ -213,22 +235,38 @@ class World():
 					enemy_name = 'sepparition'
 			
 			self.enemies.append(
-				Enemy(self.game, enemy_name, 5, 96, spawn[0], self.game.enemy_sprites)
+				Enemy(self.game, enemy_name, 5, ENEMIES[enemy_name]['SPRITE SIZE'], spawn[0], self.game.enemy_sprites)
 			)
 			# break
 		
 	def despawn_enemy(self):
 		for enemy in self.enemies:
 			if enemy.health <= 0:
+				# enemy.status = 'explode'
 				enemy.kill()
 				self.enemies.remove(enemy)
-				self.enemy_rects.remove(enemy.rect)
+				if enemy.rect in self.enemy_rects:
+					self.enemy_rects.remove(enemy.rect)
+				
+				# spawn magick_shards on enemy death
 				for i in range(enemy.exp):
 					position = (enemy.rect.x + random.randint(-50, 50), enemy.rect.y + random.randint(-50, 50))
 					self.world_items.append(Item(self.game, 'magick_shard', 'magick', ITEMS['magick']['magick_shard']["SIZE"], position, 2, self.game.item_group))
-		
-		# print('amount of items', len(self.world_items))
 
+					# death particles
+					self.world_particles.append(
+						Particle(
+							self.game,
+							[255,255,255],
+							enemy.rect.center,
+							(random.randint(-5, 5), random.randint(-5, 5)),
+							8,
+							pygame.sprite.GroupSingle(),
+							# gravity=True,
+							# physics=True
+						)
+					)
+		
 	def generate_enemy_rects(self):
 		for enemy in self.enemies:
 			self.enemy_rects.append(enemy.rect)
@@ -248,13 +286,14 @@ class World():
 	def generate_constraint_rects(self):
 		self.constraint_rects = []
 		y = 0
-		for row in self.constraint_data:
-			x = 0
-			for tile_num, tile_id in enumerate(row):
-				if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys():
-					self.constraint_rects.append(pygame.Rect( (x * TILE_SIZE, y * TILE_SIZE), ( TILE_SIZE, TILE_SIZE ) ))
-				x += 1
-			y += 1
+		if self.constraint_data:
+			for row in self.constraint_data:
+				x = 0
+				for tile_num, tile_id in enumerate(row):
+					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys():
+						self.constraint_rects.append(pygame.Rect( (x * TILE_SIZE, y * TILE_SIZE), ( TILE_SIZE, TILE_SIZE ) ))
+					x += 1
+				y += 1
 
 	def setup_torches(self):
 		# torches
@@ -269,17 +308,18 @@ class World():
 					
 	def generate_torch_positions(self):
 		y = 0
-		for row in self.torch_data:
-			x = 0
-			for tile_num, tile_id in enumerate(row):
-				if int(tile_id) == 18:
-					self.torch_positions.append([(x * TILE_SIZE - self.game.camera.level_scroll.x, y * TILE_SIZE - self.game.camera.level_scroll.y)])
-					if len(self.torch_positions) > self.num_of_torches:
-						self.torch_positions.pop(self.num_of_torches)
-				else:
-					pass
-				x += 1
-			y += 1
+		if self.torch_data:
+			for row in self.torch_data:
+				x = 0
+				for tile_num, tile_id in enumerate(row):
+					if int(tile_id) == 18:
+						self.torch_positions.append([(x * TILE_SIZE - self.game.camera.level_scroll.x, y * TILE_SIZE - self.game.camera.level_scroll.y)])
+						if len(self.torch_positions) > self.num_of_torches:
+							self.torch_positions.pop(self.num_of_torches)
+					else:
+						pass
+					x += 1
+				y += 1
 
 	def draw_tiles(self, screen):
 		for layer in self.layer_data:
@@ -301,20 +341,46 @@ class World():
 			if self.game.player.rect.bottom >= self.level_height + 300:
 				self.game.player.rect.x = self.player_spawn.x
 				self.game.player.rect.y = self.player_spawn.y
+				self.game.player.health = CHARACTERS[self.game.player.character]["HEALTH"]
+				self.game.player.magick = CHARACTERS[self.game.player.character]["MAGICK"]
 				self.game.playable = False
 			if self.game.player.collide_bottom:
 				self.game.playable = True
 
 	def world_FX(self):
+		# world particles
 		for index, pos in enumerate(self.torch_positions):
 			for x in range(3):
 				self.world_particles.append(
-					Particle(self.game, random.choice(seto_colors["torch1"]), ((self.torch_positions[index][0][0] + 32) + random.randint(-10, 10), self.torch_positions[index][0][1] + 42), (random.randint(-2,2), -4), 3, [pygame.sprite.Group()], torch=True)
+					Particle(
+						self.game, 
+						random.choice(seto_colors["torch1"]), 
+						((self.torch_positions[index][0][0] + 32) + random.randint(-10, 10), self.torch_positions[index][0][1] + 42), 
+						(random.randint(-2,2), -4), 
+						random.randint(2,8), 
+						[], 
+						torch=True,
+						)
 				)
 		
+		# world lights
 		for index, position in enumerate(self.torch_positions):
 			torch_glow = glow_surface(TILE_SIZE*2, [20,20,40],120)
 			self.game.world_brightness.blit(torch_glow, (position[0] - self.game.camera.level_scroll) - (102, 122), special_flags=pygame.BLEND_RGB_ADD)
+
+		# player spell FX
+		for spell in self.game.player.projectiles:
+			if spell.status not in ['hit', 'remove']:
+				spell_glow = glow_surface(spell.size.x, [20,20,20], 100)
+				self.game.world_brightness.blit(spell_glow, spell.rect.topleft - self.game.camera.level_scroll - (30, 30), special_flags=BLEND_RGB_ADD)
+
+		# enemy FX
+		for enemy in self.enemies:
+			for spell in enemy.spells:
+				# spell lights
+				if spell.status not in ['hit', 'remove']:
+					spell_glow = glow_surface(spell.size.x, [20,20,20], 100)
+					self.game.world_brightness.blit(spell_glow, spell.rect.topleft - self.game.camera.level_scroll - (50, 50), special_flags=BLEND_RGB_ADD)
 
 	def update_FX(self, surface:pygame.Surface):
 		for particle in self.world_particles:
@@ -330,9 +396,15 @@ class World():
 			if item.status in ['collected', 'despawned']:
 				self.world_items.remove(item)
 
+	def draw_map_image(self, surface:pygame.Surface):
+		map_image = get_image(f'../levels/level_data/{world_names[self.game.current_world]}.png')
+		map_image = scale_images([map_image], (self.level_width, self.level_height))[0]
+		surface.blit(map_image, (0,0) - self.game.camera.level_scroll)
+
 	def draw_world(self, surface:pygame.Surface):
 		# self.spawn_enemies()
 		# draw tiles
+		# self.draw_map_image(surface)
 		self.draw_tiles(surface)
 		self.generate_torch_positions()
 		self.update_FX(surface)

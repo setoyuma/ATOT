@@ -28,14 +28,26 @@ church_of_melara = {
 		'constraint': '../levels/church_of_melara/church_of_melara_constraint.csv',
 		}
 
+test_map = {
+	'terrain': '../levels/test_map/test_map_terrain.csv',
+	'player': '../levels/test_map/test_map_player.csv',
+	'torch': '../levels/test_map/test_map_torch.csv',
+	'foreground': '../levels/test_map/test_map_foreground.csv',
+	'enemy': '../levels/test_map/test_map_enemy.csv',
+}
+
 worlds = {
 	1 : church_of_melara,
 	2 : world_02,
 	3 : world_01,
+	4 : test_map,
 }
 
 world_names = {
-	1: 'church_of_melara'
+	1: 'church_of_melara',
+	2: 'church_of_melara',
+	3: 'church_of_melara',
+	4: 'church_of_melara'
 }
 
 music = {
