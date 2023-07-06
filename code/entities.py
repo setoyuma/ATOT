@@ -443,8 +443,6 @@ class Enemy(Entity):
 			self.attack()
 
 
-
-
 class Player(Entity):
 
 	def __init__(self, game, character, size, position, speed, groups):
@@ -796,3 +794,4 @@ class Player(Entity):
 		# draw player
 		# self.show_attacks(surface)
 		self.draw(surface)
+

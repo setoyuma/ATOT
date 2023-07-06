@@ -2,7 +2,7 @@ from BLACKFORGE2 import *
 
 
 notes = {
-	"Launcher" : "Added patch notes section, and character list.",
+	"Launcher" : "Added patch notes section.",
 	"Game" : "Added decoration tiles and level system."
 }
 

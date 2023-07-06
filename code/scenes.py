@@ -3,7 +3,8 @@ from CONSTANTS import *
 from entities import *
 from particle import *
 from utils import *
-from world_data import world_names
+from world_data import *
+from world import World
 
 class Scene:
 	def __init__(self, game,):
@@ -32,388 +33,314 @@ class Scene:
 
 
 class Launcher(Scene):
+	
 	def __init__(self, game):
 		super().__init__(game)
-		self.logo = get_image("./assets/ui/abberoth.png")
-		self.game.screen = pg.display.set_mode((1000,600))
-		img = 'assets/ui/buttons/button_plate1.png'
+		self.scene_type = 'launcher'
+		self.logo = scale_images([get_image("../assets/ui/menu/main_menu/book50.png")], (1000, 1000))[0]
+		self.game.screen = pygame.display.set_mode((1000,600))
+		new_img = '../assets/ui/buttons/New.png'
+		play_img = '../assets/ui/buttons/Play.png'
 		self.buttons = [
-			Button(game, "NEW", (925, 355), None, img, img),
-			Button(game, "PLAY", (925, 455), self.load_world, img, img),
-			#Button(game, "QUIT", (self.game.settings["screen_width"] - 100, 50,), pg.quit, img, img)
+			Button(game, "", (725, 350), None, new_img, new_img),
+			Button(game, "", (725, 455), self.load_world, play_img, play_img),
 		]
 
+	def import_character_assets(self):
+		self.animation_keys = {'idle':[],'loading':[]} 
+
+		for animation in self.animation_keys:
+			full_path = CHAR_PATH + animation
+			
+			original_images = import_folder(full_path)
+			scaled_images = scale_images(original_images, self.size)
+			
+			self.animation_keys[animation] = import_folder(full_path)
+
+		self.animations = self.animation_keys
+	
+	def animate(self):
+		animation = self.animation_keys[self.status]
+		self.frame_index += self.animation_speed * self.game.dt
+		if self.frame_index >= len(animation):
+			self.frame_index = 0
+		if self.facing_right:
+			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+		elif not self.vulnerable:
+			self.image.set_alpha(sine_wave_value())
+		else:
+			self.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.size), True, False)
+
 	def patch_notes(self):
-		patch_notes_surf = pg.Surface((240,250))
-		patch_notes_surf.fill("white")
-		self.game.screen.blit(patch_notes_surf, (10,125))
-		patch_notes_rect = patch_notes_surf.get_rect(topleft=(10,175))
-		draw_text(self.game.screen, "Patch Notes", (120,150), color="black")
-		text_line_wrap(self.game.screen, f"{notes['Launcher']}"+f"{notes['Game']}", "black", patch_notes_rect, pg.font.Font(None, 30), aa=True)
+		patch_notes_rect = pygame.Rect((100,150),(200,175))
+		draw_text(self.game.screen, "Patch Notes", (280,100), color="black")
+		draw_text(self.game.screen,  f"{notes['Launcher']}", (280,150), color="black")
+		draw_text(self.game.screen,  f"{notes['Game']}", (280,170), color="black")
 
 	def load_world(self):
-		pass
+		self.game.scenes = [WorldScene(self.game)]
 
 	def update(self):
-		for event in pg.event.get():
+		for event in pygame.event.get():
 			for button in self.buttons:
 				button.update(event)
 
-			if event.type == pg.QUIT:
-				pg.quit()
+			if event.type == pygame.QUIT:
+				pygame.quit()
 				sys.exit()
 
 	def draw(self):
-		self.game.screen.fill("black")
-		self.game.screen.blit(self.logo, (0,0))
+		self.game.screen.blit(self.logo, (0,-200))
+		# self.game.screen.fill([0,0,0])
 		
 		self.patch_notes()
+
 
 		for button in self.buttons:
 			button.draw()
 
+
+
+
+
+class WorldScene(Scene):
+	def __init__(self, game):
+		super().__init__(game)
+		self.scene_type = 'world'
+		self.game.screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pygame.SCALED)
+		self.game.current_level = 3
+		self.game.world = World(game, worlds[self.game.current_level])
+		self.events = True
+		self.player = self.game.player
+		self.world = self.game.world
+		# pygame.display.toggle_fullscreen()
+
+	def update(self):
+		if not self.events:
+			return
+
+		for event in pygame.event.get():
+			self.game.mx, self.game.my = pygame.mouse.get_pos()
+			# quit
+			if event.type == pygame.QUIT:
+				print('Game Closed\n')
+				pygame.quit()
+				sys.exit()
+
+			# button clicked
+			elif event.type == pygame.MOUSEBUTTONDOWN:
+				if event.button == 4:  # Mouse wheel up
+					self.player.active_spell_slot = 2
+					self.player.switch_active_spell()
+					pass
+				elif event.button == 5:  # Mouse wheel down
+					self.player.active_spell_slot = 1
+					self.player.switch_active_spell()
+					pass
+				elif event.button == 1:
+					for i in range(10):
+						self.game.particles.append(
+							Particle(
+								self.game,
+								[255,255,255],
+								(self.game.mx, self.game.my) + self.game.camera.level_scroll,
+								(random.randint(-10,10), random.randint(-10,10)),
+								20,
+								[],
+								gravity=True,
+								physics=True
+							)
+						)
+					pass
+
+			# button released
+			
+			# key pressed
+			elif event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_ESCAPE:
+					if len(self.game.scenes) == 1:
+						self.game.scenes.append(RadialMenu(self.game))
+						self.events = False
+				if event.key == pygame.K_F8:
+					self.game.show_fps = not self.game.show_fps
+
+				if event.key == pygame.K_f:
+					pygame.display.toggle_fullscreen()
+				
+				# dashing
+				if event.key == pygame.K_LSHIFT and self.player.dash_counter > 0 and not self.player.collide_bottom:
+					play_sound('../assets/sounds/dashing.wav')
+					self.player.dash_point = (self.player.rect.x, self.player.rect.y)
+					self.player.dashing = True
+					self.player.dash_counter -= 1
+				
+				# rolling
+				if event.key == pygame.K_LSHIFT and self.player.collide_bottom and self.player.roll_counter > 0 and int(self.player.roll_cooldown) == CHARACTERS[self.player.character]["ROLL COOLDOWN"]:
+					self.player.roll_point = (self.player.rect.x, self.player.rect.y)
+					self.player.rolling = True
+					self.player.roll_counter -= 1
+
+				# attacking
+				if event.key == pygame.K_o and self.player.collide_bottom:
+					pass
+					# self.player.attacking = True
+					# self.player.create_attack()
+
+				# spells
+				if event.key == pygame.K_p: #and self.player.collide_bottom:
+					# add this once we have damage animations (and self.player.vulnerable)
+					if self.player.facing_right  and self.player.magick > 0 and self.player.cast_timer == self.player.cast_cooldown:
+						self.player.casting = True
+						self.player.magick -= SPELLS[self.player.active_spell][3]
+						self.player.projectiles.append(
+							Projectile(self.game, self.player.rect.center, self.player.active_spell, 'right', self.player.rect.center, 300)
+						)
+						play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
+					if not self.player.facing_right  and self.player.magick > 0 and self.player.vulnerable and self.player.cast_timer == self.player.cast_cooldown:
+						self.player.casting = True
+						self.player.magick -= SPELLS[self.player.active_spell][3]
+						self.player.projectiles.append(
+							Projectile(self.game, self.player.rect.center, self.player.active_spell, 'left', self.player.rect.center, 300)
+						)
+						play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
+
+				
+				# player hud testing
+				if event.key == pygame.K_h:
+					self.player.health -= 10
+				if event.key == pygame.K_m:
+					self.player.magick -= 5
+				if event.key == pygame.K_s:
+					self.player.spell_shards += 1
+
+	def draw(self):
+		# updates
+		self.game.world.update()
+		self.game.world.update_enemies(self.game.dt, self.game.screen, self.game.world.tile_rects, self.game.world.constraint_rects)
+		self.player.update(self.game.dt, self.game.screen, self.game.world.tile_rects)
+		self.game.camera.update_position()
+
+		# drawing
+		self.game.update_background()
+		self.game.world.draw_world(self.game.screen)
+		self.player.stat_bar()
+		self.game.ui.update_player_HUD()
+		self.game.ui.update_spell_slot()
+		self.game.ui.update_spell_shard_count()
+		self.game.world.update_items(self.game.screen)
+		self.game.world.update_FX(self.game.screen)
+
+		for p in self.game.particles:
+			p.emit()
+
+			if p.radius <= 0.1:
+				self.game.particles.remove(p)
+
+		# handle player projectiles
+		for projectile in self.player.projectiles:
+			projectile.draw(self.game.screen)
+
+
+			if projectile.status == 'remove':
+				self.player.projectiles.remove(projectile)
+			else:
+				if projectile.position.x >= projectile.cast_from.x + projectile.distance:
+					projectile.status = 'hit'				
+				if projectile.position.x <= projectile.cast_from.x - projectile.distance:
+					projectile.status = 'hit'				
+
+		# handle enemy projectiles
+		for enemy in self.game.world.enemies:
+			if enemy.name in ['Covenant Follower']:
+				for projectile in enemy.spells:
+					projectile.draw(self.game.screen)
+
+					if projectile.status == 'remove':
+						enemy.spells.remove(projectile)
+					else:
+						if projectile.position.x >= projectile.cast_from.x + projectile.distance:
+							projectile.status = 'hit'				
+						if projectile.position.x <= projectile.cast_from.x - projectile.distance:
+							projectile.status = 'hit'
+
+		# handle weapons
+		if len(self.player.weapon) > 0:
+			for weapon in self.player.weapon:
+				weapon.draw(self.game.screen)
+
+				if not self.player.attacking:
+					self.player.weapon.remove(weapon)
+		
+		if self.game.show_fps:
+			self.game.draw_fps()
+		# for proj in self.player.projectiles:
+		# 	proj.draw(self.game.screen)
+
 		self.game.draw_fps()
 
 
-class World():
-
-	def __init__(self, game, world_data):
-		# world config
-		self.game = game
-		self.world_data = world_data
-		self.level_topleft = 0
-		self.level_bottomright = 0
-
-		self.constraint_data = None
-		self.torch_data = None
-		
-		# player setup
-		self.player_spawn = self.generate_player_spawn(self.world_data)
-
-		# layer setup
-		self.create_layer_lists(self.world_data)
-		
-		# tile setup
-		self.tile_index = {}
-
-		self.create_tile_index()
-		self.generate_tile_rects()
-		self.generate_constraint_rects()
-		
-		# enemy setup
-		self.enemies = []
-		self.enemy_spawns = []
-		self.enemy_rects = []
-		self.generate_enemy_spawns(self.world_data)
-		self.spawn_enemies()
-		self.generate_enemy_rects()
-
-		# world stats
-		self.calculate_level_size()
-		self.level_topleft = self.tile_rects[0]
-		self.level_bottomright = self.tile_rects[len(self.tile_rects)-1]
-
-		# world fx
-		self.num_of_torches = 0
-		self.world_particles = []
-		self.setup_torches()
-
-		# items
-		self.world_items = []
-
-	def calculate_level_size(self):
-		max_right = 0
-		max_bottom = 0
-
-		for tile in self.tile_rects:
-			sprite_rect = tile
-			sprite_right = sprite_rect.x + sprite_rect.width
-			sprite_bottom = sprite_rect.y + sprite_rect.height
-
-			max_right = max(max_right, sprite_right)
-			max_bottom = max(max_bottom, sprite_bottom)
-		
-		self.level_width = max_right
-		self.level_height = max_bottom
-
-	def create_tile_index(self):
-		tile_list = import_cut_graphics('../assets/terrain/Tileset.png', TILE_SIZE)  # Load tile graphics
-		for index, tile in enumerate(tile_list):
-			self.tile_index[index] = tile
-
-	def create_layer_lists(self, world_data):
-		self.terrain = []
-		self.layer_data = []
-		self.background_positions = []
-		if 'background' in world_data:
-			self.background_data = import_csv_layout(world_data['background'])
-			self.layer_data.append(self.background_data)
-		else:
-			pass
-		if 'terrain' in world_data:
-			self.terrain_data = import_csv_layout(world_data['terrain'])
-			self.layer_data.append(self.terrain_data)
-		else:
-			pass
-		
-		self.constraints = []
-		if 'constraint' in world_data:
-			self.constraint_data = import_csv_layout(world_data['constraint'])
-			self.layer_data.append(self.constraint_data)
-		else:
-			pass
-		
-		self.torch_positions = []
-		if 'torch' in world_data:
-			self.torch_data = import_csv_layout(world_data['torch'])
-			self.layer_data.append(self.torch_data)
-		else:
-			pass
-		self.foreground_positions = []
-		if 'foreground' in world_data:
-			self.foreground_data = import_csv_layout(world_data['foreground'])
-			self.layer_data.append(self.foreground_data)
-		else:
-			pass
-
-
-		# self.layer_data = [
-		# 	self.background_data,
-		# 	self.terrain_data,
-		# 	self.player_data,  # i need to draw the player at this point  ( i fix later )
-		# 	self.foreground_data,
-		# 	self.torch_data,
-		# ]
-
-		self.collision_tile_data = [
-			self.terrain_data,
-		]
-	
-	def generate_item_rects(self, world_data):
-		pass
-
-	def generate_player_spawn(self, world_data):
-		self.player_data = import_csv_layout(world_data['player'])
-		y = 0
-		for row in self.player_data:
-			x = 0
-			for index, value in enumerate(row):
-				if int(value) == 0:
-					self.player_spawn = pygame.math.Vector2(x * TILE_SIZE, y * TILE_SIZE)
-				x += 1
-			y += 1
-		return self.player_spawn
-	
-	def generate_enemy_spawns(self, world_data):
-		self.enemy_data = import_csv_layout(world_data['enemy'])
-		y = 0
-		for row in self.enemy_data:
-			x = 0
-			for index, value in enumerate(row):
-				if int(value) in [0, 1, 2]:
-					self.enemy_spawns.append([pygame.math.Vector2(x * TILE_SIZE, y * TILE_SIZE), int(value)])
-				x += 1
-			y += 1
-
-	def draw_enemies(self, surface:pygame.Surface):
-		for enemy in self.enemies:
-			enemy.draw(surface)
-
-	def update_enemies(self, dt, surface:pygame.Surface, terrain:list, constraints:list):
-		for enemy in self.enemies:
-			enemy.update(terrain, constraints)
-		self.despawn_enemy()
-
-	def spawn_enemies(self):
-		for spawn in self.enemy_spawns:
-			match spawn[1]:
-				case 0:
-					enemy_name = 'covenant_follower'
-				case 1:
-					enemy_name = 'rose_sentinel'
-				case 2:
-					enemy_name = 'sepparition'
-			
-			self.enemies.append(
-				Enemy(self.game, enemy_name, 5, ENEMIES[enemy_name]['SPRITE SIZE'], spawn[0], self.game.enemy_sprites)
-			)
-			# break
-		
-	def despawn_enemy(self):
-		for enemy in self.enemies:
-			if enemy.health <= 0:
-				# enemy.status = 'explode'
-				enemy.kill()
-				self.enemies.remove(enemy)
-				if enemy.rect in self.enemy_rects:
-					self.enemy_rects.remove(enemy.rect)
-				
-				# spawn magick_shards on enemy death
-				for i in range(enemy.exp):
-					position = (enemy.rect.x + random.randint(-50, 50), enemy.rect.y + random.randint(-50, 50))
-					self.world_items.append(Item(self.game, 'magick_shard', 'magick', ITEMS['magick']['magick_shard']["SIZE"], position, 2, self.game.item_group))
-
-					# death particles
-					self.world_particles.append(
-						Particle(
-							self.game,
-							[255,255,255],
-							enemy.rect.center,
-							(random.randint(-5, 5), random.randint(-5, 5)),
-							8,
-							pygame.sprite.GroupSingle(),
-							# gravity=True,
-							# physics=True
-						)
-					)
-		
-	def generate_enemy_rects(self):
-		for enemy in self.enemies:
-			self.enemy_rects.append(enemy.rect)
-
-	def generate_tile_rects(self):
-		self.tile_rects = []
-		for layer in self.collision_tile_data:
-			y = 0
-			for row in layer:
-				x = 0
-				for tile_num, tile_id in enumerate(row):
-					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys() and int(tile_id) not in [18]:
-						self.tile_rects.append(pygame.Rect( (x * TILE_SIZE, y * TILE_SIZE), ( TILE_SIZE, TILE_SIZE ) ))
-					x += 1
-				y += 1
-	
-	def generate_constraint_rects(self):
-		self.constraint_rects = []
-		y = 0
-		if self.constraint_data:
-			for row in self.constraint_data:
-				x = 0
-				for tile_num, tile_id in enumerate(row):
-					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys():
-						self.constraint_rects.append(pygame.Rect( (x * TILE_SIZE, y * TILE_SIZE), ( TILE_SIZE, TILE_SIZE ) ))
-					x += 1
-				y += 1
-
-	def setup_torches(self):
-		# torches
-		y = 0
-		for row in self.torch_data:
-			x = 0
-			for tile_num, tile_id in enumerate(row):
-				if int(tile_id) == 18:
-					self.num_of_torches += 1
-				x += 1
-			y += 1
-					
-	def generate_torch_positions(self):
-		y = 0
-		if self.torch_data:
-			for row in self.torch_data:
-				x = 0
-				for tile_num, tile_id in enumerate(row):
-					if int(tile_id) == 18:
-						self.torch_positions.append([(x * TILE_SIZE - self.game.camera.level_scroll.x, y * TILE_SIZE - self.game.camera.level_scroll.y)])
-						if len(self.torch_positions) > self.num_of_torches:
-							self.torch_positions.pop(self.num_of_torches)
-					else:
-						pass
-					x += 1
-				y += 1
-
-	def draw_tiles(self, screen):
-		for layer in self.layer_data:
-			y = 0
-			for row in layer:
-				x = 0
-				for tile_num, tile_id in enumerate(row):
-					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys():
-						screen.blit(self.tile_index[int(tile_id)], (x * TILE_SIZE - self.game.camera.level_scroll.x, y * TILE_SIZE - self.game.camera.level_scroll.y))
-					x += 1
-				y += 1
-
-	def respawn(self):
-		if self.game.player.health <= 0:
-			self.game.player.rect.x = self.player_spawn.x
-			self.game.player.rect.y = self.player_spawn.y
-			self.game.player.health = CHARACTERS[self.game.player.character]["HEALTH"]
-		else:
-			if self.game.player.rect.bottom >= self.level_height + 300:
-				self.game.player.rect.x = self.player_spawn.x
-				self.game.player.rect.y = self.player_spawn.y
-				self.game.player.health = CHARACTERS[self.game.player.character]["HEALTH"]
-				self.game.player.magick = CHARACTERS[self.game.player.character]["MAGICK"]
-				self.game.playable = False
-			if self.game.player.collide_bottom:
-				self.game.playable = True
-
-	def world_FX(self):
-		# world particles
-		for index, pos in enumerate(self.torch_positions):
-			for x in range(3):
-				self.world_particles.append(
-					Particle(
-						self.game, 
-						random.choice(seto_colors["torch1"]), 
-						((self.torch_positions[index][0][0] + 32) + random.randint(-10, 10), self.torch_positions[index][0][1] + 42), 
-						(random.randint(-2,2), -4), 
-						random.randint(2,8), 
-						[], 
-						torch=True,
-						)
-				)
-		
-		# world lights
-		for index, position in enumerate(self.torch_positions):
-			torch_glow = glow_surface(TILE_SIZE*2, [20,20,40],120)
-			self.game.world_brightness.blit(torch_glow, (position[0] - self.game.camera.level_scroll) - (102, 122), special_flags=pygame.BLEND_RGB_ADD)
-
-		# player spell FX
-		for spell in self.game.player.projectiles:
-			if spell.status not in ['hit', 'remove']:
-				spell_glow = glow_surface(spell.size.x, [20,20,20], 100)
-				self.game.world_brightness.blit(spell_glow, spell.rect.topleft - self.game.camera.level_scroll - (30, 30), special_flags=BLEND_RGB_ADD)
-
-		# enemy FX
-		for enemy in self.enemies:
-			for spell in enemy.spells:
-				# spell lights
-				if spell.status not in ['hit', 'remove']:
-					spell_glow = glow_surface(spell.size.x, [20,20,20], 100)
-					self.game.world_brightness.blit(spell_glow, spell.rect.topleft - self.game.camera.level_scroll - (50, 50), special_flags=BLEND_RGB_ADD)
-
-	def update_FX(self, surface:pygame.Surface):
-		for particle in self.world_particles:
-			particle.emit()
-			if particle.radius <= 0.5:
-				self.world_particles.remove(particle)
-
-	def update_items(self, surface:pygame.Surface):
-		for item in self.world_items:
-			item.status = 'active'
-			item.update(surface)
-
-			if item.status in ['collected', 'despawned']:
-				self.world_items.remove(item)
-
-	def draw_map_image(self, surface:pygame.Surface):
-		map_image = get_image(f'../levels/level_data/{world_names[self.game.current_world]}.png')
-		map_image = scale_images([map_image], (self.level_width, self.level_height))[0]
-		surface.blit(map_image, (0,0) - self.game.camera.level_scroll)
-
-	def draw_world(self, surface:pygame.Surface):
-		# self.spawn_enemies()
-		# draw tiles
-		# self.draw_map_image(surface)
-		self.draw_tiles(surface)
-		self.generate_torch_positions()
-		self.update_FX(surface)
-		# draw player????
-		self.game.player.draw(surface)
-		# draw enemies
-		self.draw_enemies(surface)
-		# draw vfx
-		self.world_FX()
+class RadialMenu(Scene):
+	def __init__(self, game):
+		super().__init__(game)
+		self.scene_type = 'radial menu'
+		self.menu_center = SCREEN_WIDTH//2, SCREEN_HEIGHT//2
+		self.icons = import_folder("../assets/ui/menu/")
+		self.rotation = 0 # keep track of how much the menu has rotated
+		self.target_angle = 0
+		self.section_radius = 200  # distance from the center to each section
+		self.sections = len(self.icons) # resume // settings // inventory // spells // equipment
+		self.section_arc = 360 / self.sections
+		self.button = Button(game, "", (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-184), self.callback, base=(0,0,100,50), hovered=(0,0,100,50))
+		self.options = ["Equipment", "Grimoire", "Inventory", "Settings"]
+		self.selected = 0
 
 	def update(self):
-		self.respawn()
+		pressed_keys = pygame.key.get_pressed()
+		for event in pygame.event.get():
+			self.check_universal_events(pressed_keys, event)
+			self.button.update(event)
+
+			if event.type == KEYDOWN:
+				if event.key == pygame.K_f:
+					pygame.display.toggle_fullscreen()
+				
+				elif event.key == pygame.K_ESCAPE:
+					self.game.scenes.pop()
+					self.game.scenes[0].events = True
+				
+				elif event.key == pygame.K_LEFT:
+					self.selected -= 1
+					if self.selected < 0:
+						self.selected = len(self.options)-1
+					self.target_angle += self.section_arc
+		
+				elif event.key == pygame.K_RIGHT:
+					self.selected += 1
+					if self.selected > len(self.options)-1:
+						self.selected = 0
+					self.target_angle -= self.section_arc
+
+		if self.rotation % 360 != self.target_angle % 360:
+			self.rotate()
+	
+	def rotate(self):
+		rotation_speed = 5
+		if self.rotation < self.target_angle:
+			self.rotation += rotation_speed
+		elif self.rotation > self.target_angle:
+			self.rotation -= rotation_speed
+
+	def draw(self):
+		self.button.draw()
+		draw_text(self.game.screen, self.options[self.selected], (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-222), 24)
+		for i, icon in enumerate(self.icons):
+			angle = self.rotation + (i * self.section_arc)
+			#pygame.transform.rotate(icon, rotation_angle)
+			angle_rad = math.radians(angle)
+			x = self.menu_center[0] + self.section_radius * math.sin(angle_rad)
+			y = self.menu_center[1] - self.section_radius * math.cos(angle_rad)
+			self.game.screen.blit(icon, (x, y))
+
+	def callback(self):
+		print("callback")
+
