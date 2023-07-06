@@ -398,7 +398,7 @@ class Enemy(Entity):
 	def update_spells(self, player):
 		for spell in self.spells:
 			spell.update()
-			if spell.rect.colliderect(player.rect):
+			if spell.rect.colliderect(player.rect) and self.game.player.vulnerable and not self.game.player.rolling and self.game.player.health > 0:
 				spell.collided = True
 				spell.status = 'hit'
 				player.get_damage(spell.damage)
@@ -636,7 +636,7 @@ class Player(Entity):
 	def get_status(self):
 		if self.velocity.y < 0:
 			self.status = 'jump'
-		elif self.velocity.y > 1:
+		elif self.velocity.y > 1.5:
 			self.status = 'fall'
 		else:
 			if self.velocity.x != 0:

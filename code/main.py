@@ -86,7 +86,7 @@ class Game():
 		self.enemy_sprites = pygame.sprite.Group()
 
 		# create world
-		self.current_world = 3
+		self.current_world = 4
 		self.world = World(self, worlds[self.current_world])
 
 		# create player
@@ -94,7 +94,7 @@ class Game():
 		self.player = Player(self, "ALRYN", 96, self.world.player_spawn, CHARACTERS["ALRYN"]["SPEED"], [self.player_sprite_group])
 
 		# create camera
-		self.camera = Camera(self, 10, 225)
+		self.camera = Camera(self, 12, 225)
 		
 		# ui
 		self.ui = UI(self, self.screen)
@@ -197,7 +197,8 @@ class Game():
 
 				# spells
 				if event.key == pygame.K_p: #and self.player.collide_bottom:
-					if self.player.facing_right  and self.player.magick > 0 and self.player.vulnerable and self.player.cast_timer == self.player.cast_cooldown:
+					# add this once we have damage animations (and self.player.vulnerable)
+					if self.player.facing_right  and self.player.magick > 0 and self.player.cast_timer == self.player.cast_cooldown:
 						self.player.casting = True
 						self.player.magick -= SPELLS[self.player.active_spell][3]
 						self.player.projectiles.append(
