@@ -187,10 +187,10 @@ class World():
 							[255,255,255],
 							enemy.rect.center,
 							(random.randint(-5, 5), random.randint(-5, 5)),
-							8,
+							12,
 							pygame.sprite.GroupSingle(),
-							# gravity=True,
-							# physics=True
+							gravity=True,
+							physics=True,
 						)
 					)
 		

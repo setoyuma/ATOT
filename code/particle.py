@@ -5,7 +5,7 @@ from utils import *
 
 class Particle(pygame.sprite.Sprite):
 	
-	def __init__(self, game, color:list, position:tuple, velocity:tuple, radius:int, groups, glow=False, gravity=False, torch=False, physics=False):
+	def __init__(self, game, color:list, position:tuple, velocity:tuple, radius:int, groups, glow=False, gravity=False, torch=False, physics=False, image_path=''):
 		# super().__init__(groups)
 		self.entity_type = 'particle'
 		self.game = game
@@ -17,8 +17,14 @@ class Particle(pygame.sprite.Sprite):
 		self.position = pygame.math.Vector2(position)
 		self.velocity = pygame.math.Vector2(velocity)
 		self.radius = radius
-		self.image = pygame.Surface((self.radius, self.radius))
-		self.image.set_colorkey([0,0,0])
+		self.has_image = False
+		self.image_path = image_path
+		if len(self.image_path) > 0:
+			self.has_image = True
+			self.image = scale_images([get_image(self.image_path)], (self.radius, self.radius))[0]
+		else:
+			self.image = pygame.Surface((self.radius, self.radius))
+			self.image.set_colorkey([0,0,0])
 		self.rect = pygame.Rect(self.position, (self.radius, self.radius))
 
 	def collision_test(self):
@@ -47,4 +53,7 @@ class Particle(pygame.sprite.Sprite):
 			self.rect.topleft = self.position
 		self.radius -= 0.1 * self.game.dt
 
-		pygame.draw.circle(self.game.screen, self.color, [int(self.rect.x), int(self.rect.y)] - self.game.camera.level_scroll, int(self.radius))
+		if self.has_image:
+			self.game.screen.blit(self.image, [int(self.rect.x), int(self.rect.y)] - self.game.camera.level_scroll)
+		else:
+			pygame.draw.circle(self.game.screen, self.color, [int(self.rect.x), int(self.rect.y)] - self.game.camera.level_scroll, int(self.radius))

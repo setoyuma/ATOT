@@ -108,7 +108,7 @@ class WorldScene(Scene):
 		super().__init__(game)
 		self.scene_type = 'world'
 		self.game.screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pygame.SCALED)
-		self.game.current_level = 3
+		self.game.current_level = 4
 		self.game.world = World(game, worlds[self.game.current_level])
 		self.events = True
 		self.player = self.game.player
