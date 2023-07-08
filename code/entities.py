@@ -4,6 +4,11 @@ from projectile import *
 from utils import *
 from particle import Particle
 
+
+	
+		
+
+
 class Weapon(pygame.sprite.Sprite):
 	def __init__(self,game,player,groups):
 		super().__init__(groups)
@@ -203,11 +208,14 @@ class Enemy(Entity):
 
 		self.hurtbox = pygame.Rect(self.rect.center, (64, 64))
 
+		self.rects = [self.rect]
+
 	def grab_stats(self, enemy_name):
 		self.stats = ENEMIES[enemy_name]
 		self.size = pygame.math.Vector2(self.stats['SPRITE SIZE'], self.stats['SPRITE SIZE'])
 		self.name = self.stats['NAME']
 		self.health = self.stats['HEALTH']
+		self.health_scale = self.stats['HEALTH']
 		self.exp = self.stats['EXP']
 		self.damage = self.stats['DAMAGE']
 		self.attack_type = self.stats['ATTACK_TYPE']
@@ -349,15 +357,20 @@ class Enemy(Entity):
 			if weapon.rect.colliderect(self.rect) and self.vulnerable and self.health > 0:
 				self.get_damage(weapon.damage)
 
-	def get_damage(self, damage_taken):
+	def get_damage(self, damage_taken, type=None):
 		if self.vulnerable:
 			self.vulnerable = False
 			self.hit_time = pygame.time.get_ticks()
 			self.health -= damage_taken
 
+		if type == 'melee':
+			self.game.camera.shake = True
+			self.game.camera.shake_timer = damage_taken
+
 	def hit_reaction(self):
 		if not self.vulnerable and int(self.direction.x) != 0:
 			self.direction *= -self.resistance
+			pass
 		elif not self.vulnerable and int(self.direction.x) == 0:
 			if self.direction_facing == 'right':
 				self.direction += (1,1)
@@ -381,7 +394,7 @@ class Enemy(Entity):
 				self.vulnerable = True
 
 	def status_bar(self):
-		health_bar = pygame.Rect((self.rect.topleft - self.game.camera.level_scroll) - (0, 20), (200 * self.health/100, 8))
+		health_bar = pygame.Rect((self.rect.topleft - self.game.camera.level_scroll) - (0, 20), (200 * self.health/self.health_scale, 8))
 		pygame.draw.rect(self.game.screen, [255,0,0], health_bar)
 	
 	def draw(self, surface:pygame.Surface):
@@ -402,7 +415,13 @@ class Enemy(Entity):
 				spell.collided = True
 				spell.status = 'hit'
 				player.get_damage(spell.damage)
-			
+	
+	def show_rects(self, surface:pygame.Surface):
+		for rect in self.rects:
+			surf = pygame.Surface((rect.width, rect.height))
+			surf.fill('red')
+			surface.blit(surf, rect.topleft - self.game.camera.level_scroll)
+
 	def update(self, terrain, constraints):
 		self.actions(self.game.player)
 		self.incoming_damage_check()
@@ -417,7 +436,6 @@ class Enemy(Entity):
 			self.facing_right = True
 		if self.direction.x < 0:
 			self.facing_right = False
-		
 
 		self.rect, self.game.world.collisions = collision_adjust(self, self.velocity, self.game.dt, terrain)
 		
@@ -495,9 +513,12 @@ class Player(Entity):
 		# animation
 		self.frame_index = 0
 		self.animation_speed = 0.25
-		self.animation = self.animations[self.status]
-		self.attack_duration = 0
-		self.rect = pygame.Rect( (self.rect.x, self.rect.y), (32, 96) )
+		self.animator = Animator(self.game, self, self.animation_speed)
+
+
+		# self.animation = self.animations[self.status]
+
+		self.rect = pygame.Rect( (self.rect.x, self.rect.y), (32, self.image.get_height()/2) )
 
 		# collision area
 		self.collision_area = pygame.Rect(self.rect.x, self.rect.y, TILE_SIZE * 3, TILE_SIZE * 3)
@@ -507,8 +528,16 @@ class Player(Entity):
 		self.current_weapon = 'skolfen'
 		self.weapon_sprite = pygame.sprite.GroupSingle()
 
+		# attacking
+		self.attack_time = 0
+		self.combo = 0
+
+
+		self.rects = [self.rect]
+
 	def get_stats(self):
 		self.stats = CHARACTERS[self.character]
+		self.hitboxes = self.stats['hitboxes']
 		self.name = self.stats['NAME']
 		self.health = self.stats['HEALTH']
 		self.magick = self.stats['MAGICK']
@@ -524,29 +553,30 @@ class Player(Entity):
 		self.IFRAMES = self.stats['IFRAMES']
 
 	def import_character_assets(self):
-		self.animation_keys = {'idle':[],'run':[],'jump':[],'fall':[], 'attack':[], 'roll':[]} 
+		self.animation_keys = {'idle':[],'run':[],'jump':[],'fall':[], 'attack/overhead/1':[], 'attack/overhead/2':[], 'roll':[]} 
 
 		for animation in self.animation_keys:
 			full_path = CHAR_PATH + animation
 			
-			original_images = import_folder(full_path)
+			original_images = new_import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
 			
-			self.animation_keys[animation] = import_folder(full_path)
+			self.animation_keys[animation] = new_import_folder(full_path)
 
 		self.animations = self.animation_keys
 	
-	def animate(self):
-		animation = self.animation_keys[self.status]
-		self.frame_index += self.animation_speed * self.game.dt
-		if self.frame_index >= len(animation):
-			self.frame_index = 0
-		if self.facing_right:
-			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
-		elif not self.vulnerable:
+	def animation_handler(self):
+		animation = self.animator.animation
+
+		if self.status == f'attack/overhead/{self.combo}':
+			if int(self.animator.frame_index) == len(animation) - 1:
+				self.animator.frame_index = self.animator.frame_index - 1
+				print('attack over')
+		
+		if not self.vulnerable:
 			self.image.set_alpha(sine_wave_value())
-		else:
-			self.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.size), True, False)
+
+		self.animator.run(self.animations[self.status])
 
 	def jump(self, dt):
 		if self.jumps > 0:
@@ -556,17 +586,17 @@ class Player(Entity):
 	def move(self, dt):
 		keys = pygame.key.get_pressed()
 
-		if keys[pygame.K_d] and not self.dashing and not self.rolling:
+		if keys[pygame.K_d] and not self.dashing and not self.rolling and '/' not in self.status:
 			self.facing_right = True
 			self.velocity.x = self.speed
-		elif keys[pygame.K_a] and not self.dashing and not self.rolling:
+		elif keys[pygame.K_a] and not self.dashing and not self.rolling and '/' not in self.status:
 			self.facing_right = False
 			self.velocity.x = -self.speed
 		else:
 			self.velocity.x = 0
 		
 		# jumping
-		if keys[pygame.K_SPACE] and self.jumps > 0 and self.airborne_timer < 12:
+		if keys[pygame.K_SPACE] and self.jumps > 0 and self.airborne_timer < 12 and '/' not in self.status:
 			self.jump(dt)
 			self.jumping = True
 			self.collide_bottom = False
@@ -575,25 +605,12 @@ class Player(Entity):
 		if self.jumps <= 0 and self.collide_bottom:
 			self.jumps = CHARACTERS[self.character]["JUMPS"]
 
-		if self.attacking:
-			self.attack_duration += 0.2 * self.game.dt
-			self.velocity.x = 0
-
 		if self.jumping:
 			self.rolling = False
 
 	def switch_active_spell(self):
 		if self.active_spell_slot in [1, 2]:
 			self.active_spell = self.bound_spells[self.active_spell_slot-1]
-
-	def create_attack(self):
-		self.weapon.append(
-			Weapon(self.game, self, self.weapon_sprite)
-		)
-	
-	def show_attacks(self, surface:pygame.Surface):
-		for attack_rect in self.attack_rects:
-			pygame.draw.rect(surface, "blue", attack_rect)
 
 	def roll(self, dt):
 		frame_scale = self.game.current_fps / 75.0
@@ -642,12 +659,17 @@ class Player(Entity):
 			elif self.velocity.x < 1:
 				self.status = 'idle'
 		if self.attacking:
-			self.status = 'attack'
+			self.status = f'attack/overhead/{self.combo}'
 		if self.rolling:
 			self.status = 'roll'
 	
+	def check_combo(self):
+		# reset combo if it reaches max
+		if self.combo >= 2:
+			self.combo = 1
+
 	def draw(self, surface:pygame.Surface):
-		image_offset = ( -30, 0)
+		image_offset = ( -60, -80)
 		surface.blit(self.image, (self.rect.topleft - self.game.camera.level_scroll + image_offset))
 
 		for particle in self.particles:
@@ -685,15 +707,58 @@ class Player(Entity):
 			self.hit_time = pygame.time.get_ticks()
 			self.health -= damage_taken
 
+	def attack(self):
+		self.animator.frame_index = 0
+		self.combo += 1
+		self.attack_time = pygame.time.get_ticks()
+		self.attacking = True
+		self.can_attack = False
+	
+	def create_attack(self):
+		if self.facing_right:
+			hitbox = self.hitboxes['overhead'+str(self.combo)]
+			if int(self.animator.frame_index) == hitbox[0]:
+				print('attack active on frame', int(self.animator.frame_index))
+				offset = pygame.math.Vector2(hitbox[1][0], hitbox[1][1])
+				final_hitbox = pygame.Rect(self.rect.bottomright - offset, (hitbox[1][2], hitbox[1][3]))
+				self.rects.append(final_hitbox)
+
+				# collision checks
+				for enemy in self.game.world.enemies:
+					if final_hitbox.colliderect(enemy.rect):
+						enemy.get_damage(5, type='melee')
+
+		if not self.facing_right:
+			hitbox = self.hitboxes['overhead'+str(self.combo)]
+			if int(self.animator.frame_index) + 1 == hitbox[0]:
+				print('attack active on frame', int(self.animator.frame_index))
+				offset = pygame.math.Vector2(-hitbox[1][0], hitbox[1][1])
+				final_hitbox = pygame.Rect(self.rect.bottomright - offset, (hitbox[1][2], hitbox[1][3]))
+				self.rects.append(final_hitbox)
+		
+				# collision checks
+				for enemy in self.game.world.enemies:
+					if final_hitbox.colliderect(enemy.rect):
+						enemy.get_damage(5, type='melee')
+
 	def cooldowns(self):
 		current_time = pygame.time.get_ticks()
-		if not self.can_attack:
+		if self.attacking:
 			if current_time - self.attack_time >= self.attack_cooldown:
 				self.can_attack = True
-
+				self.attacking = False
+				self.combo = 0
+				self.frame_index = 0
+				self.rects = [self.rect]
 		if not self.vulnerable:
 			if current_time - self.hit_time >= self.IFRAMES:
 				self.vulnerable = True
+
+	def show_rects(self, surface:pygame.Surface):
+		for rect in self.rects:
+			surf = pygame.Surface((rect.width, rect.height))
+			surf.fill('white')
+			surface.blit(surf, rect.topleft - self.game.camera.level_scroll)
 
 	def update(self, dt, surface:pygame.Surface, terrain:list):
 		self.incoming_damage_check()
@@ -702,8 +767,14 @@ class Player(Entity):
 		self.dash(dt)
 		self.on_screen_check()
 		self.get_status()
-		self.animate()
+		# self.animate()
+		self.animation_handler()
 		self.cooldowns()
+		self.check_combo()
+		
+		if self.attacking:
+			self.create_attack()
+
 		
 		# update hurtbox
 		self.hurtbox.center = self.rect.center - self.game.camera.level_scroll
@@ -739,10 +810,10 @@ class Player(Entity):
 			blur_surface = pygame.transform.box_blur(self.image, 4, True)
 			self.image = blur_surface
 
-
 		if self.dash_timer <= 0 or not self.dashing:
 			self.dashing = False
 			self.dash_timer = 4
+
 		if self.collide_bottom:
 			self.dashing = False
 
@@ -759,15 +830,6 @@ class Player(Entity):
 		if self.roll_cooldown < CHARACTERS[self.character]["ROLL COOLDOWN"]:
 			self.roll_cooldown += 0.1 * dt  # roll cooldown
 		
-		# # attacking
-		# if int(self.attack_duration) > 5:
-		# 	self.attack_duration = 0
-		# 	self.animation.frame_index = 0
-
-		# if int(self.attack_duration) == self.animations[self.status].frame_duration:
-		# 	self.attacking = False
-		# 	self.attack_duration = 0
-
 		# particles
 		for particle in self.particles:
 			if particle.radius <= 0:
@@ -794,4 +856,8 @@ class Player(Entity):
 		# draw player
 		# self.show_attacks(surface)
 		self.draw(surface)
+		# if self.attacking:
+		# 	print(int(self.animator.frame_index)  + 1)
+
+		
 

@@ -154,7 +154,7 @@ class Game():
 
 		# create player
 		self.player_sprite_group = pygame.sprite.GroupSingle()
-		self.player = Player(self, "ALRYN", 96, self.world.player_spawn, CHARACTERS["ALRYN"]["SPEED"], [self.player_sprite_group])
+		self.player = Player(self, "ALRYN", CHARACTERS["ALRYN"]["SPRITE SIZE"], self.world.player_spawn, CHARACTERS["ALRYN"]["SPEED"], [self.player_sprite_group])
 
 		# create camera
 		self.camera = Camera(self, 12, 225)
@@ -381,19 +381,32 @@ class Camera():
 		self.level_scroll = pygame.math.Vector2()
 		self.scroll_speed = scroll_speed
 		self.interpolation = interpolation
+		self.shake = False
+		self.shake_timer = 0
 
 	def horizontal_scroll(self):
-		self.level_scroll.x += ((self.player.rect.centerx - self.level_scroll.x - (HALF_WIDTH - self.player.size.x)) / self.interpolation * self.scroll_speed)
+		self.level_scroll.x += ((self.player.rect.centerx - self.level_scroll.x - (HALF_WIDTH - self.player.size.x)) / self.interpolation * self.scroll_speed) * self.game.dt
 
 	def vertical_scroll(self):
-		self.level_scroll.y += (((self.player.rect.centery - 180) - self.level_scroll.y - (HALF_HEIGHT - self.player.size.y)) / self.interpolation * self.scroll_speed)
+		self.level_scroll.y += (((self.player.rect.centery - 180) - self.level_scroll.y - (HALF_HEIGHT - self.player.size.y)) / self.interpolation * self.scroll_speed) * self.game.dt
 
 	def pan_cinematic(self):
 		pass
 
+	def hit_shake(self):
+		if self.shake_timer > 0 and self.shake:
+			# if sine_wave_value() > 0:
+			self.level_scroll.x += (random.randint(-100, 100) / self.interpolation * self.scroll_speed) * self.game.dt
+			
+			# (((self.player.rect.centerx - 180) - self.level_scroll.x - (HALF_HEIGHT - self.player.size.x)) / self.interpolation * self.scroll_speed)
+
+			# if sine_wave_value() > 0:
+			# self.level_scroll.y += random.randint(-100, 100)# (((self.player.rect.centery - 180) - self.level_scroll.y - (HALF_HEIGHT - self.player.size.y)) / self.interpolation * self.scroll_speed)
+
 	def update_position(self):
 		self.horizontal_scroll()
 		self.vertical_scroll()
+		self.hit_shake()
 
 		# constrain camera velocity
 		if self.game.world.level_topleft.left + self.level_scroll.x < 0:
@@ -406,6 +419,11 @@ class Camera():
 		elif self.game.world.level_bottomright.bottom - self.level_scroll.y < SCREEN_HEIGHT:
 			self.level_scroll.y = self.game.world.level_height - SCREEN_HEIGHT
 
+		if self.shake_timer != 0:
+			self.shake_timer -= 1 * self.game.dt
+		if self.shake_timer < 0:
+			self.shake_timer = 0
+			self.shake = False
 
 if __name__ == "__main__":
 	game = Game()

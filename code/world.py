@@ -242,7 +242,7 @@ class World():
 				x = 0
 				for tile_num, tile_id in enumerate(row):
 					if int(tile_id) == 18:
-						self.torch_positions.append([(x * TILE_SIZE - self.game.camera.level_scroll.x, y * TILE_SIZE - self.game.camera.level_scroll.y)])
+						self.torch_positions.append([pygame.math.Vector2(x * TILE_SIZE - self.game.camera.level_scroll.x, y * TILE_SIZE - self.game.camera.level_scroll.y)])
 						if len(self.torch_positions) > self.num_of_torches:
 							self.torch_positions.pop(self.num_of_torches)
 					else:
@@ -284,7 +284,7 @@ class World():
 					Particle(
 						self.game, 
 						random.choice(seto_colors["torch1"]), 
-						((self.torch_positions[index][0][0] + 32) + random.randint(-10, 10), self.torch_positions[index][0][1] + 42), 
+						((self.torch_positions[index][0].x + 32) + random.randint(-10, 10), self.torch_positions[index][0].y + 324), 
 						(random.randint(-2,2), -4), 
 						random.randint(2,8), 
 						[], 
@@ -295,7 +295,7 @@ class World():
 		# world lights
 		for index, position in enumerate(self.torch_positions):
 			torch_glow = glow_surface(TILE_SIZE*2, [20,20,40],120)
-			self.game.world_brightness.blit(torch_glow, (position[0] - self.game.camera.level_scroll) - (102, 122), special_flags=pygame.BLEND_RGB_ADD)
+			self.game.world_brightness.blit(torch_glow, (position[0].x, (position[0].y + 324)) - self.game.camera.level_scroll - (102, 122), special_flags=pygame.BLEND_RGB_ADD)
 
 		# player spell FX
 		for spell in self.game.player.projectiles:

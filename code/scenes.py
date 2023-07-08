@@ -78,10 +78,10 @@ class Launcher(Scene):
 		for animation in self.animation_keys:
 			full_path = LAUNCHER_ASSET_PATH + animation
 			
-			original_images = import_folder(full_path)
+			original_images = new_import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
 			
-			self.animation_keys[animation] = import_folder(full_path)
+			self.animation_keys[animation] = new_import_folder(full_path)
 
 		self.animations = self.animation_keys
 	
@@ -102,6 +102,11 @@ class Launcher(Scene):
 		patch_notes = ['Launcher', 'Game']
 
 		draw_custom_font_text(self.game.screen, self.game.alphabet, notes[patch_notes[0]], 42, (100,115), [' ', '.'])
+
+	def draw_footer(self):
+		savior_systems = scale_images([get_image('../assets/ss/logo.png')], (105, 103))[0]
+		
+		self.game.screen.blit(savior_systems, (1296, 695))
 
 	def load_world(self):
 		self.game.scenes = [WorldScene(self.game)]
@@ -132,8 +137,8 @@ class Launcher(Scene):
 			button.draw()
 			self.handle_buttons()
 
+		self.draw_footer()
 		self.universal_draw()
-		
 
 class WorldScene(Scene):
 	def __init__(self, game):
@@ -214,9 +219,7 @@ class WorldScene(Scene):
 
 				# attacking
 				if event.key == pygame.K_o and self.player.collide_bottom:
-					pass
-					# self.player.attacking = True
-					# self.player.create_attack()
+					self.player.attack()
 
 				# spells
 				if event.key == pygame.K_p: #and self.player.collide_bottom:
@@ -225,14 +228,14 @@ class WorldScene(Scene):
 						self.player.casting = True
 						self.player.magick -= SPELLS[self.player.active_spell][3]
 						self.player.projectiles.append(
-							Projectile(self.game, self.player.rect.center, self.player.active_spell, 'right', self.player.rect.center, 300)
+							Projectile(self.game, (self.player.rect.right, self.player.rect.bottom - 50), self.player.active_spell, 'right', self.player.rect.center, 300)
 						)
 						play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
-					if not self.player.facing_right  and self.player.magick > 0 and self.player.vulnerable and self.player.cast_timer == self.player.cast_cooldown:
+					if not self.player.facing_right  and self.player.magick > 0 and self.player.cast_timer == self.player.cast_cooldown:
 						self.player.casting = True
 						self.player.magick -= SPELLS[self.player.active_spell][3]
 						self.player.projectiles.append(
-							Projectile(self.game, self.player.rect.center, self.player.active_spell, 'left', self.player.rect.center, 300)
+							Projectile(self.game, (self.player.rect.left, self.player.rect.bottom - 50), self.player.active_spell, 'left', self.player.rect.center, 300)
 						)
 						play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
 
@@ -262,6 +265,10 @@ class WorldScene(Scene):
 		self.game.world.update_items(self.game.screen)
 		self.game.world.update_FX(self.game.screen)
 
+		# for enemy in self.world.enemies:
+		# 	enemy.show_rects(self.game.screen)
+
+		# self.game.player.show_rects(self.game.screen)
 		for p in self.game.particles:
 			p.emit()
 

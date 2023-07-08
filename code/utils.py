@@ -5,7 +5,35 @@ from CONSTANTS import *
 
 
 """ SUPPORT FUNCTIONS/CLASSES """
-def import_folder(path:str) -> list:	
+class Animator():
+
+	def __init__(self, game, target:Entity, animation_speed:int=0.25):
+		self.game = game
+		self.frame_index = 0
+		self.animation_speed = animation_speed
+		self.target = target
+		self.animation = []
+
+	def animate(self, animation:list):
+		self.animation = animation
+		if self.frame_index < len(animation):
+			self.frame_index += self.animation_speed * self.game.dt
+		
+		if int(self.frame_index) + 1 >= len(animation):
+			self.frame_index = 0
+
+		if self.target.facing_right:
+			self.target.image = pygame.transform.scale(animation[int(self.frame_index)], self.target.size)
+		else:
+			self.target.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.target.size), True, False)
+
+		# self.target.image = pygame.transform.scale(animation[int(self.frame_index)], self.target.size)
+	
+	def run(self, animation:list):
+		self.animate(animation)
+	
+
+def new_import_folder(path:str) -> list:	
 	surface_list = []
 	file_list = []
 	for _, __, image_files in walk(path):

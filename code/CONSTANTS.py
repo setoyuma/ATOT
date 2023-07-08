@@ -55,6 +55,7 @@ seto_colors = {
 """ CHARACTER STATS """
 CHARACTERS = {
 	"ALRYN": {
+		"SPRITE SIZE": 160,
 		"NAME": "Alryn",
 		"HEALTH": 100,
 		"MAGICK": 120,
@@ -63,11 +64,16 @@ CHARACTERS = {
 		"JUMPFORCE": 16,
 		"ROLL SPEED": 8,
 		"ROLL COOLDOWN": 4,
-		"ATK_CD": 800,
+		"ATK_CD": 320,
 		"CAST_CD": 50,
 		"DASH DIST": 30,
 		"ROLL DIST": 2,
 		"IFRAMES": 300,
+
+		"hitboxes": {
+			"overhead1": [4, (-60, 50, 40, 50)],
+			# "overhead2": [4, (-60, 50, 40, 50)],
+		}
 	}
 }
 
@@ -80,7 +86,7 @@ ENEMIES = {
 		'DAMAGE': 8,
 		"ATTACK_TYPE": 'evergreen_serpent',
 		"SPEED": 2,
-		"RESIST": 3,
+		"RESIST": 1,
 		"ATK_CD": 400,
 		"IFRAMES": 300,
 		"ATK_RAD": 200,
@@ -127,7 +133,7 @@ ENEMIES = {
 SPELLS = {
 	# type		 size speed damage MGC
 	'': [0, 0],
-	'windblade': [96, 20, 500, 4],
+	'windblade': [96, 20, 5, 4],
 	'fireball': [64, 10, 7, 5],
 	'wrath_of_alwyd': [72, 15, 8, 10],
 }
