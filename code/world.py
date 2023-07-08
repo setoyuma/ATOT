@@ -103,15 +103,6 @@ class World():
 		else:
 			pass
 
-
-		# self.layer_data = [
-		# 	self.background_data,
-		# 	self.terrain_data,
-		# 	self.player_data,  # i need to draw the player at this point  ( i fix later )
-		# 	self.foreground_data,
-		# 	self.torch_data,
-		# ]
-
 		self.collision_tile_data = [
 			self.terrain_data,
 		]
@@ -177,8 +168,18 @@ class World():
 				
 				# spawn magick_shards on enemy death
 				for i in range(enemy.exp):
-					position = (enemy.rect.x + random.randint(-50, 50), enemy.rect.y + random.randint(-50, 50))
-					self.world_items.append(Item(self.game, 'magick_shard', 'magick', ITEMS['magick']['magick_shard']["SIZE"], position, 2, self.game.item_group))
+					position = (
+						enemy.rect.x + random.randint(-50, 50), 
+						enemy.rect.y + random.randint(-50, 50))
+					self.world_items.append(Item(self.game, 
+					'magick_shard', 
+					'magick', 
+					ITEMS['magick']['magick_shard']["SIZE"], 
+					position, 
+					2, 
+					self.game.item_group
+						)
+					)
 
 					# death particles
 					self.world_particles.append(
@@ -191,6 +192,7 @@ class World():
 							pygame.sprite.GroupSingle(),
 							gravity=True,
 							physics=True,
+							image_path='../assets/items/magick/magick_shard/magick_shard1.png'
 						)
 					)
 		

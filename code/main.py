@@ -54,7 +54,43 @@ class UI():
 		if self.game.player.spell_shards == 2:
 			spell_shard_2 = pygame.transform.scale(get_image('../assets/UI/HUD/HUD_SHARD.png'), (54, 30))
 			self.display.blit(spell_shard_2, (136, 35))
-		
+
+class Cursor():
+	
+	def __init__(self, game, cursor:str, size:int):
+		self.game = game
+		self.size = pygame.math.Vector2(size, size)
+		self.image = scale_images([get_image(f'../assets/ui/cursor/{cursor}1.png')], self.size)[0]
+		self.position = pygame.math.Vector2(self.game.mx, self.game.my)
+
+	def import_assets(self):
+		self.animation_keys = {'':[]} 
+
+		for animation in self.animation_keys:
+			full_path = LAUNCHER_ASSET_PATH + animation
+			
+			original_images = import_folder(full_path)
+			scaled_images = scale_images(original_images, self.size)
+			
+			self.animation_keys[animation] = import_folder(full_path)
+
+		self.animations = self.animation_keys
+	
+	def animate(self):
+		animation = self.animation_keys[self.stats]
+		self.frame_index += self.animation_speed
+
+		if self.frame_index >= len(animation):
+			self.frame_index = self.frame_index - 1
+
+		self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+
+	def draw(self, surface:pygame.Surface):
+		surface.blit(self.image, self.position)
+
+	def update(self):
+		pass
+
 class Game():
 	
 	def __init__(self):
@@ -64,6 +100,35 @@ class Game():
 		self.particles = []
 
 		self.show_fps = False
+		self.font = import_cut_graphics('../assets/ui/menu/ATOT_Alphabet.png', 16)
+		self.alphabet = {
+			'a': self.font[0],
+			'b': self.font[1],
+			'c': self.font[2],
+			'd': self.font[3],
+			'e': self.font[4],
+			'f': self.font[5],
+			'g': self.font[6],
+			'h': self.font[7],
+			'i': self.font[8],
+			'j': self.font[9],
+			'k': self.font[10],
+			'l': self.font[11],
+			'm': self.font[12],
+			'n': self.font[13],
+			'o': self.font[14],
+			'p': self.font[15],
+			'q': self.font[16],
+			'r': self.font[17],
+			's': self.font[18],
+			't': self.font[19],
+			'u': self.font[20],
+			'v': self.font[21],
+			'w': self.font[22],
+			'x': self.font[23],
+			'y': self.font[24],
+			'z': self.font[25],
+		}
 
 	def setup_pygame(self):
 		self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.SCALED)
@@ -73,6 +138,8 @@ class Game():
 		pygame.display.set_icon(get_image('../assets/logo.ico'))
 		# pygame.display.toggle_fullscreen()
 		pygame.mixer.init()
+		pygame.mouse.set_visible(False)
+		self.mx, self.my = pygame.mouse.get_pos()
 
 	def setup_world(self):
 		self.world_brightness = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
@@ -108,9 +175,8 @@ class Game():
 		]
 		self.full_background = scale_images(self.full_background, (self.world.level_width, self.world.level_height))
 
-		print(f'../assets/music/{world_names[self.current_world]}/{music[world_names[self.current_world]]}')
 		pygame.mixer.music.load(f'../assets/music/{world_names[self.current_world]}/{music[world_names[self.current_world]]}.wav')
-		pygame.mixer.music.play(-1)
+		# pygame.mixer.music.play(-1)
 		pygame.mixer.music.set_volume(0.1)
 
 	def update_background(self):
@@ -135,6 +201,8 @@ class Game():
 		self.running = True
 		self.last_time = time.time()
 		while self.running:
+			self.mx, self.my = pygame.mouse.get_pos()
+			self.cursor = Cursor(self, 'ValrandsCurse', 64)
 			self.dt = time.time() - self.last_time  # calculate the time difference
 			self.dt *= FPS_SCALE   # scale the dt by the target framerate for consistency
 			self.last_time = time.time()  # reset the last_time with the current time

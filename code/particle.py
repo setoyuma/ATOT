@@ -38,7 +38,7 @@ class Particle(pygame.sprite.Sprite):
 			glow = glow_surface(int(self.radius*2), [20,20,20], 100)
 			self.game.screen.blit(glow, (self.rect.x - 8, self.rect.y - 12) - self.game.camera.level_scroll, special_flags=BLEND_RGB_ADD)
 		if self.gravity:
-			self.velocity.y += 0.2 * self.game.dt 
+			self.velocity.y += 0.08 * self.game.dt 
 		if self.physics:
 			self.collision_test()
 		else:

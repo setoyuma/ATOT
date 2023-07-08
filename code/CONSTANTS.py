@@ -2,7 +2,7 @@ from BLACKFORGE2 import *
 
 
 notes = {
-	"Launcher" : "Added patch notes section.",
+	"Launcher" : "ABBEROTH",
 	"Game" : "Added decoration tiles and level system."
 }
 
@@ -35,11 +35,13 @@ SPELL_PATH = '../assets/spells/'
 HITSPARK_PATH = '../assets/spells/hitsparks/' 
 ENEMY_PATH = '../assets/enemy/'
 ITEMS_PATH = '../assets/items/'
+LAUNCHER_ASSET_PATH = '../assets/ui/menu/launcher/'
 
 # colors 
 BG_COLOR = '#060C17'
 PLAYER_COLOR = '#C4F7FF'
 TILE_COLOR = '#94D7F2'
+PANEL_COLOR = [232, 157, 85]
 
 seto_colors = {
 	"torch1": {

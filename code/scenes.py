@@ -37,20 +37,41 @@ class Launcher(Scene):
 	def __init__(self, game):
 		super().__init__(game)
 		self.scene_type = 'launcher'
-		self.logo = scale_images([get_image("../assets/ui/menu/main_menu/book50.png")], (1000, 1000))[0]
-		self.game.screen = pygame.display.set_mode((1000,600))
-		new_img = '../assets/ui/buttons/New.png'
-		play_img = '../assets/ui/buttons/Play.png'
+		self.logo = 'alpha'
+		self.bg = scale_images([get_image('../assets/backgrounds/cavern1.png')], (1440, 1440))[0]
+		self.game.screen = pygame.display.set_mode((1400,800))
+		self.size = pygame.math.Vector2(800,800)
+		# animation
+		self.frame_index = 0
+		self.animation_speed = 0.38
+		self.import_assets()
+		self.animation = self.animations[self.logo]
+
+
+		img = '../assets/ui/buttons/button_plate1.png'
+		hover_img = '../assets/ui/buttons/button_plate2.png'
 		self.buttons = [
-			Button(game, "", (725, 350), None, new_img, new_img),
-			Button(game, "", (725, 455), self.load_world, play_img, play_img),
+			Button(self.game, "new", (162, 655), None, img, hover_img, text_color=PANEL_COLOR, text_size=1),
+			Button(self.game, "play", (360, 655), self.load_world, img, hover_img, text_color=PANEL_COLOR, text_size=1)
 		]
 
-	def import_character_assets(self):
-		self.animation_keys = {'idle':[],'loading':[]} 
+	def handle_buttons(self):
+		# text
+		for button in self.buttons:
+			draw_custom_font_text(
+				self.game.screen,
+				self.game.alphabet,
+				button.text,
+				24,
+				(button.rect.x + 18, button.rect.y + 18),
+				[]					
+				)
+
+	def import_assets(self):
+		self.animation_keys = {'alpha':[]} 
 
 		for animation in self.animation_keys:
-			full_path = CHAR_PATH + animation
+			full_path = LAUNCHER_ASSET_PATH + animation
 			
 			original_images = import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
@@ -60,48 +81,54 @@ class Launcher(Scene):
 		self.animations = self.animation_keys
 	
 	def animate(self):
-		animation = self.animation_keys[self.status]
-		self.frame_index += self.animation_speed * self.game.dt
+		animation = self.animation_keys[self.logo]
+		self.frame_index += self.animation_speed
+
 		if self.frame_index >= len(animation):
-			self.frame_index = 0
-		if self.facing_right:
-			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
-		elif not self.vulnerable:
-			self.image.set_alpha(sine_wave_value())
-		else:
-			self.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.size), True, False)
+			self.frame_index = self.frame_index - 1
+
+		self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
 
 	def patch_notes(self):
 		patch_notes_rect = pygame.Rect((100,150),(200,175))
-		draw_text(self.game.screen, "Patch Notes", (280,100), color="black")
-		draw_text(self.game.screen,  f"{notes['Launcher']}", (280,150), color="black")
-		draw_text(self.game.screen,  f"{notes['Game']}", (280,170), color="black")
+		self.patch_plate = get_image('../assets/ui/menu/launcher/patch_notes_plate1.png')
+		self.game.screen.blit(self.patch_plate, (8, 8))
+
+		patch_notes = ['Launcher', 'Game']
+
+		draw_custom_font_text(self.game.screen, self.game.alphabet, notes[patch_notes[0]], 42, (100,115), [' ', '.'])
 
 	def load_world(self):
 		self.game.scenes = [WorldScene(self.game)]
 
 	def update(self):
+		self.animate()
 		for event in pygame.event.get():
+			# update
 			for button in self.buttons:
 				button.update(event)
-
+			
 			if event.type == pygame.QUIT:
 				pygame.quit()
 				sys.exit()
+		
+		self.game.cursor.update()	
 
 	def draw(self):
-		self.game.screen.blit(self.logo, (0,-200))
-		# self.game.screen.fill([0,0,0])
+		self.game.screen.fill([0,0,0])
+		self.game.screen.blit(self.bg, (0,0))
+		self.game.screen.blit(self.image, (550,-50))
+		# self.game.screen.blit(self.logo, (0,-200))
 		
 		self.patch_notes()
 
-
+		# draw
 		for button in self.buttons:
 			button.draw()
+			self.handle_buttons()
 
-
-
-
+		self.game.cursor.draw(self.game.screen)
+		
 
 class WorldScene(Scene):
 	def __init__(self, game):
@@ -120,7 +147,7 @@ class WorldScene(Scene):
 			return
 
 		for event in pygame.event.get():
-			self.game.mx, self.game.my = pygame.mouse.get_pos()
+			self.game.cursor.update()
 			# quit
 			if event.type == pygame.QUIT:
 				print('Game Closed\n')
@@ -229,6 +256,7 @@ class WorldScene(Scene):
 		self.game.ui.update_spell_shard_count()
 		self.game.world.update_items(self.game.screen)
 		self.game.world.update_FX(self.game.screen)
+		self.game.cursor.draw(self.game.screen)
 
 		for p in self.game.particles:
 			p.emit()
@@ -284,7 +312,7 @@ class RadialMenu(Scene):
 		super().__init__(game)
 		self.scene_type = 'radial menu'
 		self.menu_center = SCREEN_WIDTH//2, SCREEN_HEIGHT//2
-		self.icons = import_folder("../assets/ui/menu/")
+		self.icons = import_folder("../assets/ui/menu/radial")
 		self.rotation = 0 # keep track of how much the menu has rotated
 		self.target_angle = 0
 		self.section_radius = 200  # distance from the center to each section

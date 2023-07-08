@@ -5,6 +5,29 @@ from CONSTANTS import *
 
 
 """ SUPPORT FUNCTIONS/CLASSES """
+def import_folder(path:str) -> list:	
+	surface_list = []
+	file_list = []
+	for _, __, image_files in walk(path):
+		for index, image in enumerate(image_files):
+			file_list.append(image)
+
+		# sort images based on numerical values in the image names: run1.png will always come before run12.png as walk doesnt sort files returned.
+		file_list.sort(key=lambda image: int(''.join(filter(str.isdigit, image))))
+		
+		for index, image in enumerate(file_list):
+			full_path = path + '/' + image
+			image_surf =get_image(full_path).convert_alpha()
+			surface_list.append(image_surf)
+	
+	return surface_list
+
+def draw_custom_font_text(surface:pygame.Surface, letter_dictionary:dict, text:str, text_size:int, position:tuple, split_on:list = []):
+	for index, letter in enumerate(text):
+			if letter not in split_on:
+				scaled_letter = scale_images([letter_dictionary[letter.lower()]], (text_size, text_size))[0]
+				surface.blit(scaled_letter, (position[0] + text_size * index, position[1]))
+
 _sound_library = {}
 def play_sound(path, stop=None):
 	global _sound_library
