@@ -14,9 +14,14 @@ class Scene:
 
 	def update(self):
 		pass
-
 	def draw(self):
 		pass
+	
+	def universal_updates(self):
+		self.game.cursor.update()
+
+	def universal_draw(self):
+		self.game.cursor.draw(self.game.screen)
 
 	def check_universal_events(self, pressed_keys, event):
 		quit_attempt = False
@@ -103,7 +108,10 @@ class Launcher(Scene):
 
 	def update(self):
 		self.animate()
+		self.universal_updates()
+		pressed_keys = pygame.key.get_pressed()
 		for event in pygame.event.get():
+			self.check_universal_events(pressed_keys, event)
 			# update
 			for button in self.buttons:
 				button.update(event)
@@ -112,14 +120,11 @@ class Launcher(Scene):
 				pygame.quit()
 				sys.exit()
 		
-		self.game.cursor.update()	
-
 	def draw(self):
 		self.game.screen.fill([0,0,0])
 		self.game.screen.blit(self.bg, (0,0))
 		self.game.screen.blit(self.image, (550,-50))
 		# self.game.screen.blit(self.logo, (0,-200))
-		
 		self.patch_notes()
 
 		# draw
@@ -127,7 +132,7 @@ class Launcher(Scene):
 			button.draw()
 			self.handle_buttons()
 
-		self.game.cursor.draw(self.game.screen)
+		self.universal_draw()
 		
 
 class WorldScene(Scene):
@@ -147,7 +152,7 @@ class WorldScene(Scene):
 			return
 
 		for event in pygame.event.get():
-			self.game.cursor.update()
+			self.universal_updates()
 			# quit
 			if event.type == pygame.QUIT:
 				print('Game Closed\n')
@@ -256,7 +261,6 @@ class WorldScene(Scene):
 		self.game.ui.update_spell_shard_count()
 		self.game.world.update_items(self.game.screen)
 		self.game.world.update_FX(self.game.screen)
-		self.game.cursor.draw(self.game.screen)
 
 		for p in self.game.particles:
 			p.emit()
@@ -305,6 +309,8 @@ class WorldScene(Scene):
 		# 	proj.draw(self.game.screen)
 
 		self.game.draw_fps()
+
+		self.universal_draw()
 
 
 class RadialMenu(Scene):
@@ -372,3 +378,5 @@ class RadialMenu(Scene):
 	def callback(self):
 		print("callback")
 
+
+	
