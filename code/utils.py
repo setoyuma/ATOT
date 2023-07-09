@@ -60,7 +60,7 @@ class NewButton():
 		self.center = self.surf.get_rect().center
 
 		if isinstance(hovered, str):
-			self.hovered = pygame.transform.scale(get_image(hovered), (128,64))
+			self.hovered = pygame.transform.scale(get_image(hovered), size)
 			self.hover_func = self.draw_image
 		else:
 			self.hovered = pygame.Rect(hovered)

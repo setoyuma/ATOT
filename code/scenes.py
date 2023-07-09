@@ -209,6 +209,9 @@ class CreateNewGame(Scene):
 		print(self.text_list)
 		return(self.text_list)
 
+	def back(self):
+		self.game.scenes = [Launcher(self.game)]
+
 	def handle_buttons(self):
 		# text
 
@@ -236,6 +239,34 @@ class CreateNewGame(Scene):
 					text_size=1
 					)
 			)
+
+		back_img = '../assets/ui/menu/back_arrow.png'
+		back_img2 = '../assets/ui/menu/back_arrow2.png'
+		self.back_button = NewButton(
+				self.game,
+				(96, 96),
+				'back', 
+				(1340, 50), 
+				self.back,
+				back_img,
+				back_img2,
+				# base_color=[80,80,80],
+				# hover_color=[20,20,20],
+				text_color=PANEL_COLOR, 
+				text_size=1
+				)
+		
+		# write back button text
+		# for index, button in enumerate(self.buttons):
+		# 	if index == len(self.buttons) - 1:
+		# 		draw_custom_font_text(
+		# 			self.game.screen,
+		# 			self.game.alphabet,
+		# 			button.text,
+		# 			24,
+		# 			(button.rect.x + 18, button.rect.y + 18),
+		# 			[]					
+		# 			)
 
 	def handle_torches(self):
 		torch_rect_2 = pygame.Rect((1304, 600), (96, 160))
@@ -283,6 +314,7 @@ class CreateNewGame(Scene):
 		self.game.screen.blit(self.image, (0,-10))
 
 		# button letters
+		self.back_button.draw()
 		for button in self.buttons:
 			button.draw()
 			draw_custom_font_text(
@@ -331,6 +363,7 @@ class CreateNewGame(Scene):
 
 			for button in self.buttons:
 				button.update(event)
+				self.back_button.update(event)
 
 
 class WorldScene(Scene):
@@ -338,7 +371,7 @@ class WorldScene(Scene):
 		super().__init__(game)
 		self.scene_type = 'world'
 		self.game.screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pygame.SCALED)
-		self.game.current_level = 3
+		self.game.current_level = 4
 		self.game.world = World(game, worlds[self.game.current_level])
 		self.events = True
 		self.player = self.game.player
