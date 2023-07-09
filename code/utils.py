@@ -34,7 +34,7 @@ class Animator():
 	
 
 class NewButton():
-	def __init__(self, game, size:int, text:str, position:tuple, function, base=(0,0,96,96), hovered=(0,0,96,96), base_color=(77,77,255,50), hover_color=(77, 77, 80), text_color=(255,255,255), text_size=60, hovered_pos=None, id=None):
+	def __init__(self, game, size:tuple, text:str, position:tuple, function, base=(0,0,96,96), hovered=(0,0,96,96), base_color=(77,77,255,50), hover_color=(77, 77, 80), text_color=(255,255,255), text_size=60, hovered_pos=None, id=None):
 		self.game = game
 		self.text = text
 		self.position = position
@@ -43,7 +43,7 @@ class NewButton():
 		self.clicked = False
 
 		if isinstance(base, str):
-			self.base = pygame.transform.scale(get_image(base), (size, size))
+			self.base = pygame.transform.scale(get_image(base), size)
 			self.rect = self.base.get_rect()
 		else:
 			self.base = base

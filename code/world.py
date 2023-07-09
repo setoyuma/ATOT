@@ -279,13 +279,13 @@ class World():
 	def world_FX(self):
 		# world particles
 		for index, pos in enumerate(self.torch_positions):
-			for x in range(3):
+			for x in range(6):
 				self.world_particles.append(
 					Particle(
 						self.game, 
 						random.choice(seto_colors["torch1"]), 
-						((self.torch_positions[index][0].x + 32) + random.randint(-10, 10), self.torch_positions[index][0].y + 324), 
-						(random.randint(-2,2), -4), 
+						((int(self.torch_positions[index][0].x) + 30) + random.randint(-10, 10), int(self.torch_positions[index][0].y) + 284), 
+						(0, random.randint(-3,-1)), 
 						random.randint(2,8), 
 						[], 
 						torch=True,
@@ -295,7 +295,7 @@ class World():
 		# world lights
 		for index, position in enumerate(self.torch_positions):
 			torch_glow = glow_surface(TILE_SIZE*2, [20,20,40],120)
-			self.game.world_brightness.blit(torch_glow, (position[0].x, (position[0].y + 324)) - self.game.camera.level_scroll - (102, 122), special_flags=pygame.BLEND_RGB_ADD)
+			self.game.world_brightness.blit(torch_glow, (position[0].x, (position[0].y + 288)) - self.game.camera.level_scroll - (102, 122), special_flags=pygame.BLEND_RGB_ADD)
 
 		# player spell FX
 		for spell in self.game.player.projectiles:

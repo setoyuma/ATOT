@@ -157,7 +157,7 @@ class Game():
 		self.player = Player(self, "ALRYN", CHARACTERS["ALRYN"]["SPRITE SIZE"], self.world.player_spawn, CHARACTERS["ALRYN"]["SPEED"], [self.player_sprite_group])
 
 		# create camera
-		self.camera = Camera(self, 12, 225)
+		self.camera = Camera(self, 12, 250)
 		
 		# ui
 		self.ui = UI(self, self.screen)
@@ -385,7 +385,7 @@ class Camera():
 		self.shake_timer = 0
 
 	def horizontal_scroll(self):
-		self.level_scroll.x += ((self.player.rect.centerx - self.level_scroll.x - (HALF_WIDTH - self.player.size.x)) / self.interpolation * self.scroll_speed) * self.game.dt
+		self.level_scroll.x += ((self.player.rect.centerx - self.level_scroll.x - (HALF_WIDTH - self.player.size.x + 150)) / self.interpolation * self.scroll_speed) * self.game.dt
 
 	def vertical_scroll(self):
 		self.level_scroll.y += (((self.player.rect.centery - 180) - self.level_scroll.y - (HALF_HEIGHT - self.player.size.y)) / self.interpolation * self.scroll_speed) * self.game.dt

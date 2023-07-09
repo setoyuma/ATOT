@@ -66,6 +66,7 @@ HITSPARK_PATH = '../assets/spells/hitsparks/'
 ENEMY_PATH = '../assets/enemy/'
 ITEMS_PATH = '../assets/items/'
 LAUNCHER_ASSET_PATH = '../assets/ui/menu/launcher/'
+KEYBOARD_BACKGROUNDS_SHORTCUT = '../assets/ui/keyboards/'
 
 # colors 
 BG_COLOR = '#060C17'

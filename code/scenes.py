@@ -42,7 +42,7 @@ class Launcher(Scene):
 	def __init__(self, game):
 		super().__init__(game)
 		self.scene_type = 'launcher'
-		self.logo = 'alpha'
+		self.status = 'alpha'
 		self.bg = scale_images([get_image('../assets/backgrounds/cavern1.png')], (1440, 1440))[0]
 		self.game.screen = pygame.display.set_mode((1400,800))
 		self.size = pygame.math.Vector2(800,800)
@@ -50,14 +50,14 @@ class Launcher(Scene):
 		self.frame_index = 0
 		self.animation_speed = 0.38
 		self.import_assets()
-		self.animation = self.animations[self.logo]
+		self.animation = self.animations[self.status]
 
 
 		img = '../assets/ui/buttons/button_plate1.png'
 		hover_img = '../assets/ui/buttons/button_plate2.png'
 		self.buttons = [
-			NewButton(self.game, 32, "new", (162, 655), self.load_new, img, hover_img, text_color=PANEL_COLOR, text_size=1),
-			NewButton(self.game, 32, "play", (360, 655), self.load_world, img, hover_img, text_color=PANEL_COLOR, text_size=1)
+			NewButton(self.game, (128,64), "new", (162, 655), self.load_new, img, hover_img, text_color=PANEL_COLOR, text_size=1),
+			NewButton(self.game, (128,64), "play", (360, 655), self.load_world, img, hover_img, text_color=PANEL_COLOR, text_size=1)
 		]
 
 	def handle_buttons(self):
@@ -86,7 +86,7 @@ class Launcher(Scene):
 		self.animations = self.animation_keys
 	
 	def animate(self):
-		animation = self.animation_keys[self.logo]
+		animation = self.animation_keys[self.status]
 		self.frame_index += self.animation_speed
 
 		if self.frame_index >= len(animation):
@@ -152,11 +152,43 @@ class CreateNewGame(Scene):
 		self.game.screen = pygame.display.set_mode((1400,800))
 		self.buttons = []
 		self.text_list = []
+		self.particles = []
 		self.letter_slots = []
+		self.torch_rects = []
 		self.name_length = ['','','','','','','','']
 		self.layout_keyboard()
 		self.handle_buttons()
+		self.background = scale_images([get_image('../assets/ui/keyboards/alpha/alpha1.png')], self.game.screen.get_size())[0]
 
+		# animation
+		self.size = self.game.screen.get_size()
+		self.status = 'alpha'
+		self.frame_index = 0
+		self.animation_speed = 0.1
+		self.import_assets()
+		self.animation = self.animations[self.status]
+
+	def import_assets(self):
+		self.animation_keys = {'alpha':[]} 
+
+		for animation in self.animation_keys:
+			full_path = KEYBOARD_BACKGROUNDS_SHORTCUT + animation
+			
+			original_images = new_import_folder(full_path)
+			scaled_images = scale_images(original_images, self.size)
+			
+			self.animation_keys[animation] = new_import_folder(full_path)
+
+		self.animations = self.animation_keys
+	
+	def animate(self):
+		animation = self.animation_keys[self.status]
+		self.frame_index += self.animation_speed
+
+		if self.frame_index >= len(animation):
+			self.frame_index = 0
+
+		self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
 
 	def layout_keyboard(self):
 		self.keyboard_rect = pygame.Rect((120, 360), (self.game.screen.get_width() - 245, self.game.screen.get_height() - 420))
@@ -198,19 +230,59 @@ class CreateNewGame(Scene):
 					letter, 
 					row, 
 					self.draw_letter,
-					base_color=[80,80,80],
-					hover_color=[20,20,20],
+					# base_color=[80,80,80],
+					hover_color=[0,0,0],
 					text_color=PANEL_COLOR, 
 					text_size=1
 					)
 			)
 
+	def handle_torches(self):
+		torch_rect_2 = pygame.Rect((1304, 600), (96, 160))
+		torch_rect_1 = pygame.Rect((0, 600), (96, 160))
+
+		self.torch_rects = [
+			torch_rect_1,
+			torch_rect_2
+		]
+
+		img = scale_images([get_image('../assets/terrain/torch.png')], (160, 200))[0]
+
+		# show torch rects
+		# pygame.draw.rect(self.game.screen, 'blue', torch_rect_1)
+		# pygame.draw.rect(self.game.screen, 'blue', torch_rect_2)
+
+		for rect in self.torch_rects:
+			for i in range(8):
+				self.particles.append(
+					Particle(
+						self.game, 
+						random.choice(seto_colors["torch1"]), 
+						(rect.centerx + random.randint(-20,20), rect.centery - 84), 
+						(0, random.randint(-4,-1)), 
+						random.randint(2,8), 
+						[],
+						# glow=True,
+						torch=True,
+						# circle=True
+						)
+				)
+
+		self.game.screen.blit(img, (torch_rect_1.x - 33, torch_rect_1.y))
+		self.game.screen.blit(img, (torch_rect_2.x - 33, torch_rect_2.y))
+
 	def draw(self):
 		self.game.screen.fill([0,0,0])
-		surf = pygame.Surface((self.keyboard_rect.width, self.keyboard_rect.height))
-		surf.fill('green')
-		self.game.screen.blit(surf, (self.keyboard_rect.x, self.keyboard_rect.y))
+		
+		# show keyboard rect
+		# surf = pygame.Surface((self.keyboard_rect.width, self.keyboard_rect.height))
+		# surf.fill('green')
+		# self.game.screen.blit(surf, (self.keyboard_rect.x, self.keyboard_rect.y))
+		
+		# keyboard background
+		self.game.screen.blit(self.image, (0,-10))
 
+		# button letters
 		for button in self.buttons:
 			button.draw()
 			draw_custom_font_text(
@@ -230,9 +302,22 @@ class CreateNewGame(Scene):
 			else:
 				self.text_list = self.text_list[:-1]
 
+
+		# vfx
+		self.handle_torches()
+		for particle in self.particles:
+			particle.emit()
+
+			if particle.radius <= 0.1:
+				self.particles.remove(particle)
+
+
+
 		self.universal_draw()
 
 	def update(self):
+		self.animate()
+
 		self.universal_updates()
 
 		pressed_keys = pygame.key.get_pressed()
@@ -253,7 +338,7 @@ class WorldScene(Scene):
 		super().__init__(game)
 		self.scene_type = 'world'
 		self.game.screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pygame.SCALED)
-		self.game.current_level = 4
+		self.game.current_level = 3
 		self.game.world = World(game, worlds[self.game.current_level])
 		self.events = True
 		self.player = self.game.player

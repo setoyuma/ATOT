@@ -5,11 +5,12 @@ from utils import *
 
 class Particle(pygame.sprite.Sprite):
 	
-	def __init__(self, game, color:list, position:tuple, velocity:tuple, radius:int, groups, glow=False, gravity=False, torch=False, physics=False, image_path=''):
+	def __init__(self, game, color:list, position:tuple, velocity:tuple, radius:int, groups, glow=False, gravity=False, torch=False, physics=False, image_path='', circle=False):
 		# super().__init__(groups)
 		self.entity_type = 'particle'
 		self.game = game
 		self.glow = glow
+		self.circle = circle
 		self.torch = torch
 		self.gravity = gravity
 		self.physics = physics
@@ -56,4 +57,10 @@ class Particle(pygame.sprite.Sprite):
 		if self.has_image:
 			self.game.screen.blit(self.image, [int(self.rect.x), int(self.rect.y)] - self.game.camera.level_scroll)
 		else:
-			pygame.draw.circle(self.game.screen, self.color, [int(self.rect.x), int(self.rect.y)] - self.game.camera.level_scroll, int(self.radius))
+			if self.circle:
+				pygame.draw.circle(self.game.screen, self.color, [int(self.rect.x), int(self.rect.y)] - self.game.camera.level_scroll, int(self.radius))
+			else:
+				surf = pygame.Surface((self.radius, self.radius))
+				surf.fill(random.choice(seto_colors["torch1"]))
+				self.game.screen.blit(surf, self.rect.topleft - self.game.camera.level_scroll)
+				# pygame.draw.rect(self.game.screen, self.color, self.rect)
