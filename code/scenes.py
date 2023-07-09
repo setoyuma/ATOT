@@ -56,8 +56,8 @@ class Launcher(Scene):
 		img = '../assets/ui/buttons/button_plate1.png'
 		hover_img = '../assets/ui/buttons/button_plate2.png'
 		self.buttons = [
-			Button(self.game, "new", (162, 655), None, img, hover_img, text_color=PANEL_COLOR, text_size=1),
-			Button(self.game, "play", (360, 655), self.load_world, img, hover_img, text_color=PANEL_COLOR, text_size=1)
+			NewButton(self.game, 32, "new", (162, 655), self.load_new, img, hover_img, text_color=PANEL_COLOR, text_size=1),
+			NewButton(self.game, 32, "play", (360, 655), self.load_world, img, hover_img, text_color=PANEL_COLOR, text_size=1)
 		]
 
 	def handle_buttons(self):
@@ -111,6 +111,9 @@ class Launcher(Scene):
 	def load_world(self):
 		self.game.scenes = [WorldScene(self.game)]
 
+	def load_new(self):
+		self.game.scenes = [CreateNewGame(self.game)]
+
 	def update(self):
 		self.animate()
 		self.universal_updates()
@@ -139,6 +142,111 @@ class Launcher(Scene):
 
 		self.draw_footer()
 		self.universal_draw()
+
+
+class CreateNewGame(Scene):
+	
+	def __init__(self, game):
+		self.scene_type = 'create new'
+		super().__init__(game)
+		self.game.screen = pygame.display.set_mode((1400,800))
+		self.buttons = []
+		self.text_list = []
+		self.letter_slots = []
+		self.name_length = ['','','','','','','','']
+		self.layout_keyboard()
+		self.handle_buttons()
+
+
+	def layout_keyboard(self):
+		self.keyboard_rect = pygame.Rect((120, 360), (self.game.screen.get_width() - 245, self.game.screen.get_height() - 420))
+
+		for index, slot in enumerate(self.name_length):
+			self.letter_slots.append(
+				pygame.Rect(
+					(190 + 130 * index, 190),
+					(96 , 160)
+				)
+			)
+	
+	def draw_letter(self):
+		for button in self.buttons:
+			if button.clicked:
+				self.text_list.append(button.text)
+
+		print(self.text_list)
+		return(self.text_list)
+
+	def handle_buttons(self):
+		# text
+
+		for index, letter in enumerate(self.game.alphabet):
+			print(letter)
+			img = self.game.font[index]
+
+			if index in range(10, 18):
+				row = (-600 + 96 * index, 455 + 100)
+			elif index in range(18, 26):
+				row = (-1368 + 96 * index, 455 + 200)
+			else:
+				row = (265 + 96 * index, 455)
+			
+			self.buttons.append(
+				NewButton(
+					self.game,
+					96,
+					letter, 
+					row, 
+					self.draw_letter,
+					base_color=[80,80,80],
+					hover_color=[20,20,20],
+					text_color=PANEL_COLOR, 
+					text_size=1
+					)
+			)
+
+	def draw(self):
+		self.game.screen.fill([0,0,0])
+		surf = pygame.Surface((self.keyboard_rect.width, self.keyboard_rect.height))
+		surf.fill('green')
+		self.game.screen.blit(surf, (self.keyboard_rect.x, self.keyboard_rect.y))
+
+		for button in self.buttons:
+			button.draw()
+			draw_custom_font_text(
+				self.game.screen,
+				self.game.alphabet,
+				button.text,
+				64,
+				(button.rect.x + 18, button.rect.y + 8),
+				[]					
+			)
+
+		# draw selected letters to screen
+		for index, letter in enumerate(self.text_list):
+			surf = scale_images([self.game.alphabet[letter]], (96,96))[0]
+			if index + 1 <= len(self.name_length):
+				self.game.screen.blit(surf, self.letter_slots[index].topleft)			
+			else:
+				self.text_list = self.text_list[:-1]
+
+		self.universal_draw()
+
+	def update(self):
+		self.universal_updates()
+
+		pressed_keys = pygame.key.get_pressed()
+		for event in pygame.event.get():
+			self.check_universal_events(pressed_keys, event)
+			
+			if event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_BACKSPACE:
+					print(self.text_list[:-1], 'result')
+					self.text_list = self.text_list[:-1]
+
+			for button in self.buttons:
+				button.update(event)
+
 
 class WorldScene(Scene):
 	def __init__(self, game):
@@ -331,7 +439,7 @@ class RadialMenu(Scene):
 		self.section_radius = 200  # distance from the center to each section
 		self.sections = len(self.icons) # resume // settings // inventory // spells // equipment
 		self.section_arc = 360 / self.sections
-		self.button = Button(game, "", (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-184), self.callback, base=(0,0,100,50), hovered=(0,0,100,50))
+		self.button = NewButton(game, 32, "", (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-184), self.callback, base=(0,0,100,50), hovered=(0,0,100,50))
 		self.options = ["Equipment", "Grimoire", "Inventory", "Settings"]
 		self.selected = 0
 

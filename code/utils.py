@@ -33,6 +33,91 @@ class Animator():
 		self.animate(animation)
 	
 
+class NewButton():
+	def __init__(self, game, size:int, text:str, position:tuple, function, base=(0,0,96,96), hovered=(0,0,96,96), base_color=(77,77,255,50), hover_color=(77, 77, 80), text_color=(255,255,255), text_size=60, hovered_pos=None, id=None):
+		self.game = game
+		self.text = text
+		self.position = position
+		self.id = id
+		self.function = function
+		self.clicked = False
+
+		if isinstance(base, str):
+			self.base = pygame.transform.scale(get_image(base), (size, size))
+			self.rect = self.base.get_rect()
+		else:
+			self.base = base
+			self.rect = base
+
+		if isinstance(base, str):
+			self.surf = pygame.Surface((self.rect[2], self.rect[3]), pygame.SRCALPHA)
+			self.base_func = self.draw_image
+		else:
+			self.base = pygame.Rect(base)
+			self.rect = self.base.copy()
+			self.surf = pygame.Surface((base[2], base[3]), pygame.SRCALPHA)
+			self.base_func = self.draw_rect
+		self.center = self.surf.get_rect().center
+
+		if isinstance(hovered, str):
+			self.hovered = pygame.transform.scale(get_image(hovered), (128,64))
+			self.hover_func = self.draw_image
+		else:
+			self.hovered = pygame.Rect(hovered)
+			self.hover_func = self.draw_rect
+
+		self.rect.center = self.position
+		self.text_color = text_color
+		self.base_color = base_color
+		self.hover_color = hover_color
+		self.size = text_size
+		if hovered_pos is None:
+			self.hovered_pos = position
+		else:
+			self.hovered_pos = hovered_pos
+		self.is_hovered = False
+	
+	def update(self, event:pygame.event) -> None:
+		position = pygame.mouse.get_pos()
+		if self.rect.collidepoint(position[0], position[1]):
+			self.is_hovered = True
+			if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+				self.clicked = True
+				#play_sound("Assets/sounds/click.mp3")
+				
+				if isinstance(self.function, type):
+					self.game.sceneManager.scene = self.function(self.game)
+					return
+
+				if self.function != None:
+						if self.function == pygame.quit:
+							self.function()
+							sys.exit()
+						elif self.id is not None:
+							self.function(self.id)
+						else:
+							self.function()                
+		else:
+			self.is_hovered = False
+			self.clicked = False
+
+	def draw(self) -> None:
+		self.surf.fill((0,0,0,0))
+		if self.is_hovered:
+			self.hover_func(self.hovered, self.hover_color)
+		else:
+			self.base_func(self.base, self.base_color)
+		if self.text:
+			draw_text(self.surf, self.text, self.center, self.size, self.text_color)
+		self.game.screen.blit(self.surf, self.rect.topleft)
+
+	def draw_rect(self, rect:pygame.Rect, color:str) -> None:
+		pygame.draw.rect(self.surf, color, rect)
+
+	def draw_image(self, image:pygame.Surface, color:str) -> None:
+		self.surf.blit(image, (0,0))
+	
+
 def new_import_folder(path:str) -> list:	
 	surface_list = []
 	file_list = []
