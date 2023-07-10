@@ -5,7 +5,33 @@ from CONSTANTS import *
 
 
 """ SUPPORT FUNCTIONS/CLASSES """
-class Animator():
+
+def palette_swap(image:pygame.Surface, old_color:list, new_color:list):
+	image_copy = pygame.Surface(image.get_size())
+	image_copy.fill(new_color)
+	image.set_colorkey(old_color)
+	image_copy.blit(image, (0, 0))
+	return image_copy
+
+def alryn_pallete_swap(image:pygame.Surface, new_blue:list, new_blue_shadow:list, new_gold:list=[], new_skin:list=[], new_skin_shadow:list=[], new_hair:list=[], new_hair_shadow:list=[],):
+
+	new_image = palette_swap(image, ALRYN_COLORS['blue'], new_blue)
+	new_image = palette_swap(image, ALRYN_COLORS['blue shadows'], new_blue_shadow)
+	if len(new_gold) != 0:
+		new_image = palette_swap(image, ALRYN_COLORS['gold'], new_gold)
+	if len(new_skin) != 0:
+		new_image = palette_swap(image, ALRYN_COLORS['skin'], new_skin)
+	if len(new_skin_shadow) != 0:
+		new_image = palette_swap(image, ALRYN_COLORS['skin shadows'], new_skin_shadow)
+	if len(new_hair) != 0:
+		new_image = palette_swap(image, ALRYN_COLORS['hair'], new_hair)
+	if len(new_hair_shadow) != 0:
+		new_image = palette_swap(image, ALRYN_COLORS['hair shadows'], new_hair_shadow)
+	new_image.set_colorkey((0, 0, 0))
+
+	return new_image
+
+class NewAnimator():
 
 	def __init__(self, game, target:Entity, animation_speed:int=0.25):
 		self.game = game

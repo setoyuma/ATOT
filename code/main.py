@@ -22,7 +22,7 @@ class UI():
 	def update_spell_shard_count(self):
 		spell_shard_img = get_image('../assets/items/magick/magick_shard/magick_shard1.png')
 		self.display.blit(spell_shard_img, (40, 120))
-		draw_text(self.display, f"{self.game.player.current_spell_shard_count}", [25, 150], size=32)
+		draw_text(self.display, f"{self.game.player.magick_shards}", [25, 150], size=32)
 
 	def update_spell_slot(self):
 		spell_slot_1_rect = pygame.Rect((1, SCREEN_HEIGHT - 121), (96,96))
@@ -136,7 +136,6 @@ class Game():
 		self.clock = pygame.time.Clock()
 		pygame.display.set_caption("A Tale Of Time")
 		pygame.display.set_icon(get_image('../assets/logo.ico'))
-		# pygame.display.toggle_fullscreen()
 		pygame.mixer.init()
 		pygame.mouse.set_visible(False)
 		self.mx, self.my = pygame.mouse.get_pos()

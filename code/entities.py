@@ -142,7 +142,7 @@ class Item(Entity):
 				case 'magick':
 					self.game.player.magick += self.recovery
 					if 'shard' in self.item_name:
-						self.game.player.current_spell_shard_count += 1
+						self.game.player.magick_shards += 1
 					# print('player gained', self.recovery, 'magick')
 
 					for spell in self.game.player.projectiles:
@@ -499,7 +499,7 @@ class Player(Entity):
 		self.bound_spells = ['windblade', 'fireball']
 		self.known_spells = []
 		self.active_spell = self.bound_spells[self.active_spell_slot-1]
-		self.current_spell_shard_count = 0
+		self.magick_shards = 0
 
 		# player status
 		self.status = 'idle'
@@ -516,7 +516,7 @@ class Player(Entity):
 		# animation
 		self.frame_index = 0
 		self.animation_speed = 0.25
-		self.animator = Animator(self.game, self, self.animation_speed)
+		self.animator = NewAnimator(self.game, self, self.animation_speed)
 
 
 		# self.animation = self.animations[self.status]
@@ -570,6 +570,7 @@ class Player(Entity):
 	
 	def animation_handler(self):
 		animation = self.animator.animation
+		self.animator.run(self.animations[self.status])
 
 		if self.status == f'attack/overhead/{self.combo}':
 			if int(self.animator.frame_index) == len(animation) - 1:
@@ -579,7 +580,11 @@ class Player(Entity):
 		if not self.vulnerable:
 			self.image.set_alpha(sine_wave_value())
 
-		self.animator.run(self.animations[self.status])
+		# self.image = alryn_pallete_swap(
+		# 	self.image,
+		# 	[255, 255, 0],
+		# 	[140, 255, 0]
+		# )
 
 	def jump(self, dt):
 		if self.jumps > 0:
@@ -721,7 +726,7 @@ class Player(Entity):
 		if self.facing_right:
 			hitbox = self.hitboxes['overhead'+str(self.combo)]
 			if int(self.animator.frame_index) == hitbox[0]:
-				print('attack active on frame', int(self.animator.frame_index))
+				# print('attack active on frame', int(self.animator.frame_index))
 				offset = pygame.math.Vector2(hitbox[1][0], hitbox[1][1])
 				final_hitbox = pygame.Rect(self.rect.bottomright - offset, (hitbox[1][2], hitbox[1][3]))
 				self.rects.append(final_hitbox)
@@ -733,8 +738,8 @@ class Player(Entity):
 
 		if not self.facing_right:
 			hitbox = self.hitboxes['overhead'+str(self.combo)]
-			if int(self.animator.frame_index) + 1 == hitbox[0]:
-				print('attack active on frame', int(self.animator.frame_index))
+			if int(self.animator.frame_index) == hitbox[0]:
+				# print('attack active on frame', int(self.animator.frame_index))
 				offset = pygame.math.Vector2(-hitbox[1][0], hitbox[1][1])
 				final_hitbox = pygame.Rect(self.rect.bottomright - offset, (hitbox[1][2], hitbox[1][3]))
 				self.rects.append(final_hitbox)
@@ -770,7 +775,6 @@ class Player(Entity):
 		self.dash(dt)
 		self.on_screen_check()
 		self.get_status()
-		# self.animate()
 		self.animation_handler()
 		self.cooldowns()
 		self.check_combo()
@@ -859,6 +863,7 @@ class Player(Entity):
 		# draw player
 		# self.show_attacks(surface)
 		self.draw(surface)
+
 		# if self.attacking:
 		# 	print(int(self.animator.frame_index)  + 1)
 

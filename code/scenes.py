@@ -596,12 +596,12 @@ class WorldScene(Scene):
 		super().__init__(game)
 		self.scene_type = 'world'
 		self.game.screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pygame.SCALED)
-		self.game.current_level = 4
+		self.game.current_level = 3
 		self.game.world = World(game, worlds[self.game.current_level])
 		self.events = True
 		self.player = self.game.player
 		self.world = self.game.world
-		# pygame.display.toggle_fullscreen()
+		pygame.display.toggle_fullscreen()
 
 	def update(self):
 		if not self.events:
@@ -674,11 +674,11 @@ class WorldScene(Scene):
 					self.player.roll_counter -= 1
 
 				# attacking
-				if event.key == pygame.K_o and self.player.collide_bottom:
+				if event.key == pygame.K_o and self.player.collide_bottom and not self.player.attacking:
 					self.player.attack()
 
 				# spells
-				if event.key == pygame.K_p: #and self.player.collide_bottom:
+				if event.key == pygame.K_p and not self.player.attacking: #and self.player.collide_bottom :
 					# add this once we have damage animations (and self.player.vulnerable)
 					if self.player.facing_right  and self.player.magick > 0 and self.player.cast_timer == self.player.cast_cooldown:
 						self.player.casting = True
@@ -696,13 +696,13 @@ class WorldScene(Scene):
 						play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
 
 				
-				# player hud testing
-				if event.key == pygame.K_h:
-					self.player.health -= 10
-				if event.key == pygame.K_m:
-					self.player.magick -= 5
-				if event.key == pygame.K_s:
-					self.player.spell_shards += 1
+				# # player hud testing
+				# if event.key == pygame.K_h:
+				# 	self.player.health -= 10
+				# if event.key == pygame.K_m:
+				# 	self.player.magick -= 5
+				# if event.key == pygame.K_s:
+				# 	self.player.spell_shards += 1
 
 	def draw(self):
 		# updates
@@ -714,13 +714,14 @@ class WorldScene(Scene):
 		self.game.update_background()
 		self.game.world.draw_world(self.game.screen)
 		self.player.stat_bar()
-		self.game.ui.update_player_HUD()
-		self.game.ui.update_spell_slot()
 		self.game.ui.update_spell_shard_count()
 		self.game.world.update_items(self.game.screen)
 		self.game.world.update_FX(self.game.screen)
 
 		self.game.camera.update_position()
+
+		self.game.ui.update_player_HUD()
+		self.game.ui.update_spell_slot()
 		# for enemy in self.world.enemies:
 		# 	enemy.show_rects(self.game.screen)
 

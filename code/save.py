@@ -12,6 +12,8 @@ def load_save(world, player, save):
 	player.position = pygame.math.Vector2(data[save]["Position"][0], data[save]["Position"][1])
 	player.health = data[save]["Health"]
 	player.magick = data[save]["Magick"]
+	player.magick_shards = data[save]["MagickShards"]
+	player.spell_shards = data[save]["SpellShards"]
 	player.facing_right = data[save]["Direction"]
 	player.bound_spells = data[save]["Spells"]
 	player.savename = data[save]["SAVENAME"]
@@ -28,6 +30,8 @@ def save_game(world, player, save):
 	data[save]["Position"] = [player.position.x, player.position.y]
 	data[save]["Health"] = player.health
 	data[save]["Magick"] = player.magick
+	data[save]["MagickShards"] = player.magick_shards
+	data[save]["SpellShards"] = player.spell_shards
 	data[save]["Direction"] = player.facing_right
 	data[save]["Spells"] = player.bound_spells
 

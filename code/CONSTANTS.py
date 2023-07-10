@@ -6,44 +6,6 @@ notes = {
 	"Game" : "Added decoration tiles and level system."
 }
 
-
-SAVES = {
-	"SAVE1": {
-		"SAVENAME": "",
-		"X": 0,
-		"Y": 0,
-		"Position": [0,0],
-		"Health": 0,
-		"Magick": 0,
-		"Direction": "",
-		"Spells": [],
-		"Enemies": []
-	},
-	"SAVE2": {
-		"SAVENAME": "",
-		"X": 0,
-		"Y": 0,
-		"Position": [0,0],
-		"Health": 0,
-		"Magick": 0,
-		"Direction": "",
-		"Spells": [],
-		"Enemies": []
-	},
-	"SAVE3": {
-		"SAVENAME": "",
-		"X": 0,
-		"Y": 0,
-		"Position": [0,0],
-		"Health": 0,
-		"Magick": 0,
-		"Direction": "",
-		"Spells": [],
-		"Enemies": []
-	}
-}
-
-
 FPS_SCALE = 75.0
 FPS = 75
 # FPS = 25
@@ -93,7 +55,7 @@ CENTER = (HALF_WIDTH, HALF_HEIGHT)
 
 # world
 TILE_SIZE = 64
-WORLD_BRIGHTNESS = 160
+WORLD_BRIGHTNESS = 255
 GRAVITY = 0.6
 CHUNK_SIZE = 8
 
@@ -112,6 +74,16 @@ BG_COLOR = '#060C17'
 PLAYER_COLOR = '#C4F7FF'
 TILE_COLOR = '#94D7F2'
 PANEL_COLOR = [232, 157, 85]
+ALRYN_COLORS = {
+	'blue': [52, 0, 11],
+	'blue shadows': [28, 0, 52],
+	'gold': [197, 130, 0],
+	'skin': [108, 130, 141],
+	'skin shadows':	[72, 90, 97],
+	'hair': [255, 255, 255],
+	'hair shadows': [182, 182, 182],
+}
+
 
 seto_colors = {
 	"torch1": {
@@ -131,7 +103,7 @@ CHARACTERS = {
 		"MAGICK": 120,
 		"SPEED": 5.5,
 		"JUMPS": 1,
-		"JUMPFORCE": 15.5,
+		"JUMPFORCE": 16.2,
 		"ROLL SPEED": 8,
 		"ROLL COOLDOWN": 4,
 		"ATK_CD": 320,
