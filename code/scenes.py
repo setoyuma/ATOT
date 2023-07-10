@@ -283,18 +283,6 @@ class CreateNewGame(Scene):
 				text_color=[0,0,0], 
 				text_size=0
 				)
-		
-		# write back button text
-		# for index, button in enumerate(self.buttons):
-		# 	if index == len(self.buttons) - 1:
-		# 		draw_custom_font_text(
-		# 			self.game.screen,
-		# 			self.game.alphabet,
-		# 			button.text,
-		# 			24,
-		# 			(button.rect.x + 18, button.rect.y + 18),
-		# 			[]					
-		# 			)
 
 	def handle_torches(self):
 		torch_rect_2 = pygame.Rect((1304, 600), (96, 160))
@@ -364,7 +352,6 @@ class CreateNewGame(Scene):
 			else:
 				self.text_list = self.text_list[:-1]
 
-
 		# vfx
 		self.handle_torches()
 		for particle in self.particles:
@@ -404,9 +391,7 @@ class ChooseSave(Scene):
 		self.game.screen = pygame.display.set_mode((1400,800))
 		self.savedata = self.get_save_data()
 		self.buttons = []
-		# self.plate1 = scale_images([get_image('../assets/ui/menu/plate1.png')], (800, 400))[0]
 		self.plate1 = '../assets/ui/menu/plate1.png'
-		# self.plate2 = scale_images([get_image('../assets/ui/menu/plate2.png')], (800, 400))[0]
 		self.plate2 = '../assets/ui/menu/plate2.png'
 		self.handle_buttons()
 
@@ -452,8 +437,28 @@ class ChooseSave(Scene):
 				)
 			)
 
+		# back button
+		back_img = '../assets/ui/menu/back_arrow.png'
+		back_img2 = '../assets/ui/menu/back_arrow2.png'
+		self.back_button = NewButton(
+				self.game,
+				(96, 96),
+				'back', 
+				(1340, 50), 
+				self.back,
+				back_img,
+				back_img2,
+				# base_color=[80,80,80],
+				# hover_color=[20,20,20],
+				text_color=[0,0,0], 
+				text_size=0
+				)
+
 	def stat_book(self):
 		self.game.screen.blit(self.statbook, (410,20))
+
+	def back(self):
+		self.game.scenes = [Launcher(self.game)]
 
 	def draw(self):
 		self.game.screen.blit(self.background, (0,0))
@@ -466,6 +471,8 @@ class ChooseSave(Scene):
 			(200, self.game.screen.get_rect().top + 20),
 			[]
 		)
+
+		self.back_button.draw()
 
 		index = 1
 		for index, button in enumerate(self.buttons):
@@ -508,7 +515,6 @@ class ChooseSave(Scene):
 					self.game.player.saveslot = f'SAVE{index}'
 					self.game.scenes = [LoadingScreen(self.game)]
 
-
 		self.stat_book()
 
 		self.universal_draw()
@@ -522,6 +528,7 @@ class ChooseSave(Scene):
 
 			for button in self.buttons:
 				button.update(event)
+				self.back_button.update(event)
 
 
 class LoadingScreen(Scene):
@@ -600,7 +607,7 @@ class WorldScene(Scene):
 		super().__init__(game)
 		self.scene_type = 'world'
 		self.game.screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pygame.SCALED)
-		self.game.current_level = 3
+		self.game.current_level = 0
 		self.game.world = World(game, worlds[self.game.current_level])
 		self.events = True
 		self.player = self.game.player
@@ -647,13 +654,6 @@ class WorldScene(Scene):
 
 			# key pressed
 			elif event.type == pygame.KEYDOWN:
-				# if event.key == pygame.K_m:
-				# 	save_game(self.game.world, self.game.player, self.game.player.saveslot)
-				# if event.key == pygame.K_l:
-				# 	self.player.rect.x = 500
-				# 	load_save(self.game.world, self.game.player, self.game.player.saveslot)
-
-
 				if event.key == pygame.K_ESCAPE:
 					if self.game.scenes[0].scene_type == 'world':
 						self.game.scenes.append(RadialMenu(self.game))
@@ -699,15 +699,6 @@ class WorldScene(Scene):
 						)
 						play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
 
-				
-				# # player hud testing
-				# if event.key == pygame.K_h:
-				# 	self.player.health -= 10
-				# if event.key == pygame.K_m:
-				# 	self.player.magick -= 5
-				# if event.key == pygame.K_s:
-				# 	self.player.spell_shards += 1
-
 	def draw(self):
 		# updates
 		self.game.world.update()
@@ -726,10 +717,17 @@ class WorldScene(Scene):
 
 		self.game.ui.update_player_HUD()
 		self.game.ui.update_spell_slot()
-		# for enemy in self.world.enemies:
-		# 	enemy.show_rects(self.game.screen)
 
-		# self.game.player.show_rects(self.game.screen)
+
+		topleft = pygame.Surface((TILE_SIZE, TILE_SIZE))
+		topleft.fill('blue')
+		bottomright = pygame.Surface((TILE_SIZE, TILE_SIZE))
+		bottomright.fill('red')
+
+
+		self.game.screen.blit(topleft, self.game.world.level_topleft.topleft - self.game.camera.level_scroll)
+		self.game.screen.blit(bottomright, self.game.world.level_bottomright.topleft - self.game.camera.level_scroll)
+
 		for p in self.game.particles:
 			p.emit()
 
@@ -773,8 +771,6 @@ class WorldScene(Scene):
 		
 		if self.game.show_fps:
 			self.game.draw_fps()
-		# for proj in self.player.projectiles:
-		# 	proj.draw(self.game.screen)
 
 		self.game.draw_fps()
 

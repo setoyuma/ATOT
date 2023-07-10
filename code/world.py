@@ -13,6 +13,7 @@ class World():
 
 		self.constraint_data = None
 		self.torch_data = None
+		self.torch_tile_id = 63
 		
 		# player setup
 		self.player_spawn = self.generate_player_spawn(self.world_data)
@@ -64,17 +65,24 @@ class World():
 		self.level_height = max_bottom
 
 	def create_tile_index(self):
-		tile_list = import_cut_graphics('../assets/terrain/Tileset.png', TILE_SIZE)  # Load tile graphics
+		tile_list = import_cut_graphics('../assets/terrain/melara.png', TILE_SIZE)  # Load tile graphics
+		old_tile_list = import_cut_graphics('../assets/terrain/Tileset.png', TILE_SIZE)  # Load tile graphics
 		for index, tile in enumerate(tile_list):
 			self.tile_index[index] = tile
 
 	def create_layer_lists(self, world_data):
 		self.terrain = []
 		self.layer_data = []
+		self.foreground_layer_data = []
 		self.background_positions = []
 		if 'background' in world_data:
 			self.background_data = import_csv_layout(world_data['background'])
 			self.layer_data.append(self.background_data)
+		else:
+			pass
+		if 'midground' in world_data:
+			self.midground_data = import_csv_layout(world_data['midground'])
+			self.layer_data.append(self.midground_data)
 		else:
 			pass
 		if 'terrain' in world_data:
@@ -82,14 +90,12 @@ class World():
 			self.layer_data.append(self.terrain_data)
 		else:
 			pass
-		
 		self.constraints = []
 		if 'constraint' in world_data:
 			self.constraint_data = import_csv_layout(world_data['constraint'])
 			self.layer_data.append(self.constraint_data)
 		else:
 			pass
-		
 		self.torch_positions = []
 		if 'torch' in world_data:
 			self.torch_data = import_csv_layout(world_data['torch'])
@@ -99,7 +105,7 @@ class World():
 		self.foreground_positions = []
 		if 'foreground' in world_data:
 			self.foreground_data = import_csv_layout(world_data['foreground'])
-			self.layer_data.append(self.foreground_data)
+			self.foreground_layer_data.append(self.foreground_data)
 		else:
 			pass
 
@@ -230,7 +236,7 @@ class World():
 		for row in self.torch_data:
 			x = 0
 			for tile_num, tile_id in enumerate(row):
-				if int(tile_id) == 18:
+				if int(tile_id) == self.torch_tile_id:
 					self.num_of_torches += 1
 				x += 1
 			y += 1
@@ -241,7 +247,7 @@ class World():
 			for row in self.torch_data:
 				x = 0
 				for tile_num, tile_id in enumerate(row):
-					if int(tile_id) == 18:
+					if int(tile_id) == self.torch_tile_id:
 						self.torch_positions.append([pygame.math.Vector2(x * TILE_SIZE - self.game.camera.level_scroll.x, y * TILE_SIZE - self.game.camera.level_scroll.y)])
 						if len(self.torch_positions) > self.num_of_torches:
 							self.torch_positions.pop(self.num_of_torches)
@@ -252,6 +258,17 @@ class World():
 
 	def draw_tiles(self, screen):
 		for layer in self.layer_data:
+			y = 0
+			for row in layer:
+				x = 0
+				for tile_num, tile_id in enumerate(row):
+					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys():
+						screen.blit(self.tile_index[int(tile_id)], (x * TILE_SIZE - self.game.camera.level_scroll.x, y * TILE_SIZE - self.game.camera.level_scroll.y))
+					x += 1
+				y += 1
+	
+	def draw_foreground(self, screen):
+		for layer in self.foreground_layer_data:
 			y = 0
 			for row in layer:
 				x = 0
@@ -294,7 +311,7 @@ class World():
 		
 		# world lights
 		for index, position in enumerate(self.torch_positions):
-			torch_glow = glow_surface(TILE_SIZE*2, [20,20,40],120)
+			torch_glow = glow_surface(TILE_SIZE*2, [20,20,40], TORCH_BRIGHTNESS)
 			self.game.world_brightness.blit(torch_glow, (position[0].x, (position[0].y + 32)) - self.game.camera.level_scroll - (102, 122), special_flags=pygame.BLEND_RGB_ADD)
 
 		# player spell FX
@@ -331,17 +348,17 @@ class World():
 		surface.blit(map_image, (0,0) - self.game.camera.level_scroll)
 
 	def draw_world(self, surface:pygame.Surface):
-		# self.spawn_enemies()
 		# draw tiles
-		# self.draw_map_image(surface)
 		self.draw_tiles(surface)
 		self.generate_torch_positions()
-		self.update_FX(surface)
-		# draw player????
+		# draw player
 		self.game.player.draw(surface)
+		# draw foreground
+		self.draw_foreground(surface)
 		# draw enemies
 		self.draw_enemies(surface)
 		# draw vfx
+		self.update_FX(surface)
 		self.world_FX()
 
 	def update(self):

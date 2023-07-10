@@ -5,10 +5,6 @@ from utils import *
 from particle import Particle
 
 
-	
-		
-
-
 class Weapon(pygame.sprite.Sprite):
 	def __init__(self,game,player,groups):
 		super().__init__(groups)
@@ -35,8 +31,6 @@ class Weapon(pygame.sprite.Sprite):
 	def draw(self, surface:pygame.Surface):
 		self.hitbox.topleft = self.rect.topleft - self.game.camera.level_scroll
 		surface.blit(self.image, self.rect.center - self.game.camera.level_scroll)
-		# pygame.draw.rect(self.game.screen, "white", self.hitbox)
-		# pygame.draw.rect(self.game.screen, "white", self.rect)
 
 
 class Item(Entity):
@@ -143,7 +137,6 @@ class Item(Entity):
 					self.game.player.magick += self.recovery
 					if 'shard' in self.item_name:
 						self.game.player.magick_shards += 1
-					# print('player gained', self.recovery, 'magick')
 
 					for spell in self.game.player.projectiles:
 						if spell.rect.colliderect(self.rect):
@@ -400,13 +393,6 @@ class Enemy(Entity):
 	def draw(self, surface:pygame.Surface):
 		surface.blit(self.image, self.hurtbox.topleft - self.game.camera.level_scroll)
 		self.status_bar()
-		
-		# show cast range
-		# if self.name in ['Covenant Follower']:
-		# 	self.game.screen.blit(pygame.Surface((self.cast_range, self.cast_range)), self.cast_range_rect.topleft - self.game.camera.level_scroll)
-
-	 	# show aggro range
-		# self.game.screen.blit(pygame.Surface((self.aggro_range, self.aggro_range)), self.aggro_rect.topleft - self.game.camera.level_scroll)
 
 	def update_spells(self, player):
 		for spell in self.spells:
@@ -426,7 +412,6 @@ class Enemy(Entity):
 		self.actions(self.game.player)
 		self.incoming_damage_check()
 		self.hit_reaction()
-		# self.check_constraints(constraints)
 		self.move()
 		self.cooldowns()
 		self.animate()
@@ -518,9 +503,6 @@ class Player(Entity):
 		self.animation_speed = 0.25
 		self.animator = NewAnimator(self.game, self, self.animation_speed)
 
-
-		# self.animation = self.animations[self.status]
-
 		self.rect = pygame.Rect( (self.rect.x, self.rect.y), (32, self.image.get_height()/2) )
 
 		# collision area
@@ -534,8 +516,8 @@ class Player(Entity):
 		# attacking
 		self.attack_time = 0
 		self.combo = 0
-
-
+		
+		# active rects list
 		self.rects = [self.rect]
 
 	def get_stats(self):
@@ -626,13 +608,9 @@ class Player(Entity):
 
 		if self.rolling and self.facing_right and self.collide_bottom:
 			self.velocity.x += adjusted_roll_speed * dt
-			# marker = pygame.Rect(self.roll_point - self.game.camera.level_scroll, (40,40))
-			# pygame.draw.rect(self.game.screen, "white", marker)
 
 		elif self.rolling and not self.facing_right and self.collide_bottom:
 			self.velocity.x += -adjusted_roll_speed * dt
-			# marker = pygame.Rect(self.roll_point - self.game.camera.level_scroll, (40,40))
-			# pygame.draw.rect(self.game.screen, "white", marker)
 	
 	def dash(self, dt):
 		frame_scale = self.game.current_fps / 75.0
@@ -645,8 +623,6 @@ class Player(Entity):
 			for i in range(int(self.dash_timer)):
 				self.particles.append(Particle(self.game, [255, 255, 255], self.rect.center, (0, 1), 6, [pygame.sprite.Group()]))
 
-			# pygame.draw.rect(self.game.screen, "white", marker)
-
 		elif self.dashing and not self.facing_right and not self.collide_bottom:
 			self.velocity.y = 0
 			self.velocity.x += -adjusted_dash_distance * dt
@@ -654,8 +630,6 @@ class Player(Entity):
 			for i in range(int(self.dash_timer)):
 				self.particles.append(Particle(self.game, [255, 255, 255], self.rect.center, (0, 1), 6, [pygame.sprite.Group()]))
 				
-			# pygame.draw.rect(self.game.screen, "white", marker)
-
 	def get_status(self):
 		if self.velocity.y < 0:
 			self.status = 'jump'
@@ -683,9 +657,6 @@ class Player(Entity):
 		for particle in self.particles:
 			particle.emit()
 
-		# pygame.draw.rect(surface, "white", self.hurtbox)
-		# pygame.draw.rect(surface, "white", self.rect)
-
 	def on_screen_check(self):
 		if self.rect.x >= self.game.world.level_bottomright.x:
 			self.rect.x = self.game.world.level_bottomright.x
@@ -705,9 +676,6 @@ class Player(Entity):
 					if projectile.rect.colliderect(obj):
 						projectile.collided = True
 						projectile.status = 'hit'
-
-	def incoming_damage_check(self):
-		pass
 		
 	def get_damage(self, damage_taken):
 		if self.vulnerable:
@@ -782,7 +750,6 @@ class Player(Entity):
 		if self.attacking:
 			self.create_attack()
 
-		
 		# update hurtbox
 		self.hurtbox.center = self.rect.center - self.game.camera.level_scroll
 
@@ -859,15 +826,5 @@ class Player(Entity):
 		# stats
 		if self.magick > CHARACTERS[self.character]["MAGICK"]:
 			self.magick = CHARACTERS[self.character]["MAGICK"]
-
-		# draw player
-		# self.show_attacks(surface)
-		self.draw(surface)
-
-		# if self.attacking:
-		# 	print(int(self.animator.frame_index)  + 1)
-
-		# print('my saveslot',self.saveslot, 'my savename', self.savename)
-
 		
 
