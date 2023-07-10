@@ -1,18 +1,21 @@
 {
     "SAVE1": {
-        "SAVENAME": "",
-        "X": 0,
-        "Y": 0,
+        "SAVENAME": "ddn",
+        "X": 909,
+        "Y": 1072,
         "Position": [
-            0,
-            0
+            320.0,
+            576.0
         ],
-        "Health": 0,
-        "Magick": 0,
-        "MagickShards": 0,
+        "Health": 92,
+        "Magick": 120,
+        "MagickShards": 30,
         "SpellShards": 0,
-        "Direction": "",
-        "Spells": [],
+        "Direction": true,
+        "Spells": [
+            "windblade",
+            "fireball"
+        ],
         "Enemies": []
     },
     "SAVE2": {

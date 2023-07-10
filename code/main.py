@@ -207,8 +207,11 @@ class Game():
 			self.last_time = time.time()  # reset the last_time with the current time
 			self.current_fps = self.clock.get_fps()
 			for scene in self.scenes:
-				scene.update()
-				scene.draw()
+				if scene.active:
+					scene.update()
+					scene.draw()
+				if scene.obscured:
+					scene.draw()
 			self.send_frame()
 
 class Camera():

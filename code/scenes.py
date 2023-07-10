@@ -8,6 +8,7 @@ from world import World
 from save import *
 
 class Scene:
+	
 	def __init__(self, game,):
 		self.game = game
 		self.active = True
@@ -15,6 +16,7 @@ class Scene:
 
 	def update(self):
 		pass
+	
 	def draw(self):
 		pass
 	
@@ -23,6 +25,8 @@ class Scene:
 
 	def universal_draw(self):
 		self.game.cursor.draw(self.game.screen)
+		if self.game.show_fps:
+			self.game.draw_fps()
 
 	def check_universal_events(self, pressed_keys, event):
 		quit_attempt = False
@@ -500,7 +504,7 @@ class ChooseSave(Scene):
 					print('ERROR: unable to configure save data...\n')
 
 				self.game.player.saveslot = f'SAVE{index}'
-				self.game.scenes = [LoadingScreen(self.game)]
+				self.game.scenes = [LoadingScreen(self.game, 'launch')]
 
 			elif button.clicked and self.pick_type in ['play game']:
 				if button.text in [f'SAVE{index}']:
@@ -513,7 +517,7 @@ class ChooseSave(Scene):
 						print('ERROR: unable to configure save data...\n')
 
 					self.game.player.saveslot = f'SAVE{index}'
-					self.game.scenes = [LoadingScreen(self.game)]
+					self.game.scenes = [LoadingScreen(self.game, 'launch')]
 
 		self.stat_book()
 
@@ -533,9 +537,10 @@ class ChooseSave(Scene):
 
 class LoadingScreen(Scene):
 
-	def __init__(self, game):
+	def __init__(self, game, load_type:str):
 		super().__init__(game)
 		self.scene_type = 'main menu'
+		self.load_type = load_type
 		self.game = game
 		self.game.screen = pygame.display.set_mode((1400,800))
 		self.buttons = []
@@ -581,7 +586,7 @@ class LoadingScreen(Scene):
 		self.game.screen.blit(self.image, (-10, 50))
 		title = scale_images([get_image('../assets/title.png')], (960, 960))[0]
 		if self.begin_launch:
-			self.counter += 0.1 * self.game.dt
+			self.counter += self.game.dt
 			title.set_alpha(25*self.counter)
 			self.game.screen.blit(title, (220, -150))
 		if self.counter > 10:
@@ -598,11 +603,14 @@ class LoadingScreen(Scene):
 
 		if self.counter >= 10:
 			self.begin_launch = False
-		if int(self.counter) == 14:
+		# if int(self.counter) == 11 and self.load_type in ['launch']:
 			self.game.scenes = [WorldScene(self.game)]
-
+		# elif int(self.counter) == 11 and self.load_type in ['exit']:
+		# 	self.game.scenes = [Launcher(self.game)]
+ 
  
 class WorldScene(Scene):
+	
 	def __init__(self, game):
 		super().__init__(game)
 		self.scene_type = 'world'
@@ -612,7 +620,7 @@ class WorldScene(Scene):
 		self.events = True
 		self.player = self.game.player
 		self.world = self.game.world
-		pygame.display.toggle_fullscreen()
+		# pygame.display.toggle_fullscreen()
 
 	def update(self):
 		if not self.events:
@@ -624,80 +632,64 @@ class WorldScene(Scene):
 			self.check_universal_events(pressed_keys, event)
 
 			# button clicked
-			if event.type == pygame.MOUSEBUTTONDOWN:
-				if event.button == 4:  # Mouse wheel up
-					self.player.active_spell_slot = 2
-					self.player.switch_active_spell()
-					pass
-				elif event.button == 5:  # Mouse wheel down
-					self.player.active_spell_slot = 1
-					self.player.switch_active_spell()
-					pass
-				elif event.button == 1:
-					for i in range(10):
-						self.game.particles.append(
-							Particle(
-								self.game,
-								[255,255,255],
-								(self.game.mx, self.game.my) + self.game.camera.level_scroll,
-								(random.randint(-10,10), random.randint(-10,10)),
-								20,
-								[],
-								gravity=True,
-								physics=True
+			for control, key in custom_controls.items():
+				if event.type == pygame.KEYDOWN and event.key == key or event.type == pygame.MOUSEBUTTONDOWN and event.button == key:
+					if control == 'cycle up':  # Mouse wheel up
+						self.player.active_spell_slot = 2
+						self.player.switch_active_spell()
+						pass
+					elif control == 'cycle down':  # Mouse wheel down
+						self.player.active_spell_slot = 1
+						self.player.switch_active_spell()
+						pass
+				# key pressed
+					if control == 'menu':
+						if self.game.scenes[0].scene_type == 'world':
+							self.game.scenes.append(RadialMenu(self.game))
+							self.events = False
+					if control == 'show fps':
+						self.game.show_fps = not self.game.show_fps
+
+					if control == 'fullscreen':
+						pygame.display.toggle_fullscreen()
+					
+					# dashing
+					if control == 'dash/roll' and self.player.dash_counter > 0 and not self.player.collide_bottom:
+						play_sound('../assets/sounds/dashing.wav')
+						self.player.dash_point = (self.player.rect.x, self.player.rect.y)
+						self.player.dashing = True
+						self.player.dash_counter -= 1
+					
+					# rolling
+					if control == 'dash/roll' and self.player.collide_bottom and self.player.roll_counter > 0 and int(self.player.roll_cooldown) == CHARACTERS[self.player.character]["ROLL COOLDOWN"]:
+						self.player.roll_point = (self.player.rect.x, self.player.rect.y)
+						self.player.rolling = True
+						self.player.roll_counter -= 1
+
+					# attacking
+					if control == 'melee' and self.player.collide_bottom and not self.player.attacking:
+						self.player.attack()
+
+					# spells
+					if control == 'cast' and not self.player.attacking: #and self.player.collide_bottom :
+						# add this once we have damage animations (and self.player.vulnerable)
+						if self.player.facing_right  and self.player.magick > 0 and self.player.cast_timer == self.player.cast_cooldown:
+							self.player.casting = True
+							self.player.magick -= SPELLS[self.player.active_spell][3]
+							self.player.projectiles.append(
+								Projectile(self.game, (self.player.rect.right, self.player.rect.bottom - 50), self.player.active_spell, 'right', self.player.rect.center, 300)
 							)
-						)
-					pass
+							play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
+						if not self.player.facing_right  and self.player.magick > 0 and self.player.cast_timer == self.player.cast_cooldown:
+							self.player.casting = True
+							self.player.magick -= SPELLS[self.player.active_spell][3]
+							self.player.projectiles.append(
+								Projectile(self.game, (self.player.rect.left, self.player.rect.bottom - 50), self.player.active_spell, 'left', self.player.rect.center, 300)
+							)
+							play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
 
-			# button released
-			
-
-			# key pressed
-			elif event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_ESCAPE:
-					if self.game.scenes[0].scene_type == 'world':
-						self.game.scenes.append(RadialMenu(self.game))
-						self.events = False
-				if event.key == pygame.K_F8:
-					self.game.show_fps = not self.game.show_fps
-
-				if event.key == pygame.K_f:
-					pygame.display.toggle_fullscreen()
-				
-				# dashing
-				if event.key == pygame.K_LSHIFT and self.player.dash_counter > 0 and not self.player.collide_bottom:
-					play_sound('../assets/sounds/dashing.wav')
-					self.player.dash_point = (self.player.rect.x, self.player.rect.y)
-					self.player.dashing = True
-					self.player.dash_counter -= 1
-				
-				# rolling
-				if event.key == pygame.K_LSHIFT and self.player.collide_bottom and self.player.roll_counter > 0 and int(self.player.roll_cooldown) == CHARACTERS[self.player.character]["ROLL COOLDOWN"]:
-					self.player.roll_point = (self.player.rect.x, self.player.rect.y)
-					self.player.rolling = True
-					self.player.roll_counter -= 1
-
-				# attacking
-				if event.key == pygame.K_o and self.player.collide_bottom and not self.player.attacking:
-					self.player.attack()
-
-				# spells
-				if event.key == pygame.K_p and not self.player.attacking: #and self.player.collide_bottom :
-					# add this once we have damage animations (and self.player.vulnerable)
-					if self.player.facing_right  and self.player.magick > 0 and self.player.cast_timer == self.player.cast_cooldown:
-						self.player.casting = True
-						self.player.magick -= SPELLS[self.player.active_spell][3]
-						self.player.projectiles.append(
-							Projectile(self.game, (self.player.rect.right, self.player.rect.bottom - 50), self.player.active_spell, 'right', self.player.rect.center, 300)
-						)
-						play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
-					if not self.player.facing_right  and self.player.magick > 0 and self.player.cast_timer == self.player.cast_cooldown:
-						self.player.casting = True
-						self.player.magick -= SPELLS[self.player.active_spell][3]
-						self.player.projectiles.append(
-							Projectile(self.game, (self.player.rect.left, self.player.rect.bottom - 50), self.player.active_spell, 'left', self.player.rect.center, 300)
-						)
-						play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
+					if control == 'show fps':
+						self.game.show_fps = not self.game.show_fps
 
 	def draw(self):
 		# updates
@@ -769,15 +761,12 @@ class WorldScene(Scene):
 				if not self.player.attacking:
 					self.player.weapon.remove(weapon)
 		
-		if self.game.show_fps:
-			self.game.draw_fps()
-
-		self.game.draw_fps()
-
 		self.universal_draw()
+		self.game.draw_fps()
 
 
 class RadialMenu(Scene):
+	
 	def __init__(self, game):
 		super().__init__(game)
 		self.scene_type = 'radial menu'
@@ -791,36 +780,76 @@ class RadialMenu(Scene):
 		self.button = NewButton(game, 32, "", (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-184), self.callback, base=(0,0,100,50), hovered=(0,0,100,50))
 		self.options = ["Equipment", "Grimoire", "Inventory", "Settings"]
 		self.selected = 0
+		
+		exit_img = '../assets/ui/menu/back_arrow.png'
+		exit_img2 = '../assets/ui/menu/back_arrow2.png'
+		self.exit_button = NewButton(game, (96, 101), "exit", (1340, 50), self.exit, exit_img, exit_img2, text_size=1, text_color=[255,255,0])
+
+	# animation
+		self.size = (320, 320)
+		self.status = 'alpha'
+		self.frame_index = 0
+		self.animation_speed = 0.45
+		self.import_assets()
+		self.animation = self.animations[self.status]
+		self.begin_launch = False
+		self.counter = 0
+
+	def import_assets(self):
+		self.animation_keys = {'alpha':[]} 
+
+		for animation in self.animation_keys:
+			full_path = MAIN_MENU_SHORTCUT + animation
+			
+			original_images = new_import_folder(full_path)
+			scaled_images = scale_images(original_images, self.size)
+			
+			self.animation_keys[animation] = scaled_images
+
+		self.animations = self.animation_keys
+	
+	def animate(self):
+		animation = self.animation_keys[self.status]
+		self.frame_index += self.animation_speed
+
+		if self.frame_index >= len(animation)/2:
+			self.frame_index = self.frame_index - 1
+
+		self.image = animation[int(self.frame_index)]
+
+	def exit(self):
+		self.game.scenes = [LoadingScreen(self.game, 'exit')]
 
 	def update(self):
 		pressed_keys = pygame.key.get_pressed()
 		for event in pygame.event.get():
 			self.check_universal_events(pressed_keys, event)
 			self.button.update(event)
+			self.exit_button.update(event)
 
-			if event.type == KEYDOWN:
-				if event.key == pygame.K_f:
-					pygame.display.toggle_fullscreen()
-				
-				elif event.key == pygame.K_ESCAPE:
-					self.game.scenes.pop()
-					self.game.scenes[0].events = True
-				
-				elif event.key == pygame.K_LEFT:
-					self.selected -= 1
-					if self.selected < 0:
-						self.selected = len(self.options)-1
-					self.target_angle += self.section_arc
-		
-				elif event.key == pygame.K_RIGHT:
-					self.selected += 1
-					if self.selected > len(self.options)-1:
-						self.selected = 0
-					self.target_angle -= self.section_arc
+			for control, key in custom_controls.items():
+				if event.type == pygame.KEYDOWN and event.key == key or event.type == pygame.MOUSEBUTTONDOWN and event.button == key:
+					if control == 'menu':
+						self.game.scenes.pop()
+						self.game.scenes[0].events = True
+					
+					elif control == 'cycle up':
+						self.selected -= 1
+						if self.selected < 0:
+							self.selected = len(self.options)-1
+						self.target_angle += self.section_arc
+			
+					elif control == 'cycle down':
+						self.selected += 1
+						if self.selected > len(self.options)-1:
+							self.selected = 0
+						self.target_angle -= self.section_arc
 
 		if self.rotation % 360 != self.target_angle % 360:
+
+
 			self.rotate()
-	
+
 	def rotate(self):
 		rotation_speed = 5
 		if self.rotation < self.target_angle:
@@ -829,7 +858,10 @@ class RadialMenu(Scene):
 			self.rotation -= rotation_speed
 
 	def draw(self):
+		self.animate()
+		self.game.screen.blit(self.image, (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-122))
 		self.button.draw()
+		self.exit_button.draw()
 		draw_text(self.game.screen, self.options[self.selected], (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-222), 24)
 		for i, icon in enumerate(self.icons):
 			angle = self.rotation + (i * self.section_arc)
@@ -840,7 +872,67 @@ class RadialMenu(Scene):
 			self.game.screen.blit(icon, (x, y))
 
 	def callback(self):
-		print("callback")
+		match self.options[self.selected]:
+			case 'Settings':
+				self.game.scenes[1] = Settings(self.game)
+			case 'Grimoire':
+				pass
+			case 'Inventory':
+				pass
+			case 'Equipment':
+				pass
+			
 
+
+class Settings(Scene):
+
+	def __init__(self, game):
+		super().__init__(game)
+		self.scene_type = 'settings'
+		self.game = game
+
+
+		# animation
+		self.size = self.game.screen.get_size()
+		self.status = 'alpha'
+		self.frame_index = 0
+		self.animation_speed = 0.23
+		self.import_assets()
+		self.animation = self.animations[self.status]
+		self.begin_launch = False
+		self.counter = 0
+
+	def import_assets(self):
+		self.animation_keys = {'alpha':[]} 
+
+		for animation in self.animation_keys:
+			full_path = MAIN_MENU_SHORTCUT + animation
+			
+			original_images = new_import_folder(full_path)
+			scaled_images = scale_images(original_images, self.size)
+			
+			self.animation_keys[animation] = new_import_folder(full_path)
+
+		self.animations = self.animation_keys
+	
+	def animate(self):
+		animation = self.animation_keys[self.status]
+		self.frame_index += self.animation_speed
+
+		if self.frame_index >= len(animation):
+			self.frame_index = self.frame_index - 1
+			self.begin_launch = True
+
+		self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+
+
+	def draw(self):
+		self.universal_draw()
+
+	def update(self):
+		self.universal_updates()
+		pressed_keys = pygame.key.get_pressed()
+		for event in pygame.event.get():
+			self.check_universal_events(pressed_keys, event)
 
 	

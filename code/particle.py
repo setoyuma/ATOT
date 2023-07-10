@@ -55,12 +55,15 @@ class Particle(pygame.sprite.Sprite):
 		self.radius -= 0.1 * self.game.dt
 
 		if self.has_image:
-			self.game.screen.blit(self.image, [int(self.rect.x), int(self.rect.y)] - self.game.camera.level_scroll)
+			if self.radius > 0:
+				self.game.screen.blit(self.image, [int(self.rect.x), int(self.rect.y)] - self.game.camera.level_scroll)
 		else:
 			if self.circle:
-				pygame.draw.circle(self.game.screen, self.color, [int(self.rect.x), int(self.rect.y)] - self.game.camera.level_scroll, int(self.radius))
+				if self.radius > 0:
+					pygame.draw.circle(self.game.screen, self.color, [int(self.rect.x), int(self.rect.y)] - self.game.camera.level_scroll, int(self.radius))
 			else:
-				surf = pygame.Surface((int(self.radius), int(self.radius)))
-				surf.fill(random.choice(seto_colors["torch1"]))
-				self.game.screen.blit(surf, self.rect.topleft - self.game.camera.level_scroll)
+				if self.radius > 0:
+					surf = pygame.Surface((int(self.radius), int(self.radius)))
+					surf.fill(random.choice(seto_colors["torch1"]))
+					self.game.screen.blit(surf, self.rect.topleft - self.game.camera.level_scroll)
 				# pygame.draw.rect(self.game.screen, self.color, self.rect)

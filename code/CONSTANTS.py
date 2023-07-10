@@ -11,6 +11,21 @@ FPS = 75
 # FPS = 25
 # FPS = 10
 
+default_controls = {
+    'menu': pygame.K_ESCAPE,
+    'fullscreen': pygame.K_F11,
+	'show fps': pygame.K_F8,
+    'move_left': pygame.K_a,
+    'move_right': pygame.K_d,
+    'dash/roll': pygame.K_LSHIFT,
+    'melee': 1,
+    'cast': 3,
+    'cycle up': 4,
+    'cycle down': 5,
+}
+
+# Custom controls
+custom_controls = default_controls.copy()
 
 key_shortcuts = {
 	'a': pygame.K_a,
@@ -39,6 +54,8 @@ key_shortcuts = {
 	'x': pygame.K_x,
 	'y': pygame.K_y,
 	'z': pygame.K_z,
+	'left click': 1,
+	'right click': 2,
 }
 
 
@@ -55,7 +72,7 @@ CENTER = (HALF_WIDTH, HALF_HEIGHT)
 
 # world
 TILE_SIZE = 64
-WORLD_BRIGHTNESS = 150
+WORLD_BRIGHTNESS = 170
 TORCH_BRIGHTNESS = 180
 GRAVITY = 0.6
 CHUNK_SIZE = 8
