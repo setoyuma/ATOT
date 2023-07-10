@@ -466,6 +466,9 @@ class Player(Entity):
 	def __init__(self, game, character, size, position, speed, groups):
 		super().__init__(size, position, speed, groups)
 		# config
+		self.savename = ''
+		self.savedata = ''
+		self.saveslot = ''
 		self.entity_type = 'player'
 		self.game = game
 		self.character = character
@@ -832,7 +835,7 @@ class Player(Entity):
 		
 		# particles
 		for particle in self.particles:
-			if particle.radius <= 0:
+			if particle.radius <= 0.1:
 				self.particles.remove(particle)
 
 		# projectiles/spells
@@ -858,6 +861,8 @@ class Player(Entity):
 		self.draw(surface)
 		# if self.attacking:
 		# 	print(int(self.animator.frame_index)  + 1)
+
+		print('my saveslot',self.saveslot, 'my savename', self.savename)
 
 		
 

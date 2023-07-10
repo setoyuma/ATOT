@@ -15,7 +15,7 @@ class UI():
 
 		self.player_hud = get_image('../assets/ui/HUD/HUD.png')
 		self.player_portrait = get_image('../assets/ui/HUD/alryn_faceset2.png')
-		self.player_hud = scale_images([self.player_hud], (460,100))[0]
+		self.player_hud = scale_images([self.player_hud], (460,127))[0]
 		self.player_portrait = scale_images([self.player_portrait], (87,81))[0]
 		# self.spell_image = get_image()
 
@@ -34,10 +34,10 @@ class UI():
 
 	def update_player_HUD(self):
 		# under bars
-		self.health_under_bar = pygame.Rect((98, 60), (364, 26))
+		self.health_under_bar = pygame.Rect((98, 62), (364, 26))
 		self.magick_under_bar = pygame.Rect((98, 78), (364, 26))
 		# bars
-		self.health_bar = pygame.Rect((98, 60), (364 * self.game.player.health/self.game.player.health_scale, 26))
+		self.health_bar = pygame.Rect((98, 62), (364 * self.game.player.health/self.game.player.health_scale, 26))
 		self.magick_bar = pygame.Rect((90, 90), (374 * self.game.player.magick/self.game.player.magick_scale, 14))
 		
 		pygame.draw.rect(self.display, [0,0,0], self.health_under_bar)
@@ -45,7 +45,7 @@ class UI():
 		pygame.draw.rect(self.display, [150,0,0], self.health_bar)
 		pygame.draw.rect(self.display, [0,150,200], self.magick_bar)
 		self.display.blit(self.player_hud, (5,10))
-		self.display.blit(self.player_portrait, (25,10))
+		# self.display.blit(self.player_portrait, (25,10))
 		
 		if self.game.player.spell_shards > 0:
 			spell_shard_1 = pygame.transform.scale(get_image('../assets/UI/HUD/HUD_SHARD.png'), (54, 30))

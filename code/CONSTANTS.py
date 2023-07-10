@@ -6,6 +6,44 @@ notes = {
 	"Game" : "Added decoration tiles and level system."
 }
 
+
+SAVES = {
+	"SAVE1": {
+		"SAVENAME": "",
+		"X": 0,
+		"Y": 0,
+		"Position": [0,0],
+		"Health": 0,
+		"Magick": 0,
+		"Direction": "",
+		"Spells": [],
+		"Enemies": []
+	},
+	"SAVE2": {
+		"SAVENAME": "",
+		"X": 0,
+		"Y": 0,
+		"Position": [0,0],
+		"Health": 0,
+		"Magick": 0,
+		"Direction": "",
+		"Spells": [],
+		"Enemies": []
+	},
+	"SAVE3": {
+		"SAVENAME": "",
+		"X": 0,
+		"Y": 0,
+		"Position": [0,0],
+		"Health": 0,
+		"Magick": 0,
+		"Direction": "",
+		"Spells": [],
+		"Enemies": []
+	}
+}
+
+
 FPS_SCALE = 75.0
 FPS = 75
 # FPS = 25
@@ -67,6 +105,7 @@ ENEMY_PATH = '../assets/enemy/'
 ITEMS_PATH = '../assets/items/'
 LAUNCHER_ASSET_PATH = '../assets/ui/menu/launcher/'
 KEYBOARD_BACKGROUNDS_SHORTCUT = '../assets/ui/keyboards/'
+MAIN_MENU_SHORTCUT = '../assets/ui/menu/main_menu/'
 
 # colors 
 BG_COLOR = '#060C17'
@@ -90,9 +129,9 @@ CHARACTERS = {
 		"NAME": "Alryn",
 		"HEALTH": 100,
 		"MAGICK": 120,
-		"SPEED": 6,
+		"SPEED": 5.5,
 		"JUMPS": 1,
-		"JUMPFORCE": 16,
+		"JUMPFORCE": 15.5,
 		"ROLL SPEED": 8,
 		"ROLL COOLDOWN": 4,
 		"ATK_CD": 320,

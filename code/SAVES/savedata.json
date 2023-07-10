@@ -1,0 +1,47 @@
+{
+    "SAVE1": {
+        "SAVENAME": "abbicus",
+        "X": 419,
+        "Y": 880,
+        "Position": [
+            320.0,
+            576.0
+        ],
+        "Health": 76,
+        "Magick": 91,
+        "Direction": true,
+        "Spells": [
+            "windblade",
+            "fireball"
+        ],
+        "Enemies": []
+    },
+    "SAVE2": {
+        "SAVENAME": "",
+        "X": 0,
+        "Y": 0,
+        "Position": [
+            0,
+            0
+        ],
+        "Health": 0,
+        "Magick": 0,
+        "Direction": "",
+        "Spells": [],
+        "Enemies": []
+    },
+    "SAVE3": {
+        "SAVENAME": "",
+        "X": 0,
+        "Y": 0,
+        "Position": [
+            0,
+            0
+        ],
+        "Health": 0,
+        "Magick": 0,
+        "Direction": "",
+        "Spells": [],
+        "Enemies": []
+    }
+}

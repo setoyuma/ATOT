@@ -5,6 +5,7 @@ from particle import *
 from utils import *
 from world_data import *
 from world import World
+from save import *
 
 class Scene:
 	def __init__(self, game,):
@@ -26,6 +27,10 @@ class Scene:
 	def check_universal_events(self, pressed_keys, event):
 		quit_attempt = False
 		if event.type == pygame.QUIT:
+			try:
+				save_game(self.game.world, self.game.player, self.game.player.saveslot)
+			except:
+				print('unable to save game\ngame will now close...\n')
 			quit_attempt = True
 		elif event.type == pygame.KEYDOWN:
 			alt_pressed = pressed_keys[pygame.K_LALT] or \
@@ -57,7 +62,7 @@ class Launcher(Scene):
 		hover_img = '../assets/ui/buttons/button_plate2.png'
 		self.buttons = [
 			NewButton(self.game, (128,64), "new", (162, 655), self.load_new, img, hover_img, text_color=PANEL_COLOR, text_size=1),
-			NewButton(self.game, (128,64), "play", (360, 655), self.load_world, img, hover_img, text_color=PANEL_COLOR, text_size=1)
+			NewButton(self.game, (128,64), "play", (360, 655), self.choose_save, img, hover_img, text_color=PANEL_COLOR, text_size=1)
 		]
 
 	def handle_buttons(self):
@@ -108,8 +113,8 @@ class Launcher(Scene):
 		
 		self.game.screen.blit(savior_systems, (1296, 695))
 
-	def load_world(self):
-		self.game.scenes = [WorldScene(self.game)]
+	def choose_save(self):
+		self.game.scenes = [ChooseSave(self.game, 'play game')]
 
 	def load_new(self):
 		self.game.scenes = [CreateNewGame(self.game)]
@@ -206,17 +211,22 @@ class CreateNewGame(Scene):
 			if button.clicked:
 				self.text_list.append(button.text)
 
-		print(self.text_list)
 		return(self.text_list)
 
 	def back(self):
 		self.game.scenes = [Launcher(self.game)]
 
+	def choose_save(self):
+		savestring = ""
+		for letter in self.text_list:
+			savestring += letter
+		self.game.player.savename = savestring
+		self.game.scenes = [ChooseSave(self.game, 'new game')]
+
 	def handle_buttons(self):
 		# text
 
 		for index, letter in enumerate(self.game.alphabet):
-			print(letter)
 			img = self.game.font[index]
 
 			if index in range(10, 18):
@@ -240,6 +250,7 @@ class CreateNewGame(Scene):
 					)
 			)
 
+		# back button
 		back_img = '../assets/ui/menu/back_arrow.png'
 		back_img2 = '../assets/ui/menu/back_arrow2.png'
 		self.back_button = NewButton(
@@ -252,8 +263,25 @@ class CreateNewGame(Scene):
 				back_img2,
 				# base_color=[80,80,80],
 				# hover_color=[20,20,20],
-				text_color=PANEL_COLOR, 
-				text_size=1
+				text_color=[0,0,0], 
+				text_size=0
+				)
+		
+		# confirm button
+		confirm_img = '../assets/ui/menu/done_check.png'
+		confirm_img2 = '../assets/ui/menu/done_check2.png'
+		self.done_button = NewButton(
+				self.game,
+				(96, 96),
+				'done', 
+				(1220, 50), 
+				self.choose_save,
+				confirm_img,
+				confirm_img2,
+				# base_color=[80,80,80],
+				# hover_color=[20,20,20],
+				text_color=[0,0,0], 
+				text_size=0
 				)
 		
 		# write back button text
@@ -289,7 +317,7 @@ class CreateNewGame(Scene):
 					Particle(
 						self.game, 
 						random.choice(seto_colors["torch1"]), 
-						(rect.centerx + random.randint(-20,20), rect.centery - 84), 
+						((rect.centerx - 5) + random.randint(-20,20), rect.centery - 84), 
 						(0, random.randint(-4,-1)), 
 						random.randint(2,8), 
 						[],
@@ -315,6 +343,8 @@ class CreateNewGame(Scene):
 
 		# button letters
 		self.back_button.draw()
+		if len(self.text_list) != 0:
+			self.done_button.draw()
 		for button in self.buttons:
 			button.draw()
 			draw_custom_font_text(
@@ -343,8 +373,6 @@ class CreateNewGame(Scene):
 			if particle.radius <= 0.1:
 				self.particles.remove(particle)
 
-
-
 		self.universal_draw()
 
 	def update(self):
@@ -358,14 +386,211 @@ class CreateNewGame(Scene):
 			
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_BACKSPACE:
-					print(self.text_list[:-1], 'result')
 					self.text_list = self.text_list[:-1]
 
 			for button in self.buttons:
 				button.update(event)
 				self.back_button.update(event)
+				if len(self.text_list) != 0:
+					self.done_button.update(event)
 
 
+class ChooseSave(Scene):
+
+	def __init__(self, game, pick_type:str):
+		super().__init__(game)
+		self.scene_type = 'choose save'
+		self.pick_type = pick_type
+		self.game.screen = pygame.display.set_mode((1400,800))
+		self.savedata = self.get_save_data()
+		self.buttons = []
+		# self.plate1 = scale_images([get_image('../assets/ui/menu/plate1.png')], (800, 400))[0]
+		self.plate1 = '../assets/ui/menu/plate1.png'
+		# self.plate2 = scale_images([get_image('../assets/ui/menu/plate2.png')], (800, 400))[0]
+		self.plate2 = '../assets/ui/menu/plate2.png'
+		self.handle_buttons()
+
+		self.background = scale_images([get_image('../assets/backgrounds/cavern1.png')], (1440, 1440))[0]
+
+		self.statbook = scale_images([get_image('../assets/ui/menu/main_menu/alpha/book50.png')], (996, 996))[0]
+
+	def get_save_data(self):
+		try:
+			with open('./SAVES/savedata.json', 'r') as savefile: data = json.load(savefile)
+		except:
+			print('ERROR: unable to load save data...\n')
+		
+		return data
+
+	def handle_buttons(self):
+		index = 1
+		for index, save in enumerate(self.savedata):
+			index += 1
+			if self.savedata[f'SAVE{index}']["SAVENAME"] not in ['']:
+				savename = self.savedata[f'SAVE{index}']["SAVENAME"]
+				textsize = 1
+				textcolor = PANEL_COLOR
+			else:
+				savename = f'SAVE{index}'
+				textsize = 1
+				textcolor = PANEL_COLOR
+				# textcolor = [255,255,255]
+			
+			# print('save number', index, 'save data', save)
+			
+			self.buttons.append(
+				NewButton(
+					self.game,
+					(400,200),
+					savename,
+					(220, 50 + 212 *index),
+					None,
+					self.plate1,
+					self.plate2,
+					text_size=textsize,
+					text_color=textcolor
+				)
+			)
+
+	def stat_book(self):
+		self.game.screen.blit(self.statbook, (410,20))
+
+	def draw(self):
+		self.game.screen.blit(self.background, (0,0))
+
+		draw_custom_font_text(
+			self.game.screen,
+			self.game.alphabet,
+			self.game.player.savename,
+			128,
+			(200, self.game.screen.get_rect().top + 20),
+			[]
+		)
+
+		index = 1
+		for index, button in enumerate(self.buttons):
+			index += 1
+			button.draw()
+
+			if str(button.text) in ['SAVE1', 'SAVE2', 'SAVE3']:
+				text = 'no data'
+			else:
+				text = str(button.text)
+
+			draw_custom_font_text(
+				self.game.screen,
+				self.game.alphabet,
+				text,
+				18,
+				(button.rect.centerx - 120, button.rect.centery - 5),
+				[' ']
+			)
+
+			if button.clicked and self.pick_type in ['new game']:
+				try:
+					save_game(self.game.world, self.game.player, f'SAVE{index}')
+				except:
+					print('ERROR: unable to configure save data...\n')
+
+				self.game.player.saveslot = f'SAVE{index}'
+				self.game.scenes = [LoadingScreen(self.game)]
+
+			elif button.clicked and self.pick_type in ['play game']:
+				try:
+					load_save(self.game.world, self.game.player, f'SAVE{index}')
+				except:
+					print('ERROR: unable to configure save data...\n')
+				
+				self.game.player.saveslot = f'SAVE{index}'
+				self.game.scenes = [LoadingScreen(self.game)]
+
+
+		self.stat_book()
+
+		self.universal_draw()
+
+	def update(self):
+		self.universal_updates()
+
+		pressed_keys = pygame.key.get_pressed()
+		for event in pygame.event.get():
+			self.check_universal_events(pressed_keys, event)
+
+			for button in self.buttons:
+				button.update(event)
+
+
+class LoadingScreen(Scene):
+
+	def __init__(self, game):
+		super().__init__(game)
+		self.scene_type = 'main menu'
+		self.game = game
+		self.game.screen = pygame.display.set_mode((1400,800))
+		self.buttons = []
+		
+		# animation
+		self.size = self.game.screen.get_size()
+		self.status = 'alpha'
+		self.frame_index = 0
+		self.animation_speed = 0.23
+		self.import_assets()
+		self.animation = self.animations[self.status]
+		self.begin_launch = False
+		self.counter = 0
+
+	def import_assets(self):
+		self.animation_keys = {'alpha':[]} 
+
+		for animation in self.animation_keys:
+			full_path = MAIN_MENU_SHORTCUT + animation
+			
+			original_images = new_import_folder(full_path)
+			scaled_images = scale_images(original_images, self.size)
+			
+			self.animation_keys[animation] = new_import_folder(full_path)
+
+		self.animations = self.animation_keys
+	
+	def animate(self):
+		animation = self.animation_keys[self.status]
+		self.frame_index += self.animation_speed
+
+		if self.frame_index >= len(animation):
+			self.frame_index = self.frame_index - 1
+			self.begin_launch = True
+
+		self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+
+	def draw(self):
+		self.animate()
+		self.universal_draw()
+		self.game.screen.fill([0,0,0])
+
+		self.game.screen.blit(self.image, (-10, 50))
+		title = scale_images([get_image('../assets/title.png')], (960, 960))[0]
+		if self.begin_launch:
+			self.counter += 0.1 * self.game.dt
+			title.set_alpha(25*self.counter)
+			self.game.screen.blit(title, (220, -150))
+		if self.counter > 10:
+			self.game.screen.blit(title, (220, -150))
+
+		for button in self.buttons:
+			button.draw()
+
+	def update(self):
+		self.universal_updates()
+		pressed_keys = pygame.key.get_pressed()
+		for event in pygame.event.get():
+			self.check_universal_events(pressed_keys, event)
+
+		if self.counter >= 10:
+			self.begin_launch = False
+		if int(self.counter) == 14:
+			self.game.scenes = [WorldScene(self.game)]
+
+ 
 class WorldScene(Scene):
 	def __init__(self, game):
 		super().__init__(game)
@@ -382,16 +607,13 @@ class WorldScene(Scene):
 		if not self.events:
 			return
 
+		pressed_keys = pygame.key.get_pressed()
 		for event in pygame.event.get():
 			self.universal_updates()
-			# quit
-			if event.type == pygame.QUIT:
-				print('Game Closed\n')
-				pygame.quit()
-				sys.exit()
+			self.check_universal_events(pressed_keys, event)
 
 			# button clicked
-			elif event.type == pygame.MOUSEBUTTONDOWN:
+			if event.type == pygame.MOUSEBUTTONDOWN:
 				if event.button == 4:  # Mouse wheel up
 					self.player.active_spell_slot = 2
 					self.player.switch_active_spell()
@@ -418,10 +640,18 @@ class WorldScene(Scene):
 
 			# button released
 			
+
 			# key pressed
 			elif event.type == pygame.KEYDOWN:
+				# if event.key == pygame.K_m:
+				# 	save_game(self.game.world, self.game.player, self.game.player.saveslot)
+				# if event.key == pygame.K_l:
+				# 	self.player.rect.x = 500
+				# 	load_save(self.game.world, self.game.player, self.game.player.saveslot)
+
+
 				if event.key == pygame.K_ESCAPE:
-					if len(self.game.scenes) == 1:
+					if self.game.scenes[0].scene_type == 'world':
 						self.game.scenes.append(RadialMenu(self.game))
 						self.events = False
 				if event.key == pygame.K_F8:

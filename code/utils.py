@@ -96,10 +96,11 @@ class NewButton():
 						elif self.id is not None:
 							self.function(self.id)
 						else:
-							self.function()                
+							self.function()
+			if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+				self.clicked = False         
 		else:
 			self.is_hovered = False
-			self.clicked = False
 
 	def draw(self) -> None:
 		self.surf.fill((0,0,0,0))
