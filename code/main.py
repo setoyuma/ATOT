@@ -96,7 +96,7 @@ class Game():
 	def __init__(self):
 		self.setup_pygame()
 		self.setup_world()
-
+		self.playable = False
 		self.particles = []
 
 		self.show_fps = False

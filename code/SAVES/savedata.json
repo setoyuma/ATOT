@@ -1,14 +1,14 @@
 {
     "SAVE1": {
         "SAVENAME": "abbicus",
-        "X": 419,
-        "Y": 880,
+        "X": 1279,
+        "Y": 1072,
         "Position": [
             320.0,
             576.0
         ],
-        "Health": 76,
-        "Magick": 91,
+        "Health": 46,
+        "Magick": 120,
         "Direction": true,
         "Spells": [
             "windblade",

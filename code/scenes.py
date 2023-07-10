@@ -709,7 +709,6 @@ class WorldScene(Scene):
 		self.game.world.update()
 		self.game.world.update_enemies(self.game.dt, self.game.screen, self.game.world.tile_rects, self.game.world.constraint_rects)
 		self.player.update(self.game.dt, self.game.screen, self.game.world.tile_rects)
-		self.game.camera.update_position()
 
 		# drawing
 		self.game.update_background()
@@ -721,6 +720,7 @@ class WorldScene(Scene):
 		self.game.world.update_items(self.game.screen)
 		self.game.world.update_FX(self.game.screen)
 
+		self.game.camera.update_position()
 		# for enemy in self.world.enemies:
 		# 	enemy.show_rects(self.game.screen)
 
