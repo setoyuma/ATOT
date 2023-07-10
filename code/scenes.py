@@ -496,13 +496,17 @@ class ChooseSave(Scene):
 				self.game.scenes = [LoadingScreen(self.game)]
 
 			elif button.clicked and self.pick_type in ['play game']:
-				try:
-					load_save(self.game.world, self.game.player, f'SAVE{index}')
-				except:
-					print('ERROR: unable to configure save data...\n')
-				
-				self.game.player.saveslot = f'SAVE{index}'
-				self.game.scenes = [LoadingScreen(self.game)]
+				if button.text in [f'SAVE{index}']:
+					print('no data present...\nredirecting to new save creation...\n')
+					self.game.scenes = [CreateNewGame(self.game)]
+				else:
+					try:
+						load_save(self.game.world, self.game.player, f'SAVE{index}')
+					except:
+						print('ERROR: unable to configure save data...\n')
+
+					self.game.player.saveslot = f'SAVE{index}'
+					self.game.scenes = [LoadingScreen(self.game)]
 
 
 		self.stat_book()
