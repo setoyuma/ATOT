@@ -862,7 +862,7 @@ class Player(Entity):
 		# if self.attacking:
 		# 	print(int(self.animator.frame_index)  + 1)
 
-		print('my saveslot',self.saveslot, 'my savename', self.savename)
+		# print('my saveslot',self.saveslot, 'my savename', self.savename)
 
 		
 
