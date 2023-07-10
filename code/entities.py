@@ -737,7 +737,6 @@ class Player(Entity):
 			surface.blit(surf, rect.topleft - self.game.camera.level_scroll)
 
 	def update(self, dt, surface:pygame.Surface, terrain:list):
-		self.incoming_damage_check()
 		self.move(dt)
 		self.roll(dt)
 		self.dash(dt)

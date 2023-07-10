@@ -353,10 +353,10 @@ class World():
 		self.generate_torch_positions()
 		# draw player
 		self.game.player.draw(surface)
-		# draw foreground
-		self.draw_foreground(surface)
 		# draw enemies
 		self.draw_enemies(surface)
+		# draw foreground
+		self.draw_foreground(surface)
 		# draw vfx
 		self.update_FX(surface)
 		self.world_FX()
