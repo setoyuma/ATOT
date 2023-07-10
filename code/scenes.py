@@ -586,10 +586,10 @@ class LoadingScreen(Scene):
 		self.game.screen.blit(self.image, (-10, 50))
 		title = scale_images([get_image('../assets/title.png')], (960, 960))[0]
 		if self.begin_launch:
-			self.counter += self.game.dt
+			self.counter += 0.1 * self.game.dt
 			title.set_alpha(25*self.counter)
 			self.game.screen.blit(title, (220, -150))
-		if self.counter > 10:
+		if self.counter > 8:
 			self.game.screen.blit(title, (220, -150))
 
 		for button in self.buttons:
@@ -601,12 +601,12 @@ class LoadingScreen(Scene):
 		for event in pygame.event.get():
 			self.check_universal_events(pressed_keys, event)
 
-		if self.counter >= 10:
+		if self.counter >= 8:
 			self.begin_launch = False
-		# if int(self.counter) == 11 and self.load_type in ['launch']:
+		if int(self.counter) == 10 and self.load_type in ['launch']:
 			self.game.scenes = [WorldScene(self.game)]
-		# elif int(self.counter) == 11 and self.load_type in ['exit']:
-		# 	self.game.scenes = [Launcher(self.game)]
+		elif int(self.counter) == 10 and self.load_type in ['exit']:
+			self.game.scenes = [Launcher(self.game)]
  
  
 class WorldScene(Scene):
