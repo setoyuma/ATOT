@@ -1,4 +1,4 @@
-from BLACKFORGE2 import *
+from BLACKFORGE2DEV import *
 from CONSTANTS import *
 from projectile import *
 from utils import *
@@ -221,7 +221,7 @@ class Enemy(Entity):
 
 		for animation in self.animation_keys:
 			full_path = ENEMY_PATH + enemy_name + '/' + animation
-			original_images = new_import_folder(full_path)
+			original_images = import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
 			self.animation_keys[animation] = scaled_images
 
@@ -486,7 +486,7 @@ class Player(Entity):
 		# animation
 		self.frame_index = 0
 		self.animation_speed = 0.25
-		self.animator = NewAnimator(self.game, self.animation_speed)
+		self.animator = Animator(self.game, self.animation_speed)
 
 		self.rect = pygame.Rect((self.rect.x, self.rect.y), (32, self.image.get_height()/2))
 
@@ -527,8 +527,9 @@ class Player(Entity):
 
 		for animation in self.animation_keys:
 			full_path = CHAR_PATH + animation
-			original_images = new_import_folder(full_path)
+			original_images = import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
+			
 			self.animation_keys[animation] = scaled_images
 
 		self.animations = self.animation_keys
@@ -549,6 +550,8 @@ class Player(Entity):
 		
 		if not self.vulnerable:
 			self.image.set_alpha(sine_wave_value())
+		else:
+			self.image.set_alpha(255)
 
 		# self.image = alryn_pallete_swap(
 		# 	self.image,
@@ -812,4 +815,5 @@ class Player(Entity):
 
 		# stats
 		if self.magick > CHARACTERS[self.character]["MAGICK"]:
+			self.magick = CHARACTERS[self.character]["MAGICK"]
 			self.magick = CHARACTERS[self.character]["MAGICK"]

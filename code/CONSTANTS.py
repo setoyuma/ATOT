@@ -1,4 +1,4 @@
-from BLACKFORGE2 import *
+from BLACKFORGE2DEV import *
 
 
 notes = {
@@ -111,6 +111,34 @@ seto_colors = {
 		3: [80, 50, 50], # brown
 	}
 }
+
+""" WORLD DATA """
+WORLDS = {
+	'church_of_melara':{
+		'csv': {
+			'terrain': '../levels/church_of_melara2/church_of_melara2_terrain.csv',
+			'player': '../levels/church_of_melara2/church_of_melara2_player.csv',
+			'enemy': '../levels/church_of_melara2/church_of_melara2_enemy.csv',
+			'torch': '../levels/church_of_melara2/church_of_melara2_torch.csv',
+			'foreground': '../levels/church_of_melara2/church_of_melara2_foreground.csv',
+			'midground': '../levels/church_of_melara2/church_of_melara2_midground.csv',
+			'background': '../levels/church_of_melara2/church_of_melara2_background.csv',
+		},
+		'music': ['FrozenWinds']
+
+	},
+	'test map': {
+		'csv': {
+			'terrain': '../levels/test_map/test_map_terrain.csv',
+			'player': '../levels/test_map/test_map_player.csv',
+			'torch': '../levels/test_map/test_map_torch.csv',
+			'foreground': '../levels/test_map/test_map_foreground.csv',
+			'enemy': '../levels/test_map/test_map_enemy.csv',
+		},
+		'music': ['FrozenWinds']
+	}
+}
+
 
 """ CHARACTER STATS """
 CHARACTERS = {

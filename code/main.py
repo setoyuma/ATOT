@@ -1,9 +1,8 @@
 import random, time
 from math import sin
-from BLACKFORGE2 import *
+from BLACKFORGE2DEV import *
 from CONSTANTS import *
 
-from world_data import worlds,world_names, music
 from entities import *
 from scenes import *
 
@@ -18,6 +17,10 @@ class UI:
 		self.player_hud = scale_images([self.player_hud], (460,127))[0]
 		self.player_portrait = scale_images([self.player_portrait], (87,81))[0]
 		# self.spell_image = get_image()
+		
+		self.spell_1_image = get_image(SPELL_PATH+self.game.player.active_spell+'/'+self.game.player.active_spell+'1'+'.png')
+		self.spell_1_image = scale_images([self.spell_1_image], (96,96))
+		self.spell_1_image = self.spell_1_image[0]
 
 	def update_spell_shard_count(self):
 		spell_shard_img = get_image('../assets/items/magick/magick_shard/magick_shard1.png')
@@ -26,11 +29,7 @@ class UI:
 
 	def update_spell_slot(self):
 		spell_slot_1_rect = pygame.Rect((1, SCREEN_HEIGHT - 121), (96,96))
-		spell_1_image = get_image(SPELL_PATH+self.game.player.active_spell+'/'+self.game.player.active_spell+'1'+'.png')
-		spell_1_image = scale_images([spell_1_image], (96,96))
-		spell_1_image = spell_1_image[0]
-		self.display.blit(spell_1_image, spell_slot_1_rect)
-		# pygame.draw.rect(self.display, [0,0,0], spell_slot_1_rect)
+		self.display.blit(self.spell_1_image, spell_slot_1_rect)
 
 	def update_player_HUD(self):
 		# under bars
@@ -72,7 +71,7 @@ class Cursor():
 			original_images = import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
 			
-			self.animation_keys[animation] = import_folder(full_path)
+			self.animation_keys[animation] = scaled_images
 
 		self.animations = self.animation_keys
 	
@@ -83,7 +82,7 @@ class Cursor():
 		if self.frame_index >= len(animation):
 			self.frame_index = self.frame_index - 1
 
-		self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+		self.image = animation[int(self.frame_index)]
 
 	def draw(self, surface:pygame.Surface):
 		surface.blit(self.image, self.position)
@@ -147,8 +146,8 @@ class Game:
 		self.enemy_sprites = pygame.sprite.Group()
 
 		# create world
-		self.current_world = 4
-		self.world = World(self, worlds[self.current_world])
+		self.current_world = 'church_of_melara'
+		self.world = World(self, WORLDS[self.current_world]['csv'])
 
 		# create player
 		self.player_sprite_group = pygame.sprite.GroupSingle()
@@ -173,7 +172,7 @@ class Game:
 		]
 		self.full_background = scale_images(self.full_background, (self.world.level_width, self.world.level_height))
 
-		pygame.mixer.music.load(f'../assets/music/{world_names[self.current_world]}/{music[world_names[self.current_world]]}.wav')
+		pygame.mixer.music.load(f'../assets/music/{self.current_world}/{WORLDS[self.current_world]["music"][0]}.wav')
 		# pygame.mixer.music.play(-1)
 		pygame.mixer.music.set_volume(0.1)
 
@@ -229,18 +228,10 @@ class Camera():
 	def vertical_scroll(self):
 		self.level_scroll.y += (((self.player.rect.centery - 180) - self.level_scroll.y - (HALF_HEIGHT - self.player.size.y + 120)) / self.interpolation * self.scroll_speed) * self.game.dt
 
-	def pan_cinematic(self):
-		pass
-
 	def hit_shake(self):
 		if self.shake_timer > 0 and self.shake:
 			# if sine_wave_value() > 0:
 			self.level_scroll.x += (random.randint(-100, 100) / self.interpolation * self.scroll_speed) * self.game.dt
-			
-			# (((self.player.rect.centerx - 180) - self.level_scroll.x - (HALF_HEIGHT - self.player.size.x)) / self.interpolation * self.scroll_speed)
-
-			# if sine_wave_value() > 0:
-			# self.level_scroll.y += random.randint(-100, 100)# (((self.player.rect.centery - 180) - self.level_scroll.y - (HALF_HEIGHT - self.player.size.y)) / self.interpolation * self.scroll_speed)
 
 	def update_position(self):
 		self.horizontal_scroll()

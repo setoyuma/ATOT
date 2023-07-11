@@ -1,14 +1,15 @@
 import os
 from functools import partial
 
-from BLACKFORGE2 import *
+from BLACKFORGE2DEV import *
 from CONSTANTS import *
 from entities import *
 from particle import *
 from utils import *
-from world_data import *
 from world import World
 from save import *
+
+
 
 
 class Scene:
@@ -35,10 +36,6 @@ class Scene:
 	def check_universal_events(self, pressed_keys, event):
 		quit_attempt = False
 		if event.type == pygame.QUIT:
-			try:
-				save_game(self.game.world, self.game.player, self.game.player.saveslot)
-			except:
-				print('unable to save game\ngame will now close...\n')
 			quit_attempt = True
 		elif event.type == pygame.KEYDOWN:
 			alt_pressed = pressed_keys[pygame.K_LALT] or \
@@ -55,9 +52,15 @@ class Launcher(Scene):
 		super().__init__(game)
 		self.scene_type = 'launcher'
 		self.status = 'alpha'
-		self.bg = scale_images([get_image('../assets/backgrounds/cavern1.png')], (1440, 1440))[0]
 		self.game.screen = pygame.display.set_mode((1400,800))
 		self.size = pygame.math.Vector2(800,800)
+
+		# assets
+		self.bg = scale_images([get_image('../assets/backgrounds/cavern1.png')], (1440, 1440))[0]
+		self.savior_systems = scale_images([get_image('../assets/ss/logo.png')], (105, 103))[0]
+		self.patch_plate = get_image('../assets/ui/menu/launcher/patch_notes_plate1.png')
+
+
 		# animation
 		self.frame_index = 0
 		self.animation_speed = 0.38
@@ -68,8 +71,8 @@ class Launcher(Scene):
 		img = '../assets/ui/buttons/button_plate1.png'
 		hover_img = '../assets/ui/buttons/button_plate2.png'
 		self.buttons = [
-			NewButton(self.game, (128,64), "new", (162, 655), self.load_new, img, hover_img, text_color=PANEL_COLOR, text_size=1),
-			NewButton(self.game, (128,64), "play", (360, 655), self.choose_save, img, hover_img, text_color=PANEL_COLOR, text_size=1)
+			Button(self.game, (128,64), "new", (162, 655), self.load_new, img, hover_img, text_color=PANEL_COLOR, text_size=1),
+			Button(self.game, (128,64), "play", (360, 655), self.choose_save, img, hover_img, text_color=PANEL_COLOR, text_size=1)
 		]
 
 	def handle_buttons(self):
@@ -89,9 +92,10 @@ class Launcher(Scene):
 		for animation in self.animation_keys:
 			full_path = LAUNCHER_ASSET_PATH + animation
 			
-			original_images = new_import_folder(full_path)
+			original_images = import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
 			
+			self.animation_keys[animation] = scaled_images
 			self.animation_keys[animation] = scaled_images
 
 		self.animations = self.animation_keys
@@ -104,10 +108,10 @@ class Launcher(Scene):
 			self.frame_index = self.frame_index - 1
 
 		self.image = animation[int(self.frame_index)]
+		self.image = animation[int(self.frame_index)]
 
 	def patch_notes(self):
 		patch_notes_rect = pygame.Rect((100,150),(200,175))
-		self.patch_plate = get_image('../assets/ui/menu/launcher/patch_notes_plate1.png')
 		self.game.screen.blit(self.patch_plate, (8, 8))
 
 		patch_notes = ['Launcher', 'Game']
@@ -115,9 +119,7 @@ class Launcher(Scene):
 		draw_custom_font_text(self.game.screen, self.game.alphabet, notes[patch_notes[0]], 42, (100,115), [' ', '.'])
 
 	def draw_footer(self):
-		savior_systems = scale_images([get_image('../assets/ss/logo.png')], (105, 103))[0]
-
-		self.game.screen.blit(savior_systems, (1296, 695))
+		self.game.screen.blit(self.savior_systems, (1296, 695))
 
 	def choose_save(self):
 		self.game.scenes = [ChooseSave(self.game, 'play game')]
@@ -143,7 +145,6 @@ class Launcher(Scene):
 		self.game.screen.fill([0,0,0])
 		self.game.screen.blit(self.bg, (0,0))
 		self.game.screen.blit(self.image, (550,-50))
-		# self.game.screen.blit(self.logo, (0,-200))
 		self.patch_notes()
 
 		# draw
@@ -169,6 +170,7 @@ class CreateNewGame(Scene):
 		self.layout_keyboard()
 		self.handle_buttons()
 		self.background = scale_images([get_image('../assets/ui/keyboards/alpha/alpha1.png')], self.game.screen.get_size())[0]
+		self.torch_img = scale_images([get_image('../assets/terrain/torch.png')], (160, 200))[0]
 
 		# animation
 		self.size = self.game.screen.get_size()
@@ -184,10 +186,10 @@ class CreateNewGame(Scene):
 		for animation in self.animation_keys:
 			full_path = KEYBOARD_BACKGROUNDS_SHORTCUT + animation
 			
-			original_images = new_import_folder(full_path)
+			original_images = import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
 			
-			self.animation_keys[animation] = new_import_folder(full_path)
+			self.animation_keys[animation] = scaled_images
 
 		self.animations = self.animation_keys
 	
@@ -198,7 +200,7 @@ class CreateNewGame(Scene):
 		if self.frame_index >= len(animation):
 			self.frame_index = 0
 
-		self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+		self.image = animation[int(self.frame_index)]
 
 	def layout_keyboard(self):
 		self.keyboard_rect = pygame.Rect((120, 360), (self.game.screen.get_width() - 245, self.game.screen.get_height() - 420))
@@ -230,7 +232,6 @@ class CreateNewGame(Scene):
 
 	def handle_buttons(self):
 		# text
-
 		for index, letter in enumerate(self.game.alphabet):
 			img = self.game.font[index]
 
@@ -242,7 +243,7 @@ class CreateNewGame(Scene):
 				row = (265 + 96 * index, 455)
 			
 			self.buttons.append(
-				NewButton(
+				Button(
 					self.game,
 					96,
 					letter, 
@@ -258,7 +259,7 @@ class CreateNewGame(Scene):
 		# back button
 		back_img = '../assets/ui/menu/back_arrow.png'
 		back_img2 = '../assets/ui/menu/back_arrow2.png'
-		self.back_button = NewButton(
+		self.back_button = Button(
 				self.game,
 				(96, 96),
 				'back', 
@@ -275,7 +276,7 @@ class CreateNewGame(Scene):
 		# confirm button
 		confirm_img = '../assets/ui/menu/done_check.png'
 		confirm_img2 = '../assets/ui/menu/done_check2.png'
-		self.done_button = NewButton(
+		self.done_button = Button(
 				self.game,
 				(96, 96),
 				'done', 
@@ -298,12 +299,6 @@ class CreateNewGame(Scene):
 			torch_rect_2
 		]
 
-		img = scale_images([get_image('../assets/terrain/torch.png')], (160, 200))[0]
-
-		# show torch rects
-		# pygame.draw.rect(self.game.screen, 'blue', torch_rect_1)
-		# pygame.draw.rect(self.game.screen, 'blue', torch_rect_2)
-
 		for rect in self.torch_rects:
 			for i in range(8):
 				self.particles.append(
@@ -320,16 +315,11 @@ class CreateNewGame(Scene):
 						)
 				)
 
-		self.game.screen.blit(img, (torch_rect_1.x - 33, torch_rect_1.y))
-		self.game.screen.blit(img, (torch_rect_2.x - 33, torch_rect_2.y))
+		self.game.screen.blit(self.torch_img, (torch_rect_1.x - 33, torch_rect_1.y))
+		self.game.screen.blit(self.torch_img, (torch_rect_2.x - 33, torch_rect_2.y))
 
 	def draw(self):
 		self.game.screen.fill([0,0,0])
-		
-		# show keyboard rect
-		# surf = pygame.Surface((self.keyboard_rect.width, self.keyboard_rect.height))
-		# surf.fill('green')
-		# self.game.screen.blit(surf, (self.keyboard_rect.x, self.keyboard_rect.y))
 		
 		# keyboard background
 		self.game.screen.blit(self.image, (0,-10))
@@ -409,12 +399,12 @@ class ChooseSave(Scene):
 				text = os.path.splitext(file_list[x])[0]
 			textsize = 1
 			textcolor = PANEL_COLOR
-			self.buttons.append(NewButton(self.game, (400, 200), text, (220, 50 + 212 * (x + 1)), partial(self.callback, text), self.plate1, self.plate2, text_size=textsize, text_color=textcolor))
+			self.buttons.append(Button(self.game, (400, 200), text, (220, 50 + 212 * (x + 1)), partial(self.callback, text), self.plate1, self.plate2, text_size=textsize, text_color=textcolor))
 
 		# back button
 		back_img = '../assets/ui/menu/back_arrow.png'
 		back_img2 = '../assets/ui/menu/back_arrow2.png'
-		self.buttons.append(NewButton(self.game, (96, 96), 'back', (1340, 50), self.back, back_img, back_img2, text_color=[0,0,0], text_size=0))
+		self.buttons.append(Button(self.game, (96, 96), 'back', (1340, 50), self.back, back_img, back_img2, text_color=[0,0,0], text_size=0))
 
 	def stat_book(self):
 		self.game.screen.blit(self.statbook, (410,20))
@@ -480,6 +470,7 @@ class LoadingScreen(Scene):
 		self.game = game
 		self.game.screen = pygame.display.set_mode((1400,800))
 		self.buttons = []
+		self.title = scale_images([get_image('../assets/title.png')], (960, 960))[0]
 		
 		# animation
 		self.size = self.game.screen.get_size()
@@ -497,10 +488,10 @@ class LoadingScreen(Scene):
 		for animation in self.animation_keys:
 			full_path = MAIN_MENU_SHORTCUT + animation
 			
-			original_images = new_import_folder(full_path)
+			original_images = import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
 			
-			self.animation_keys[animation] = new_import_folder(full_path)
+			self.animation_keys[animation] = scaled_images
 
 		self.animations = self.animation_keys
 	
@@ -512,7 +503,7 @@ class LoadingScreen(Scene):
 			self.frame_index = self.frame_index - 1
 			self.begin_launch = True
 
-		self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+		self.image = animation[int(self.frame_index)]
 
 	def draw(self):
 		self.animate()
@@ -520,13 +511,12 @@ class LoadingScreen(Scene):
 		self.game.screen.fill([0,0,0])
 
 		self.game.screen.blit(self.image, (-10, 50))
-		title = scale_images([get_image('../assets/title.png')], (960, 960))[0]
 		if self.begin_launch:
 			self.counter += 0.1 * self.game.dt
-			title.set_alpha(25*self.counter)
-			self.game.screen.blit(title, (220, -150))
+			self.title.set_alpha(25*self.counter)
+			self.game.screen.blit(self.title, (220, -150))
 		if self.counter > 8:
-			self.game.screen.blit(title, (220, -150))
+			self.game.screen.blit(self.title, (220, -150))
 
 		for button in self.buttons:
 			button.draw()
@@ -551,8 +541,8 @@ class WorldScene(Scene):
 		super().__init__(game)
 		self.scene_type = 'world'
 		self.game.screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pygame.SCALED)
-		self.game.current_level = 0
-		self.game.world = World(game, worlds[self.game.current_level])
+		self.game.current_level = 'church_of_melara'
+		self.game.world = World(game, WORLDS[self.game.current_level]['csv'])
 		self.events = True
 		self.player = self.game.player
 		self.world = self.game.world
@@ -713,15 +703,15 @@ class RadialMenu(Scene):
 		self.section_radius = 200  # distance from the center to each section
 		self.sections = len(self.icons) # resume // settings // inventory // spells // equipment
 		self.section_arc = 360 / self.sections
-		self.button = NewButton(game, 32, "", (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-184), self.callback, base=(0,0,100,50), hovered=(0,0,100,50))
+		self.button = Button(game, 32, "", (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-184), self.callback, base=(0,0,100,50), hovered=(0,0,100,50))
 		self.options = ["Equipment", "Grimoire", "Inventory", "Settings"]
 		self.selected = 0
 		
 		exit_img = '../assets/ui/menu/back_arrow.png'
 		exit_img2 = '../assets/ui/menu/back_arrow2.png'
-		self.exit_button = NewButton(game, (96, 101), "exit", (1340, 50), self.exit, exit_img, exit_img2, text_size=1, text_color=[255,255,0])
+		self.exit_button = Button(game, (96, 101), "exit", (1340, 50), self.exit, exit_img, exit_img2, text_size=1, text_color=[255,255,0])
 
-	# animation
+		# animation
 		self.size = (320, 320)
 		self.status = 'alpha'
 		self.frame_index = 0
@@ -737,7 +727,7 @@ class RadialMenu(Scene):
 		for animation in self.animation_keys:
 			full_path = MAIN_MENU_SHORTCUT + animation
 			
-			original_images = new_import_folder(full_path)
+			original_images = import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
 			
 			self.animation_keys[animation] = scaled_images
@@ -844,10 +834,10 @@ class Settings(Scene):
 		for animation in self.animation_keys:
 			full_path = MAIN_MENU_SHORTCUT + animation
 			
-			original_images = new_import_folder(full_path)
+			original_images = import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
 			
-			self.animation_keys[animation] = new_import_folder(full_path)
+			self.animation_keys[animation] = scaled_images
 
 		self.animations = self.animation_keys
 	
@@ -859,8 +849,7 @@ class Settings(Scene):
 			self.frame_index = self.frame_index - 1
 			self.begin_launch = True
 
-		self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
-
+		self.image = animation[int(self.frame_index)]
 
 	def draw(self):
 		self.universal_draw()

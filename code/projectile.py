@@ -1,4 +1,4 @@
-from BLACKFORGE2 import *
+from BLACKFORGE2DEV import *
 from CONSTANTS import *
 
 class Projectile(pygame.sprite.Sprite):
