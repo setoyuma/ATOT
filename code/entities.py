@@ -34,10 +34,9 @@ class Weapon(pygame.sprite.Sprite):
 
 
 class Item(Entity):
-
 	def __init__(self, game, item_name, type, size, position, speed, groups):
 		super().__init__(size, position, speed, groups)
-		self.entity_type = 'item'
+		self.entity_type = "item"
 		self.game = game
 		self.type = type
 		self.item_name = item_name
@@ -166,21 +165,13 @@ class Item(Entity):
 
 
 class Enemy(Entity):
-	
 	def __init__(self, game, enemy_name, speed, size, position, groups):
 		super().__init__(size, position, speed, groups)
-		self.entity_type = 'enemy'
+		self.entity_type = "enemy"
 		self.game = game
 		self.grab_stats(enemy_name)
 		self.import_assets(enemy_name)
 
-		self.directions = [
-			'left',
-			'right',
-		]
-		self.direction_facing = random.choice(self.directions)
-		self.patrol_timer = 0
-		
 		# status
 		self.vulnerable = True
 		self.can_attack = True
@@ -189,6 +180,7 @@ class Enemy(Entity):
 		if self.name in ['Covenant Follower']:
 			self.cast_range_rect = pygame.Rect(self.rect.topleft, (self.cast_range, self.cast_range))
 			self.cast_timer = 0
+
 		# vfx
 		self.spells = []
 		self.particles = []
@@ -198,9 +190,9 @@ class Enemy(Entity):
 		self.frame_index = 0
 		self.animation = self.animation_keys[self.status]
 		self.animation_speed = 0.25
+		self.patrol_timer = 0
 
 		self.hurtbox = pygame.Rect(self.rect.center, (64, 64))
-
 		self.rects = [self.rect]
 
 	def grab_stats(self, enemy_name):
@@ -229,11 +221,9 @@ class Enemy(Entity):
 
 		for animation in self.animation_keys:
 			full_path = ENEMY_PATH + enemy_name + '/' + animation
-			
-			original_images = import_folder(full_path)
+			original_images = new_import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
-			
-			self.animation_keys[animation] = import_folder(full_path)
+			self.animation_keys[animation] = scaled_images
 
 		self.animations = self.animation_keys
 	
@@ -244,10 +234,10 @@ class Enemy(Entity):
 			self.frame_index = 0
 			if self.status == 'attack':
 				self.can_attack = False
-		if self.direction_facing == 'right':
-			self.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.size), True, False)
-		elif self.direction_facing == 'left':
-			self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+		if self.facing_right:
+			self.image = pygame.transform.flip(animation[int(self.frame_index)], True, False)
+		else:
+			self.image = animation[int(self.frame_index)]
 
 		if self.name in ['Covenant Follower']:
 			if self.attacking and self.status == 'attack':
@@ -264,11 +254,6 @@ class Enemy(Entity):
 			self.direction = self.get_player_distance_direction(player)[1]
 		else:
 			self.direction = pygame.math.Vector2()
-
-		if self.direction.x > 0:
-			self.direction_facing = 'right'
-		elif self.direction.x < 0:
-			self.direction_facing = 'left'
 
 	def attack(self):
 		if self.name in ['Covenant Follower']:
@@ -306,24 +291,23 @@ class Enemy(Entity):
 	def check_constraints(self, contraints:list):
 		for constraint in contraints:
 			if self.rect.colliderect(constraint):
-				if self.direction_facing == 'right':
-					self.direction_facing = 'left'
+				self.facing_right = not self.facing_right
+				if self.facing_right:
 					self.rect.x + 10
-				elif self.direction_facing == 'left':
-					self.direction_facing = 'right'
+				else:
 					self.rect.x - 10
 
 	def get_player_distance_direction(self,player):
 		enemy_vec = pygame.math.Vector2(self.rect.center)
 		player_vec = pygame.math.Vector2(player.rect.center)
 		distance = (player_vec - enemy_vec).magnitude()
-		
+
 		if self.game.player.rect.colliderect(self.aggro_rect) and distance > 0:
 			direction = (player_vec - enemy_vec).normalize()
 		else:
 			direction = pygame.math.Vector2()
 
-		return (distance,direction)
+		return (distance, direction)
 	
 	def get_status(self, player):
 		distance = self.get_player_distance_direction(player)[0]
@@ -365,10 +349,10 @@ class Enemy(Entity):
 			self.direction *= -self.resistance
 			pass
 		elif not self.vulnerable and int(self.direction.x) == 0:
-			if self.direction_facing == 'right':
+			if self.facing_right:
 				self.direction += (1,1)
 				self.direction *= -self.resistance
-			if self.direction_facing == 'left':
+			else:
 				self.direction -= (1,1)
 				self.direction *= -self.resistance
 
@@ -387,7 +371,9 @@ class Enemy(Entity):
 				self.vulnerable = True
 
 	def status_bar(self):
+		under_bar = pygame.Rect((self.rect.topleft - self.game.camera.level_scroll) - (0, 20), (200, 8))
 		health_bar = pygame.Rect((self.rect.topleft - self.game.camera.level_scroll) - (0, 20), (200 * self.health/self.health_scale, 8))
+		pygame.draw.rect(self.game.screen, [0,0,0], under_bar)
 		pygame.draw.rect(self.game.screen, [255,0,0], health_bar)
 	
 	def draw(self, surface:pygame.Surface):
@@ -447,14 +433,13 @@ class Enemy(Entity):
 
 
 class Player(Entity):
-
 	def __init__(self, game, character, size, position, speed, groups):
 		super().__init__(size, position, speed, groups)
 		# config
+		self.entity_type = "player"
 		self.savename = ''
 		self.savedata = ''
 		self.saveslot = ''
-		self.entity_type = 'player'
 		self.game = game
 		self.character = character
 		self.get_stats()
@@ -501,9 +486,9 @@ class Player(Entity):
 		# animation
 		self.frame_index = 0
 		self.animation_speed = 0.25
-		self.animator = NewAnimator(self.game, self, self.animation_speed)
+		self.animator = NewAnimator(self.game, self.animation_speed)
 
-		self.rect = pygame.Rect( (self.rect.x, self.rect.y), (32, self.image.get_height()/2) )
+		self.rect = pygame.Rect((self.rect.x, self.rect.y), (32, self.image.get_height()/2))
 
 		# collision area
 		self.collision_area = pygame.Rect(self.rect.x, self.rect.y, TILE_SIZE * 3, TILE_SIZE * 3)
@@ -542,17 +527,20 @@ class Player(Entity):
 
 		for animation in self.animation_keys:
 			full_path = CHAR_PATH + animation
-			
 			original_images = new_import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
-			
-			self.animation_keys[animation] = new_import_folder(full_path)
+			self.animation_keys[animation] = scaled_images
 
 		self.animations = self.animation_keys
 	
 	def animation_handler(self):
-		animation = self.animator.animation
 		self.animator.run(self.animations[self.status])
+		animation = self.animator.animation
+
+		if self.facing_right:
+			self.image = animation[int(self.animator.frame_index)]
+		else:
+			self.image = pygame.transform.flip(animation[int(self.animator.frame_index)], True, False)
 
 		if self.status == f'attack/overhead/{self.combo}':
 			if int(self.animator.frame_index) == len(animation) - 1:
@@ -825,5 +813,3 @@ class Player(Entity):
 		# stats
 		if self.magick > CHARACTERS[self.character]["MAGICK"]:
 			self.magick = CHARACTERS[self.character]["MAGICK"]
-		
-

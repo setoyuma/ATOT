@@ -7,8 +7,8 @@ from world_data import worlds,world_names, music
 from entities import *
 from scenes import *
 
-""" GAME """
-class UI():
+
+class UI:
 	def __init__(self, game, surface):
 		self.game = game
 		self.display = surface
@@ -91,8 +91,7 @@ class Cursor():
 	def update(self):
 		pass
 
-class Game():
-	
+class Game:
 	def __init__(self):
 		self.setup_pygame()
 		self.setup_world()

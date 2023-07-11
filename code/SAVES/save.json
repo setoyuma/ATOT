@@ -1,0 +1,17 @@
+{
+    "X": 667,
+    "Y": 1072,
+    "Position": [
+        320.0,
+        576.0
+    ],
+    "Health": 100,
+    "Magick": 108,
+    "MagickShards": 41,
+    "SpellShards": 0,
+    "Direction": true,
+    "Spells": [
+        "windblade",
+        "fireball"
+    ]
+}

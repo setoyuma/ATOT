@@ -1,3 +1,6 @@
+import os
+from functools import partial
+
 from BLACKFORGE2 import *
 from CONSTANTS import *
 from entities import *
@@ -6,6 +9,7 @@ from utils import *
 from world_data import *
 from world import World
 from save import *
+
 
 class Scene:
 	
@@ -16,7 +20,7 @@ class Scene:
 
 	def update(self):
 		pass
-	
+
 	def draw(self):
 		pass
 	
@@ -47,7 +51,6 @@ class Scene:
 
 
 class Launcher(Scene):
-	
 	def __init__(self, game):
 		super().__init__(game)
 		self.scene_type = 'launcher'
@@ -70,7 +73,6 @@ class Launcher(Scene):
 		]
 
 	def handle_buttons(self):
-		# text
 		for button in self.buttons:
 			draw_custom_font_text(
 				self.game.screen,
@@ -79,7 +81,7 @@ class Launcher(Scene):
 				24,
 				(button.rect.x + 18, button.rect.y + 18),
 				[]					
-				)
+			)
 
 	def import_assets(self):
 		self.animation_keys = {'alpha':[]} 
@@ -90,7 +92,7 @@ class Launcher(Scene):
 			original_images = new_import_folder(full_path)
 			scaled_images = scale_images(original_images, self.size)
 			
-			self.animation_keys[animation] = new_import_folder(full_path)
+			self.animation_keys[animation] = scaled_images
 
 		self.animations = self.animation_keys
 	
@@ -101,7 +103,7 @@ class Launcher(Scene):
 		if self.frame_index >= len(animation):
 			self.frame_index = self.frame_index - 1
 
-		self.image = pygame.transform.scale(animation[int(self.frame_index)], self.size)
+		self.image = animation[int(self.frame_index)]
 
 	def patch_notes(self):
 		patch_notes_rect = pygame.Rect((100,150),(200,175))
@@ -114,7 +116,7 @@ class Launcher(Scene):
 
 	def draw_footer(self):
 		savior_systems = scale_images([get_image('../assets/ss/logo.png')], (105, 103))[0]
-		
+
 		self.game.screen.blit(savior_systems, (1296, 695))
 
 	def choose_save(self):
@@ -154,7 +156,6 @@ class Launcher(Scene):
 
 
 class CreateNewGame(Scene):
-	
 	def __init__(self, game):
 		self.scene_type = 'create new'
 		super().__init__(game)
@@ -387,76 +388,33 @@ class CreateNewGame(Scene):
 
 
 class ChooseSave(Scene):
-
 	def __init__(self, game, pick_type:str):
 		super().__init__(game)
 		self.scene_type = 'choose save'
 		self.pick_type = pick_type
 		self.game.screen = pygame.display.set_mode((1400,800))
-		self.savedata = self.get_save_data()
-		self.buttons = []
+		self.background = scale_images([get_image('../assets/backgrounds/cavern1.png')], (1440, 1440))[0]
+		self.statbook = scale_images([get_image('../assets/ui/menu/main_menu/alpha/book50.png')], (996, 996))[0]
 		self.plate1 = '../assets/ui/menu/plate1.png'
 		self.plate2 = '../assets/ui/menu/plate2.png'
-		self.handle_buttons()
+		self.buttons = []
+		self.setup_buttons()
 
-		self.background = scale_images([get_image('../assets/backgrounds/cavern1.png')], (1440, 1440))[0]
-
-		self.statbook = scale_images([get_image('../assets/ui/menu/main_menu/alpha/book50.png')], (996, 996))[0]
-
-	def get_save_data(self):
-		try:
-			with open('./SAVES/savedata.json', 'r') as savefile: data = json.load(savefile)
-		except:
-			print('ERROR: unable to load save data...\n')
-		
-		return data
-
-	def handle_buttons(self):
-		index = 1
-		for index, save in enumerate(self.savedata):
-			index += 1
-			if self.savedata[f'SAVE{index}']["SAVENAME"] not in ['']:
-				savename = self.savedata[f'SAVE{index}']["SAVENAME"]
-				textsize = 1
-				textcolor = PANEL_COLOR
+	def setup_buttons(self):
+		file_list = os.listdir("SAVES")
+		for x in range(3):
+			if len(file_list) - 1 < x:
+				text = "No data"
 			else:
-				savename = f'SAVE{index}'
-				textsize = 1
-				textcolor = PANEL_COLOR
-				# textcolor = [255,255,255]
-			
-			# print('save number', index, 'save data', save)
-			
-			self.buttons.append(
-				NewButton(
-					self.game,
-					(400,200),
-					savename,
-					(220, 50 + 212 *index),
-					None,
-					self.plate1,
-					self.plate2,
-					text_size=textsize,
-					text_color=textcolor
-				)
-			)
+				text = os.path.splitext(file_list[x])[0]
+			textsize = 1
+			textcolor = PANEL_COLOR
+			self.buttons.append(NewButton(self.game, (400, 200), text, (220, 50 + 212 * (x + 1)), partial(self.callback, text), self.plate1, self.plate2, text_size=textsize, text_color=textcolor))
 
 		# back button
 		back_img = '../assets/ui/menu/back_arrow.png'
 		back_img2 = '../assets/ui/menu/back_arrow2.png'
-		self.back_button = NewButton(
-				self.game,
-				(96, 96),
-				'back', 
-				(1340, 50), 
-				self.back,
-				back_img,
-				back_img2,
-				# base_color=[80,80,80],
-				# hover_color=[20,20,20],
-				text_color=[0,0,0], 
-				text_size=0
-				)
+		self.buttons.append(NewButton(self.game, (96, 96), 'back', (1340, 50), self.back, back_img, back_img2, text_color=[0,0,0], text_size=0))
 
 	def stat_book(self):
 		self.game.screen.blit(self.statbook, (410,20))
@@ -464,64 +422,20 @@ class ChooseSave(Scene):
 	def back(self):
 		self.game.scenes = [Launcher(self.game)]
 
-	def draw(self):
-		self.game.screen.blit(self.background, (0,0))
+	def callback(self, slot_name):
+		if self.pick_type in ['new game']:
+			save_game(self.game.world, self.game.player, slot_name)
+			self.game.player.saveslot = slot_name
+			self.game.scenes = [LoadingScreen(self.game, "new game")]
 
-		draw_custom_font_text(
-			self.game.screen,
-			self.game.alphabet,
-			self.game.player.savename,
-			128,
-			(200, self.game.screen.get_rect().top + 20),
-			[]
-		)
-
-		self.back_button.draw()
-
-		index = 1
-		for index, button in enumerate(self.buttons):
-			index += 1
-			button.draw()
-
-			if str(button.text) in ['SAVE1', 'SAVE2', 'SAVE3']:
-				text = 'no data'
+		elif self.pick_type in ['play game']:
+			if slot_name == 'No data':
+				print('no data present...\nredirecting to new save creation...\n')
+				self.game.scenes = [CreateNewGame(self.game)]
 			else:
-				text = str(button.text)
-
-			draw_custom_font_text(
-				self.game.screen,
-				self.game.alphabet,
-				text,
-				18,
-				(button.rect.centerx - 120, button.rect.centery - 5),
-				[' ']
-			)
-
-			if button.clicked and self.pick_type in ['new game']:
-				try:
-					save_game(self.game.world, self.game.player, f'SAVE{index}')
-				except:
-					print('ERROR: unable to configure save data...\n')
-
-				self.game.player.saveslot = f'SAVE{index}'
-				self.game.scenes = [LoadingScreen(self.game, 'launch')]
-
-			elif button.clicked and self.pick_type in ['play game']:
-				if button.text in [f'SAVE{index}']:
-					print('no data present...\nredirecting to new save creation...\n')
-					self.game.scenes = [CreateNewGame(self.game)]
-				else:
-					try:
-						load_save(self.game.world, self.game.player, f'SAVE{index}')
-					except:
-						print('ERROR: unable to configure save data...\n')
-
-					self.game.player.saveslot = f'SAVE{index}'
-					self.game.scenes = [LoadingScreen(self.game, 'launch')]
-
-		self.stat_book()
-
-		self.universal_draw()
+				load_save(self.game.world, self.game.player, slot_name)
+				self.game.player.saveslot = slot_name
+				self.game.scenes = [LoadingScreen(self.game, "launch")]
 
 	def update(self):
 		self.universal_updates()
@@ -532,7 +446,29 @@ class ChooseSave(Scene):
 
 			for button in self.buttons:
 				button.update(event)
-				self.back_button.update(event)
+
+	def draw(self):
+		self.game.screen.blit(self.background, (0,0))
+
+		draw_custom_font_text(self.game.screen, self.game.alphabet, self.game.player.savename, 128, (200, self.game.screen.get_rect().top + 20), [])
+
+		for button in self.buttons:
+			button.draw()
+
+			if button.text != "back":
+				draw_custom_font_text(
+					self.game.screen,
+					self.game.alphabet,
+					button.text,
+					18,
+					(button.rect.centerx - 120, button.rect.centery - 5),
+					[' ']
+				)
+
+		self.stat_book()
+
+		self.universal_draw()
+
 
 
 class LoadingScreen(Scene):

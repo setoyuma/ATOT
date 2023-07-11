@@ -31,13 +31,12 @@ def alryn_pallete_swap(image:pygame.Surface, new_blue:list, new_blue_shadow:list
 
 	return new_image
 
-class NewAnimator():
 
-	def __init__(self, game, target:Entity, animation_speed:int=0.25):
+class NewAnimator:
+	def __init__(self, game, animation_speed:int=0.25):
 		self.game = game
 		self.frame_index = 0
 		self.animation_speed = animation_speed
-		self.target = target
 		self.animation = []
 
 	def animate(self, animation:list):
@@ -48,18 +47,11 @@ class NewAnimator():
 		if int(self.frame_index) + 1 >= len(animation):
 			self.frame_index = 0
 
-		if self.target.facing_right:
-			self.target.image = pygame.transform.scale(animation[int(self.frame_index)], self.target.size)
-		else:
-			self.target.image = pygame.transform.flip(pygame.transform.scale(animation[int(self.frame_index)], self.target.size), True, False)
-
-		# self.target.image = pygame.transform.scale(animation[int(self.frame_index)], self.target.size)
-	
 	def run(self, animation:list):
 		self.animate(animation)
 	
 
-class NewButton():
+class NewButton:
 	def __init__(self, game, size:tuple, text:str, position:tuple, function, base=(0,0,96,96), hovered=(0,0,96,96), base_color=(77,77,255,50), hover_color=(77, 77, 80), text_color=(255,255,255), text_size=60, hovered_pos=None, id=None):
 		self.game = game
 		self.text = text
@@ -217,7 +209,7 @@ def collision_adjust(entity, velocity:pygame.math.Vector2, dt:float, tiles:list)
 			rect.left = tile.right
 	
 	# adjust the entity based on gravity before checking vertical collisions
-	if entity.entity_type in ['player', 'enemy', 'item']:
+	if entity.entity_type in ["player", "enemy", "item"]:
 		entity.physics.apply_gravity(entity, GRAVITY, entity.game.dt)
 
 	# y axis

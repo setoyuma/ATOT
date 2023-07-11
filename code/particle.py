@@ -4,10 +4,9 @@ from utils import *
 
 
 class Particle(pygame.sprite.Sprite):
-	
 	def __init__(self, game, color:list, position:tuple, velocity:tuple, radius:int, groups, glow=False, gravity=False, torch=False, physics=False, image_path='', circle=False):
 		# super().__init__(groups)
-		self.entity_type = 'particle'
+		self.entity_type = "particle"
 		self.game = game
 		self.glow = glow
 		self.circle = circle

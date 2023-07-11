@@ -3,40 +3,46 @@ from CONSTANTS import *
 import json
 
 
-def load_save(world, player, save):
+def load_save(world, player, save:str="save1"):
 	print('loading save...\n')
-	try: 
-		with open("./SAVES/savedata.json", "r") as savefiles: data = json.load(savefiles)
-	except: print("No Save Data...\n")
-	player.rect.centerx, player.rect.centery = data[save]["X"], data[save]["Y"]
-	player.position = pygame.math.Vector2(data[save]["Position"][0], data[save]["Position"][1])
-	player.health = data[save]["Health"]
-	player.magick = data[save]["Magick"]
-	player.magick_shards = data[save]["MagickShards"]
-	player.spell_shards = data[save]["SpellShards"]
-	player.facing_right = data[save]["Direction"]
-	player.bound_spells = data[save]["Spells"]
-	player.savename = data[save]["SAVENAME"]
-	print(data[save]["SAVENAME"], 'save loaded...\n')
-
-
-def save_game(world, player, save):
-	try: 
-		with open("./SAVES/savedata.json", "r") as savefiles: data = json.load(savefiles)
-	except: print("No Memory Card...\n")
-	print('Saving To Memory Card...\n')
-	data[save]["SAVENAME"] = player.savename
-	data[save]["X"], data[save]["Y"] = player.rect.x, player.rect.y
-	data[save]["Position"] = [player.position.x, player.position.y]
-	data[save]["Health"] = player.health
-	data[save]["Magick"] = player.magick
-	data[save]["MagickShards"] = player.magick_shards
-	data[save]["SpellShards"] = player.spell_shards
-	data[save]["Direction"] = player.facing_right
-	data[save]["Spells"] = player.bound_spells
 
 	try: 
-		with open("./SAVES/savedata.json", "w") as savefiles: json.dump(data, savefiles, indent=4)
-	except: print("No Memory Card...\n")
-	print(data[save]["SAVENAME"], 'Saved To Memory Card...\n')
-	player.savename = data[save]["SAVENAME"]
+		with open(f"./SAVES/{save.lower()}.json", "r") as f:
+			data = json.load(f)
+	except FileNotFoundError as e: 
+		print(f"No save file named {save.lower()}...\n", e)
+
+	player.rect.centerx = data["X"]
+	player.rect.centery = data["Y"]
+	player.position = pygame.math.Vector2(data["Position"][0], data["Position"][1])
+	player.health = data["Health"]
+	player.magick = data["Magick"]
+	player.magick_shards = data["MagickShards"]
+	player.spell_shards = data["SpellShards"]
+	player.facing_right = data["Direction"]
+	player.bound_spells = data["Spells"]
+
+	print(f'loaded "{save.lower()}"...\n')
+
+
+def save_game(world, player, save:str="save1"):
+	print('Saving to memory card...\n')
+
+	data = {
+		"X": player.rect.x, 
+		"Y":  player.rect.y,
+		"Position": [player.position.x, player.position.y],
+		"Health": player.health,
+		"Magick": player.magick,
+		"MagickShards": player.magick_shards,
+		"SpellShards": player.spell_shards,
+		"Direction": player.facing_right,
+		"Spells": player.bound_spells
+	}
+
+	try: 
+		with open(f"./SAVES/{save.lower()}.json", "w") as f:
+			json.dump(data, f, indent=4)
+		print(f'Successfully saved to memory card slot "{save}"...\n')
+	except Exception as e:
+		print(f"Error saving to file: {e}\n")
