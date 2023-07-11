@@ -79,7 +79,7 @@ class Launcher(Scene):
 		for button in self.buttons:
 			draw_custom_font_text(
 				self.game.screen,
-				self.game.alphabet,
+				self.game.font,
 				button.text,
 				24,
 				(button.rect.x + 18, button.rect.y + 18),
@@ -116,7 +116,7 @@ class Launcher(Scene):
 
 		patch_notes = ['Launcher', 'Game']
 
-		draw_custom_font_text(self.game.screen, self.game.alphabet, notes[patch_notes[0]], 42, (100,115), [' ', '.'])
+		draw_custom_font_text(self.game.screen, self.game.font, notes[patch_notes[0]], 42, (100,115), [' ', '.'])
 
 	def draw_footer(self):
 		self.game.screen.blit(self.savior_systems, (1296, 695))
@@ -232,7 +232,9 @@ class CreateNewGame(Scene):
 
 	def handle_buttons(self):
 		# text
-		for index, letter in enumerate(self.game.alphabet):
+		for index in range(26):
+			ordinal_letter = ord('a') + index
+			letter = ascii(ordinal_letter)
 			img = self.game.font[index]
 
 			if index in range(10, 18):
@@ -332,7 +334,7 @@ class CreateNewGame(Scene):
 			button.draw()
 			draw_custom_font_text(
 				self.game.screen,
-				self.game.alphabet,
+				self.game.font,
 				button.text,
 				64,
 				(button.rect.x + 18, button.rect.y + 8),
@@ -341,7 +343,7 @@ class CreateNewGame(Scene):
 
 		# draw selected letters to screen
 		for index, letter in enumerate(self.text_list):
-			surf = scale_images([self.game.alphabet[letter]], (96,96))[0]
+			surf = scale_images([self.game.font[letter]], (96,96))[0]
 			if index + 1 <= len(self.name_length):
 				self.game.screen.blit(surf, self.letter_slots[index].topleft)			
 			else:
@@ -440,7 +442,7 @@ class ChooseSave(Scene):
 	def draw(self):
 		self.game.screen.blit(self.background, (0,0))
 
-		draw_custom_font_text(self.game.screen, self.game.alphabet, self.game.player.savename, 128, (200, self.game.screen.get_rect().top + 20), [])
+		draw_custom_font_text(self.game.screen, self.game.font, self.game.player.savename, 128, (200, self.game.screen.get_rect().top + 20), [])
 
 		for button in self.buttons:
 			button.draw()
@@ -448,7 +450,7 @@ class ChooseSave(Scene):
 			if button.text != "back":
 				draw_custom_font_text(
 					self.game.screen,
-					self.game.alphabet,
+					self.game.font,
 					button.text,
 					18,
 					(button.rect.centerx - 120, button.rect.centery - 5),

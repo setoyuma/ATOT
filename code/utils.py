@@ -23,11 +23,21 @@ def alryn_pallete_swap(image:pygame.Surface, new_blue:list, new_blue_shadow:list
 
 	return new_image
 
-def draw_custom_font_text(surface:pygame.Surface, letter_dictionary:dict, text:str, text_size:int, position:tuple, split_on:list = []):
-	for index, letter in enumerate(text):
+_custom_font_text_library = {}
+def draw_custom_font_text(surface:pygame.Surface, custom_font:dict, text:str, text_size:int, position:tuple, split_on:list = []):
+	global _custom_font_text_library
+	text_surf = _custom_font_text_library.get(f"{text}{text_size}")
+	if text_surf is None:
+		text_surf = pygame.Surface((text_size * len(text), text_size)).convert_alpha()
+		text_surf.fill((0,0,0,0))
+		for index, letter in enumerate(text):
 			if letter not in split_on:
-				scaled_letter = scale_images([letter_dictionary[letter.lower()]], (text_size, text_size))[0]
-				surface.blit(scaled_letter, (position[0] + text_size * index, position[1]))
+				font_index = ord(letter.lower()) - ord('a')
+				scaled_letter = scale_images([custom_font[font_index]], (text_size, text_size))[0]
+				text_surf.blit(scaled_letter, (text_size * index, 0))
+		_custom_font_text_library[f"{text}{text_size}"] = text_surf
+	x, y = position
+	surface.blit(text_surf, (x, y))
 
 def tile_collision_test(rect:pygame.Rect, tiles:list) -> list:
 	""" Returns a list of tiles the given rect is colliding with """

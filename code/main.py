@@ -95,38 +95,9 @@ class Game:
 		self.setup_pygame()
 		self.setup_world()
 		self.playable = False
-		self.particles = []
-
 		self.show_fps = False
+		self.particles = []
 		self.font = import_cut_graphics('../assets/ui/menu/ATOT_Alphabet.png', 16)
-		self.alphabet = {
-			'a': self.font[0],
-			'b': self.font[1],
-			'c': self.font[2],
-			'd': self.font[3],
-			'e': self.font[4],
-			'f': self.font[5],
-			'g': self.font[6],
-			'h': self.font[7],
-			'i': self.font[8],
-			'j': self.font[9],
-			'k': self.font[10],
-			'l': self.font[11],
-			'm': self.font[12],
-			'n': self.font[13],
-			'o': self.font[14],
-			'p': self.font[15],
-			'q': self.font[16],
-			'r': self.font[17],
-			's': self.font[18],
-			't': self.font[19],
-			'u': self.font[20],
-			'v': self.font[21],
-			'w': self.font[22],
-			'x': self.font[23],
-			'y': self.font[24],
-			'z': self.font[25],
-		}
 
 	def setup_pygame(self):
 		self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.SCALED)
