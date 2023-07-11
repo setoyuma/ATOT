@@ -1,5 +1,4 @@
-from math import sin
-
+import math
 from BLACKFORGE2DEV import *
 from CONSTANTS import *
 

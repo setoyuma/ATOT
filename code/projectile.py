@@ -63,7 +63,7 @@ class Projectile(pygame.sprite.Sprite):
 		# ...
 	
 	def draw(self, surface:pygame.Surface):
-		surface.blit(self.image, self.rect.topleft - self.game.camera.level_scroll)
+		surface.blit(self.image, self.rect.topleft - self.game.world.camera.level_scroll)
 
 	def handle_status(self):
 		if self.status == 'hit' or self.collided:

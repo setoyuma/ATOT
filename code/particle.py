@@ -36,7 +36,7 @@ class Particle(pygame.sprite.Sprite):
 	def emit(self):
 		if self.glow:
 			glow = glow_surface(int(self.radius*2), [20,20,20], 100)
-			self.game.screen.blit(glow, (self.rect.x - 8, self.rect.y - 12) - self.game.camera.level_scroll, special_flags=BLEND_RGB_ADD)
+			self.game.screen.blit(glow, (self.rect.x - 8, self.rect.y - 12) - self.game.world.camera.level_scroll, special_flags=BLEND_RGB_ADD)
 		if self.gravity:
 			self.velocity.y += 0.08 * self.game.dt 
 		if self.physics:
@@ -55,14 +55,14 @@ class Particle(pygame.sprite.Sprite):
 
 		if self.has_image:
 			if self.radius > 0:
-				self.game.screen.blit(self.image, [int(self.rect.x), int(self.rect.y)] - self.game.camera.level_scroll)
+				self.game.screen.blit(self.image, [int(self.rect.x), int(self.rect.y)] - self.game.world.camera.level_scroll)
 		else:
 			if self.circle:
 				if self.radius > 0:
-					pygame.draw.circle(self.game.screen, self.color, [int(self.rect.x), int(self.rect.y)] - self.game.camera.level_scroll, int(self.radius))
+					pygame.draw.circle(self.game.screen, self.color, [int(self.rect.x), int(self.rect.y)] - self.game.world.camera.level_scroll, int(self.radius))
 			else:
 				if self.radius > 0:
 					surf = pygame.Surface((int(self.radius), int(self.radius)))
 					surf.fill(random.choice(seto_colors["torch1"]))
-					self.game.screen.blit(surf, self.rect.topleft - self.game.camera.level_scroll)
+					self.game.screen.blit(surf, self.rect.topleft - self.game.world.camera.level_scroll)
 				# pygame.draw.rect(self.game.screen, self.color, self.rect)
