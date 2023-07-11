@@ -40,7 +40,6 @@ class Cursor:
 	def update(self):
 		pass
 
-
 def alryn_pallete_swap(image:pygame.Surface, new_blue:list, new_blue_shadow:list, new_gold:list=[], new_skin:list=[], new_skin_shadow:list=[], new_hair:list=[], new_hair_shadow:list=[],):
 
 	new_image = palette_swap(image, ALRYN_COLORS['blue'], new_blue)

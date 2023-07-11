@@ -474,7 +474,7 @@ class LoadingScreen(Scene):
 		self.scene_type = 'main menu'
 		self.load_type = load_type
 		self.game = game
-		self.game.screen = pygame.display.set_mode((1400,800))
+		self.game.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.SCALED)
 		self.buttons = []
 		self.title = scale_images([get_image('../assets/title.png')], (960, 960))[0]
 		
@@ -546,24 +546,22 @@ class World(Scene):
 	def __init__(self, game, world_data):
 		super().__init__(game)
 		self.scene_type = 'world'
-		self.game.screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT), pygame.SCALED)
 		self.events = True
 
-		self.world_brightness = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA).convert_alpha()
 		self.enemy_sprites = pygame.sprite.Group()
 
 		# item test
 		self.item_group = pygame.sprite.Group()
 
 		# world config
+		self.torch_data = None
+		self.torch_tile_id = 63
 		self.create_layer_lists(world_data)
 		self.game = game
 		self.world_data = world_data
 		self.level_topleft = 0
 		self.level_bottomright = 0
 
-		self.torch_data = None
-		self.torch_tile_id = 63
 
 		# tile setup
 		self.tile_index = {}
@@ -606,6 +604,7 @@ class World(Scene):
 		self.generate_enemy_rects()
 		
 		# world fx
+		self.world_brightness = pygame.Surface((self.level_width, self.level_height), pygame.SRCALPHA).convert_alpha()
 		self.num_of_torches = 0
 		self.world_particles = []
 		if self.torch_data:
@@ -687,9 +686,6 @@ class World(Scene):
 			self.terrain_data,
 		]
 	
-	def generate_item_rects(self, world_data):
-		pass
-
 	def generate_player_spawn(self, world_data):
 		self.player_data = import_csv_layout(world_data['player'])
 		y = 0
@@ -866,12 +862,12 @@ class World(Scene):
 	def world_FX(self):
 		# world particles
 		for index, pos in enumerate(self.torch_positions):
-			for x in range(6):
+			for x in range(2):
 				self.world_particles.append(
 					Particle(
 						self.game, 
 						random.choice(seto_colors["torch1"]), 
-						((int(self.torch_positions[index][0].x) + 28) + random.randint(-10, 10), int(self.torch_positions[index][0].y) + 32),
+						((int(self.torch_positions[index][0].x) + 85) + random.randint(-10, 10), int(self.torch_positions[index][0].y) + 72),
 						(0, random.randint(-3,-1)), 
 						random.randint(2,8), 
 						[], 
@@ -882,7 +878,7 @@ class World(Scene):
 		# world lights
 		for index, position in enumerate(self.torch_positions):
 			torch_glow = glow_surface(TILE_SIZE*2, [20,20,40], TORCH_BRIGHTNESS)
-			self.world_brightness.blit(torch_glow, (position[0].x, (position[0].y + 32)) - self.camera.level_scroll - (102, 122), special_flags=pygame.BLEND_RGB_ADD)
+			self.world_brightness.blit(torch_glow, (position[0].x + 56, (position[0].y + 32)) - self.camera.level_scroll - (102, 122), special_flags=pygame.BLEND_RGB_ADD)
 
 		# player spell FX
 		for spell in self.game.world.player.projectiles:
@@ -993,7 +989,7 @@ class World(Scene):
 
 		self.camera.update_position()
 		self.respawn()
-
+		
 		pressed_keys = pygame.key.get_pressed()
 		for event in pygame.event.get():
 			self.universal_updates()
@@ -1002,14 +998,21 @@ class World(Scene):
 			# button clicked
 			for control, key in custom_controls.items():
 				if event.type == pygame.KEYDOWN and event.key == key or event.type == pygame.MOUSEBUTTONDOWN and event.button == key:
+					if control == 'interact' and self.player.interact_target:
+						self.game.scenes.append(ChatBubble(self.game, self.player.interact_target))
+						self.player.can_interact = False
+						self.events = False
+
 					if control == 'cycle up':  # Mouse wheel up
 						self.player.active_spell_slot = 2
 						self.player.switch_active_spell()
 						pass
+					
 					elif control == 'cycle down':  # Mouse wheel down
 						self.player.active_spell_slot = 1
 						self.player.switch_active_spell()
 						pass
+					
 					elif control == 'menu':
 						if self.game.scenes[0].scene_type == 'world':
 							self.game.scenes.append(RadialMenu(self.game))
@@ -1026,7 +1029,7 @@ class World(Scene):
 						self.player.dash_counter -= 1
 					
 					# rolling
-					elif control == 'dash/roll' and self.player.collide_bottom and self.player.roll_counter > 0 and int(self.player.roll_cooldown) == CHARACTERS[self.player.character]["ROLL COOLDOWN"]:
+					elif control == 'dash/roll' and self.player.collide_bottom and self.player.roll_counter > 0 and int(self.player.roll_cooldown) == CHARACTERS[self.player.character]["ROLL COOLDOWN"] and not self.player.attacking:
 						self.player.roll_point = (self.player.rect.x, self.player.rect.y)
 						self.player.rolling = True
 						self.player.roll_counter -= 1
@@ -1053,6 +1056,7 @@ class World(Scene):
 							)
 							play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
 
+			
 
 class RadialMenu(Scene):
 	
@@ -1222,4 +1226,51 @@ class Settings(Scene):
 		for event in pygame.event.get():
 			self.check_universal_events(pressed_keys, event)
 
+
+class ChatBubble(Scene):
+
+	def __init__(self, game, target:Entity):
+		super().__init__(game)
+		self.scene_type = 'info box'
+		self.game = game
+		self.target = target
+		self.size = pygame.math.Vector2(200,80)
+		self.game.screen.convert_alpha()
+
+		if self.target.facing_right:
+			self.infobox_rect = pygame.Rect( self.target.rect.topright, self.size )
+		else:
+			self.infobox_rect = pygame.Rect( self.target.rect.topleft, self.size )
+
+		self.infobox_border = pygame.Surface(self.size)
+		self.infobox_border.fill([255, 0, 0])
+		self.infobox_body = pygame.Surface(self.size)
+		self.infobox_body.fill([255, 255, 255])
+
+	def configure_infobox(self):
+		text = 'hello'
+
+	def update(self):
+		self.universal_updates()
+
+		pressed_keys = pygame.key.get_pressed()
+		for event in pygame.event.get():
+			self.check_universal_events(pressed_keys, event)
 	
+			for control, key in custom_controls.items():
+				if event.type == pygame.KEYDOWN and event.key == key or event.type == pygame.MOUSEBUTTONDOWN and event.button == key:
+					if control == 'interact' and self.game.world.player.interact_target:
+						self.game.scenes.pop()
+						self.game.scenes[0].events = True
+						self.game.world.player.can_interact = True
+					if control == 'menu' and self.game.world.player.interact_target:
+						self.game.scenes.pop()
+						self.game.world.player.can_interact = True
+						self.game.scenes.append(RadialMenu(self.game))
+
+	def draw(self):
+		self.universal_draw()
+
+		self.game.screen.fill([0,0,0,0], special_flags=BLEND_RGB_ADD)
+
+

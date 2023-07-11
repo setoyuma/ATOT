@@ -15,6 +15,7 @@ default_controls = {
     'menu': pygame.K_ESCAPE,
     'fullscreen': pygame.K_F11,
 	'show fps': pygame.K_F8,
+	'interact': pygame.K_e,
     'move_left': pygame.K_a,
     'move_right': pygame.K_d,
     'dash/roll': pygame.K_LSHIFT,
@@ -72,7 +73,7 @@ CENTER = (HALF_WIDTH, HALF_HEIGHT)
 
 # world
 TILE_SIZE = 64
-WORLD_BRIGHTNESS = 170
+WORLD_BRIGHTNESS = 190
 TORCH_BRIGHTNESS = 180
 GRAVITY = 0.6
 CHUNK_SIZE = 8
@@ -152,11 +153,12 @@ CHARACTERS = {
 		"JUMPFORCE": 16.2,
 		"ROLL SPEED": 8,
 		"ROLL COOLDOWN": 4,
-		"ATK_CD": 320,
+		"ATK_CD": {'overhead':432},
 		"CAST_CD": 50,
 		"DASH DIST": 30,
 		"ROLL DIST": 2,
 		"IFRAMES": 300,
+		"INTERACT RNG": 250,
 
 		"hitboxes": {
 			"overhead1": [4, (-60, 50, 40, 50)],

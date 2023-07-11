@@ -282,7 +282,8 @@ class Enemy(Entity):
 
 	def move(self):
 		if self.direction.magnitude() != 0:
-			self.direction = self.direction.normalize()
+			self.direction = pygame.math.Vector2()
+			# self.direction = self.direction.normalize()
 
 		self.velocity.x = self.direction.x * self.speed * self.game.dt
 		if not self.gravity:
@@ -403,6 +404,7 @@ class Enemy(Entity):
 		self.animate()
 		self.get_status(self.game.world.player)
 
+
 		if self.direction.x > 0:
 			self.facing_right = True
 		if self.direction.x < 0:
@@ -419,7 +421,7 @@ class Enemy(Entity):
 		self.aggro_rect.center = self.rect.center
 		if self.name in ['Covenant Follower']:
 			self.cast_range_rect.center = self.rect.center
-		self.deal_damage()
+		# self.deal_damage()
 
 		self.update_spells(self.game.world.player)
 
@@ -429,7 +431,8 @@ class Enemy(Entity):
 			self.cast_timer = 0
 
 		if round(int(self.cast_timer)) == len(self.animation):
-			self.attack()
+			# self.attack()
+			pass
 
 
 class Player(Entity):
@@ -482,16 +485,15 @@ class Player(Entity):
 		self.vulnerable = True
 		self.can_attack = True
 		self.casting = False
+		self.interact_target = None
+		self.can_interact = True
 
 		# animation
 		self.frame_index = 0
-		self.animation_speed = 0.25
+		self.animation_speed = 0.16
 		self.animator = Animator(self.game, self.animation_speed)
 
 		self.rect = pygame.Rect((self.rect.x, self.rect.y), (32, self.image.get_height()/2))
-
-		# collision area
-		self.collision_area = pygame.Rect(self.rect.x, self.rect.y, TILE_SIZE * 3, TILE_SIZE * 3)
 
 		""" WEAPONS """
 		self.weapon = []
@@ -503,7 +505,7 @@ class Player(Entity):
 		self.combo = 0
 		
 		# active rects list
-		self.rects = [self.rect]
+		self.rects = [self.rect, self.interact_rect]
 
 	def get_stats(self):
 		self.stats = CHARACTERS[self.character]
@@ -520,7 +522,9 @@ class Player(Entity):
 		self.cast_cooldown = self.stats['CAST_CD']
 		self.dash_distance = self.stats['DASH DIST']
 		self.roll_distance = self.stats['ROLL DIST']
+		self.interact_range = self.stats['INTERACT RNG']
 		self.IFRAMES = self.stats['IFRAMES']
+		self.interact_rect = pygame.Rect(self.rect.x, self.rect.y, self.interact_range, self.interact_range)
 
 	def import_character_assets(self):
 		self.animation_keys = {'idle':[],'run':[],'jump':[],'fall':[], 'attack/overhead/1':[], 'attack/overhead/2':[], 'roll':[]} 
@@ -567,17 +571,17 @@ class Player(Entity):
 	def move(self, dt):
 		keys = pygame.key.get_pressed()
 
-		if keys[pygame.K_d] and not self.dashing and not self.rolling and '/' not in self.status:
+		if keys[pygame.K_d] and not self.dashing and not self.rolling and '/' not in self.status and self.can_interact:
 			self.facing_right = True
 			self.velocity.x = self.speed
-		elif keys[pygame.K_a] and not self.dashing and not self.rolling and '/' not in self.status:
+		elif keys[pygame.K_a] and not self.dashing and not self.rolling and '/' not in self.status and self.can_interact:
 			self.facing_right = False
 			self.velocity.x = -self.speed
 		else:
 			self.velocity.x = 0
 		
 		# jumping
-		if keys[pygame.K_SPACE] and self.jumps > 0 and self.airborne_timer < 12 and '/' not in self.status:
+		if keys[pygame.K_SPACE] and self.jumps > 0 and self.airborne_timer < 12 and '/' not in self.status and self.can_interact:
 			self.jump(dt)
 			self.jumping = True
 			self.collide_bottom = False
@@ -597,10 +601,10 @@ class Player(Entity):
 		frame_scale = self.game.current_fps / 75.0
 		adjusted_roll_speed = self.roll_speed * frame_scale
 
-		if self.rolling and self.facing_right and self.collide_bottom:
+		if self.rolling and self.facing_right and self.collide_bottom and not self.attacking:
 			self.velocity.x += adjusted_roll_speed * dt
 
-		elif self.rolling and not self.facing_right and self.collide_bottom:
+		elif self.rolling and not self.facing_right and self.collide_bottom and not self.attacking:
 			self.velocity.x += -adjusted_roll_speed * dt
 	
 	def dash(self, dt):
@@ -640,6 +644,14 @@ class Player(Entity):
 		# reset combo if it reaches max
 		if self.combo >= 2:
 			self.combo = 1
+
+	def check_interactions(self):
+		for enemy in self.game.world.enemies:
+			if self.interact_rect.colliderect(enemy.rect):
+				self.interact_target = enemy
+
+			else:
+				self.interact_target = None
 
 	def draw(self, surface:pygame.Surface):
 		image_offset = ( -60, -80)
@@ -710,8 +722,9 @@ class Player(Entity):
 
 	def cooldowns(self):
 		current_time = pygame.time.get_ticks()
-		if self.attacking:
-			if current_time - self.attack_time >= self.attack_cooldown:
+		# overhead cooldowns
+		if self.attacking and 'overhead' in self.status:
+			if current_time - self.attack_time >= self.attack_cooldown['overhead']:
 				self.can_attack = True
 				self.attacking = False
 				self.combo = 0
@@ -736,13 +749,15 @@ class Player(Entity):
 		self.animation_handler()
 		self.cooldowns()
 		self.check_combo()
+		self.check_interactions()
 		
 		if self.attacking:
 			self.create_attack()
+			self.rolling = False
 
-		# update hurtbox
+		# update rect positions
 		self.hurtbox.center = self.rect.center - self.game.world.camera.level_scroll
-
+		self.interact_rect.center = self.rect.center
 		# adjust the player based on collisions
 		self.rect, self.game.world.collisions = collision_adjust(self, self.velocity, self.game.dt, terrain)
 
@@ -790,6 +805,7 @@ class Player(Entity):
 
 		if self.roll_cooldown <= 0:
 			self.rolling = False
+			self.status = 'idle'
 		
 		if self.roll_cooldown < CHARACTERS[self.character]["ROLL COOLDOWN"]:
 			self.roll_cooldown += 0.1 * dt  # roll cooldown
@@ -817,4 +833,3 @@ class Player(Entity):
 		if self.magick > CHARACTERS[self.character]["MAGICK"]:
 			self.magick = CHARACTERS[self.character]["MAGICK"]
 			self.magick = CHARACTERS[self.character]["MAGICK"]
-
