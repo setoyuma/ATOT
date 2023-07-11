@@ -42,6 +42,9 @@ class Scene:
 				pressed_keys[pygame.K_RALT]
 			if event.key == pygame.K_F4 and alt_pressed:
 				quit_attempt = True
+			for control, key in custom_controls.items():
+				if control == 'show fps':
+					self.game.show_fps = not self.game.show_fps
 		if quit_attempt:
 			pygame.quit()
 			sys.exit()
@@ -548,7 +551,6 @@ class WorldScene(Scene):
 		self.events = True
 		self.player = self.game.player
 		self.world = self.game.world
-		# pygame.display.toggle_fullscreen()
 
 	def update(self):
 		if not self.events:
@@ -570,36 +572,33 @@ class WorldScene(Scene):
 						self.player.active_spell_slot = 1
 						self.player.switch_active_spell()
 						pass
-				# key pressed
-					if control == 'menu':
+					elif control == 'menu':
 						if self.game.scenes[0].scene_type == 'world':
 							self.game.scenes.append(RadialMenu(self.game))
 							self.events = False
-					if control == 'show fps':
-						self.game.show_fps = not self.game.show_fps
 
-					if control == 'fullscreen':
+					elif control == 'fullscreen':
 						pygame.display.toggle_fullscreen()
 					
 					# dashing
-					if control == 'dash/roll' and self.player.dash_counter > 0 and not self.player.collide_bottom:
+					elif control == 'dash/roll' and self.player.dash_counter > 0 and not self.player.collide_bottom:
 						play_sound('../assets/sounds/dashing.wav')
 						self.player.dash_point = (self.player.rect.x, self.player.rect.y)
 						self.player.dashing = True
 						self.player.dash_counter -= 1
 					
 					# rolling
-					if control == 'dash/roll' and self.player.collide_bottom and self.player.roll_counter > 0 and int(self.player.roll_cooldown) == CHARACTERS[self.player.character]["ROLL COOLDOWN"]:
+					elif control == 'dash/roll' and self.player.collide_bottom and self.player.roll_counter > 0 and int(self.player.roll_cooldown) == CHARACTERS[self.player.character]["ROLL COOLDOWN"]:
 						self.player.roll_point = (self.player.rect.x, self.player.rect.y)
 						self.player.rolling = True
 						self.player.roll_counter -= 1
 
 					# attacking
-					if control == 'melee' and self.player.collide_bottom and not self.player.attacking:
+					elif control == 'melee' and self.player.collide_bottom and not self.player.attacking:
 						self.player.attack()
 
 					# spells
-					if control == 'cast' and not self.player.attacking: #and self.player.collide_bottom :
+					elif control == 'cast' and not self.player.attacking: #and self.player.collide_bottom :
 						# add this once we have damage animations (and self.player.vulnerable)
 						if self.player.facing_right  and self.player.magick > 0 and self.player.cast_timer == self.player.cast_cooldown:
 							self.player.casting = True
@@ -616,8 +615,6 @@ class WorldScene(Scene):
 							)
 							play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
 
-					if control == 'show fps':
-						self.game.show_fps = not self.game.show_fps
 
 	def draw(self):
 		# updates
@@ -629,21 +626,19 @@ class WorldScene(Scene):
 		self.game.update_background()
 		self.game.world.draw_world(self.game.screen)
 		self.player.stat_bar()
-		self.game.ui.update_spell_shard_count()
+		self.game.hud.update_spell_shard_count()
 		self.game.world.update_items(self.game.screen)
 		self.game.world.update_FX(self.game.screen)
 
 		self.game.camera.update_position()
 
-		self.game.ui.update_player_HUD()
-		self.game.ui.update_spell_slot()
-
+		self.game.hud.update_player_HUD()
+		self.game.hud.update_spell_slot()
 
 		topleft = pygame.Surface((TILE_SIZE, TILE_SIZE))
 		topleft.fill('blue')
 		bottomright = pygame.Surface((TILE_SIZE, TILE_SIZE))
 		bottomright.fill('red')
-
 
 		self.game.screen.blit(topleft, self.game.world.level_topleft.topleft - self.game.camera.level_scroll)
 		self.game.screen.blit(bottomright, self.game.world.level_bottomright.topleft - self.game.camera.level_scroll)

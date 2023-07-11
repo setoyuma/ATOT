@@ -5,6 +5,43 @@ from CONSTANTS import *
 
 
 """ SUPPORT FUNCTIONS/CLASSES """
+class Cursor:
+
+	def __init__(self, game, cursor:str, size:int):
+		self.game = game
+		self.size = pygame.math.Vector2(size, size)
+		self.image = scale_images([get_image(f'../assets/ui/cursor/{cursor}1.png')], self.size)[0]
+		self.position = pygame.math.Vector2(self.game.mx, self.game.my)
+
+	def import_assets(self):
+		self.animation_keys = {'':[]} 
+
+		for animation in self.animation_keys:
+			full_path = LAUNCHER_ASSET_PATH + animation
+			
+			original_images = import_folder(full_path)
+			scaled_images = scale_images(original_images, self.size)
+			
+			self.animation_keys[animation] = scaled_images
+
+		self.animations = self.animation_keys
+	
+	def animate(self):
+		animation = self.animation_keys[self.stats]
+		self.frame_index += self.animation_speed
+
+		if self.frame_index >= len(animation):
+			self.frame_index = self.frame_index - 1
+
+		self.image = animation[int(self.frame_index)]
+
+	def draw(self, surface:pygame.Surface):
+		surface.blit(self.image, self.position)
+
+	def update(self):
+		pass
+
+
 def alryn_pallete_swap(image:pygame.Surface, new_blue:list, new_blue_shadow:list, new_gold:list=[], new_skin:list=[], new_skin_shadow:list=[], new_hair:list=[], new_hair_shadow:list=[],):
 
 	new_image = palette_swap(image, ALRYN_COLORS['blue'], new_blue)
