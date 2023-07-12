@@ -4,6 +4,54 @@ from CONSTANTS import *
 
 
 """ SUPPORT FUNCTIONS/CLASSES """
+class appearing_text(object):
+
+	def __init__(self, lines_of_text:list):
+		
+		self.all_lines = []
+		
+		for line_count in range(len(lines_of_text)):
+			text_surf = self.write(lines_of_text[line_count], [0,0,0], [255,255,255])
+			width = text_surf.get_width()
+			height = text_surf.get_height()
+		
+			text_co_ords = []
+		
+			text_array = pygame.surfarray.array3d(text_surf)
+		
+			for x in range(width):
+				for y in range(height):
+					if text_array[x][y][0] == 0 and text_array[x][y][1] == 0 and text_array[x][y][2] == 0:
+						text_co_ords.append((x,y))
+			
+			self.all_lines.append(text_co_ords)
+											
+	def update(self, screen):
+		for event in pygame.event.get():
+		    if event.type == pygame.QUIT:
+		        raise SystemExit
+		
+		start_x = 20
+		start_y = 20
+		
+		for line in self.all_lines:
+			for co_ords in line:
+				x = co_ords[0]
+				y = co_ords[1]
+				pygame.draw.line(screen, (255,255,255), (start_x+x, start_y+y), (start_x+x+1,start_y+y))
+				pygame.display.flip()
+			
+			start_y += 20
+			
+	def write(self, msg, fg_col=[255,255,255], bg_col=[0,0,0], size=20):
+		myfont = pygame.font.Font(FONT, size)
+		text_surf = myfont.render(msg, False, bg_col, fg_col)
+		text_surf = text_surf.convert()
+		return text_surf
+
+	
+
+
 class Cursor:
 
 	def __init__(self, game, cursor:str, size:int):

@@ -556,6 +556,7 @@ class World(Scene):
 		# world config
 		self.torch_data = None
 		self.torch_tile_id = 63
+		self.pot_tile_id = 135
 		self.create_layer_lists(world_data)
 		self.game = game
 		self.world_data = world_data
@@ -986,7 +987,6 @@ class World(Scene):
 	def update(self):
 		if not self.events:
 			return
-
 		self.camera.update_position()
 		self.respawn()
 		
@@ -1002,8 +1002,20 @@ class World(Scene):
 						self.game.scenes.append(ChatBubble(self.game, self.player.interact_target))
 						self.player.can_interact = False
 						self.events = False
+					elif control == 'spawn':
+						self.world_items.append(
+							Item(
+								self.game,
+								'pot',
+								'world',
+								64,
+								(self.game.mx, self.game.my) + self.camera.level_scroll,
+								0,
+								[]
+							)
+						)
 
-					if control == 'cycle up':  # Mouse wheel up
+					elif control == 'cycle up':  # Mouse wheel up
 						self.player.active_spell_slot = 2
 						self.player.switch_active_spell()
 						pass
@@ -1155,7 +1167,7 @@ class RadialMenu(Scene):
 		self.game.screen.blit(self.image, (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-122))
 		self.button.draw()
 		self.exit_button.draw()
-		draw_text(self.game.screen, self.options[self.selected], (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-222), 24)
+		draw_text(self.game.screen, text=self.options[self.selected], pos=(SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-222), size=24, font=FONT)
 		for i, icon in enumerate(self.icons):
 			angle = self.rotation + (i * self.section_arc)
 			#pygame.transform.rotate(icon, rotation_angle)
@@ -1234,21 +1246,56 @@ class ChatBubble(Scene):
 		self.scene_type = 'info box'
 		self.game = game
 		self.target = target
-		self.size = pygame.math.Vector2(200,80)
 		self.game.screen.convert_alpha()
 
-		if self.target.facing_right:
-			self.infobox_rect = pygame.Rect( self.target.rect.topright, self.size )
-		else:
-			self.infobox_rect = pygame.Rect( self.target.rect.topleft, self.size )
+		self.box_text = 'hello muhfucka u not bout this business'
+		self.size = pygame.math.Vector2(200 + len(self.box_text), 80 + len(self.box_text))
+		self.chatbox_image = scale_images([get_image('../assets/ui/menu/chatbox.png')], (200 + len(self.box_text)*5, 80 + len(self.box_text)*2))[0]
 
-		self.infobox_border = pygame.Surface(self.size)
-		self.infobox_border.fill([255, 0, 0])
+		if self.target.facing_right:
+			self.infobox_rect = pygame.Rect( self.target.rect.topright - pygame.math.Vector2(0, 160), self.size )
+		else:
+			self.infobox_rect = pygame.Rect( self.target.rect.topleft - pygame.math.Vector2(0, 160), self.size )
+
+		self.infobox_border = pygame.Surface((self.size.x + 64, self.size.y + 48))
+		self.infobox_border.fill([255, 255, 255])
 		self.infobox_body = pygame.Surface(self.size)
-		self.infobox_body.fill([255, 255, 255])
+		self.infobox_body.fill([0, 0, 0])
 
 	def configure_infobox(self):
-		text = 'hello'
+
+		infobox_rect2 = pygame.Rect( self.infobox_rect.center - self.game.world.camera.level_scroll - (64, 24), self.size )
+		self.game.screen.blit(self.chatbox_image, infobox_rect2.topleft + (64, 24))
+
+		# font = pygame.font.Font(FONT)
+		# text_line_wrap(
+		# 	self.game.screen,
+		# 	self.box_text,
+		# 	[255,255,255],
+		# 	infobox_rect2,
+		# 	font,
+		# 	True,
+		# 	None,
+		# 	size=32
+		# )
+
+		draw_text(
+			self.game.screen,
+			self.box_text,
+			self.infobox_rect.center - self.game.world.camera.level_scroll + pygame.math.Vector2(16 + len(self.box_text), 0),
+			font=FONT,
+			size=26,
+			color=[255,255,255]
+		)
+
+		# draw_custom_font_text(
+		# 	self.game.screen,
+		# 	self.game.font,
+		# 	self.box_text,
+		# 	18,
+		# 	self.infobox_rect.topleft - self.game.world.camera.level_scroll,
+		# 	[' ', '.']
+		# )
 
 	def update(self):
 		self.universal_updates()
@@ -1273,4 +1320,4 @@ class ChatBubble(Scene):
 
 		self.game.screen.fill([0,0,0,0], special_flags=BLEND_RGB_ADD)
 
-
+		self.configure_infobox()

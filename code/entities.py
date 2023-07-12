@@ -53,15 +53,19 @@ class Item(Entity):
 	def get_stats(self):
 		self.stats = ITEMS[self.type][self.item_name]
 		self.name = self.stats['NAME']
-		self.animation_speed = self.stats['ANIM SPEED']
-		self.recovery = self.stats['RECOV']
-		self.pickup_radius = self.stats['PICKUP_RAD']
-		self.timer = self.stats['TIME']
 		self.size = pygame.math.Vector2(self.stats['SIZE'], self.stats['SIZE'])
+		self.animation_speed = self.stats['ANIM SPEED']
+		if self.type not in ['world']:
+			self.recovery = self.stats['RECOV']
+			self.pickup_radius = self.stats['PICKUP_RAD']
+			self.timer = self.stats['TIME']
 
 	def import_assets(self):
 		if self.type == 'magick' and 'shard' in self.item_name:
-			self.animation_keys = {'magick_shard':[]} 
+			self.animation_keys = {'magick_shard':[]}
+		elif self.type == 'world' and 'pot' in self.item_name:
+			self.animation_keys = {'pot':[]}
+
 
 		for animation in self.animation_keys:
 			full_path = ITEMS_PATH + self.type + '/' + animation
@@ -143,18 +147,19 @@ class Item(Entity):
 
 	def update(self, surface:pygame.Surface):
 		if self.status not in ['collected', 'inactive']:
-			self.timer -= 0.1 * self.game.dt
-			if self.timer <= self.stats['TIME'] - 12:
-				self.status = 'decay'
-			if self.timer <= 0:
-				self.status = 'despawned'
-				self.timer = self.stats['TIME']
-			
-			self.actions(self.game.world.player)
 			self.animate()
 			self.get_status(surface)
 			self.get_pickup_status()
 			self.draw(surface)
+			if self.type in ['magick']:
+				self.timer -= 0.1 * self.game.dt
+				if self.timer <= self.stats['TIME'] - 12:
+					self.status = 'decay'
+				if self.timer <= 0:
+					self.status = 'despawned'
+					self.timer = self.stats['TIME']
+
+				self.actions(self.game.world.player)
 
 			self.rect, self.game.world.collisions = collision_adjust(self, self.velocity, self.game.dt, self.game.world.tile_rects)
 			# collision handling

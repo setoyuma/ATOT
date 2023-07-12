@@ -60,7 +60,7 @@ class HUD:
 	def update_spell_shard_count(self):
 		spell_shard_img = get_image('../assets/items/magick/magick_shard/magick_shard1.png')
 		self.display.blit(spell_shard_img, (40, 120))
-		draw_text(self.display, f"{self.player.magick_shards}", [25, 150], size=32)
+		draw_text(self.display, f"{self.player.magick_shards}", [25, 150], size=45, font=FONT)
 
 	def update_spell_slot(self):
 		self.spell_1_image = get_image(SPELL_PATH+self.player.active_spell+'/'+self.player.active_spell+'1'+'.png')

@@ -30,7 +30,7 @@ class Game:
 
 	def draw_fps(self):
 		fpsCounter = int(self.clock.get_fps())
-		draw_text(self.screen, f"FPS: {fpsCounter}", [900, 20])
+		draw_text(self.screen, f"fps: {fpsCounter}", [900, 20], font=FONT, size=42)
 
 	def send_frame(self):
 		pygame.display.flip()

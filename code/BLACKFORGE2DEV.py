@@ -281,7 +281,7 @@ class Button():
 		else:
 			self.base_func(self.base, self.base_color)
 		if self.text:
-			draw_text(self.surf, self.text, self.center, self.size, self.text_color)
+			draw_text(self.surf, text=self.text, pos=self.center, size=self.size, color=self.text_color)
 		self.game.screen.blit(self.surf, self.rect.topleft)
 
 	def draw_rect(self, rect:pygame.Rect, color:str) -> None:
@@ -375,12 +375,12 @@ def play_sound(path, stop=None):
 		sound.play(6)
 
 _text_library = {}
-def draw_text(surface:pygame.Surface, text:str, pos:tuple, size=30, color=(255,255,255), bg_color=None):
+def draw_text(surface:pygame.Surface, text:str, pos:tuple, font=None, size=30, color=(255,255,255), bg_color=None):
 	global _text_library
 	text_surf = _text_library.get(f"{text}{color}{size}")
 	if text_surf is None:
-		font = pygame.font.Font(None, size)
-		text_surf = font.render(text, True, color, bg_color)
+		usefont = pygame.font.Font(font, size)
+		text_surf = usefont.render(text, True, color, bg_color)
 		_text_library[f"{text}{color}{size}"] = text_surf
 	x, y = pos
 	surface.blit(text_surf, (x - (text_surf.get_width() // 2), y - (text_surf.get_height() // 2)))

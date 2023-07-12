@@ -12,6 +12,7 @@ FPS = 75
 # FPS = 10
 
 default_controls = {
+    'spawn': pygame.K_F2,
     'menu': pygame.K_ESCAPE,
     'fullscreen': pygame.K_F11,
 	'show fps': pygame.K_F8,
@@ -59,6 +60,7 @@ key_shortcuts = {
 	'right click': 2,
 }
 
+FONT = '../assets/font/OldeEnglish.ttf'
 
 2.7 # chunks visible on screen on x axis -> SCREEN_WIDTH / ( chunk_size * TILE_SIZE)
 1.5 # chunks visible on screen on y axis -> SCREEN_HEIGHT / ( chunk_size * TILE_SIZE)
@@ -239,6 +241,13 @@ ITEMS = {
 			"RECOV": 6,
 			"TIME": 20,
 			"PICKUP_RAD": 120
+		}
+	},
+	'world': {
+		'pot' : {
+			"NAME": "Pot",
+			"ANIM SPEED": 0.45,
+			"SIZE": 64,
 		}
 	}
 }
