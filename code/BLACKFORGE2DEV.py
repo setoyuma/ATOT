@@ -311,6 +311,7 @@ class Animator():
 	def run(self, animation:list):
 		self.animate(animation)
 
+
 """ SUPPORT FUNCTIONS """
 def clamp(num:int, min_value:int, max_value:int):
 	return max(min(num, max_value), min_value)
@@ -375,12 +376,12 @@ def play_sound(path, stop=None):
 		sound.play(6)
 
 _text_library = {}
-def draw_text(surface:pygame.Surface, text:str, pos:tuple, font=None, size=30, color=(255,255,255), bg_color=None):
+def draw_text(surface:pygame.Surface, text:str, pos:tuple, font=None, size=30, color=(255,255,255), bg_color=None, wraplength=0):
 	global _text_library
 	text_surf = _text_library.get(f"{text}{color}{size}")
 	if text_surf is None:
 		usefont = pygame.font.Font(font, size)
-		text_surf = usefont.render(text, True, color, bg_color)
+		text_surf = usefont.render(text, True, color, bg_color, wraplength)
 		_text_library[f"{text}{color}{size}"] = text_surf
 	x, y = pos
 	surface.blit(text_surf, (x - (text_surf.get_width() // 2), y - (text_surf.get_height() // 2)))
@@ -417,7 +418,7 @@ def scale_images(images: list, size: tuple) -> list:
 		scaled_images.append(pygame.transform.scale(image, size))
 	return scaled_images
 
-def text_line_wrap(surface:pygame.Surface, text:str, color:str, rect:pygame.Rect, font:pygame.Font, aa=False, bkg=None):
+def text_line_wrap(surface:pygame.Surface, text:str, color:str, rect:pygame.Rect, font:pygame.Font, aa=False, bkg=None, size=32):
 	rect = pygame.Rect(rect)
 	y = rect.top
 	lineSpacing = -2

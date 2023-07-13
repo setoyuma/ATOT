@@ -745,6 +745,17 @@ class Player(Entity):
 			surf.fill('white')
 			surface.blit(surf, rect.topleft - self.game.world.camera.level_scroll)
 
+	def respawn(self):
+		if self.health <= 0:
+			self.rect.x = self.game.world.player_spawn.x
+			self.rect.y = self.game.world.player_spawn.y
+			self.health = CHARACTERS[self.character]["HEALTH"]
+		elif self.rect.bottom >= self.game.world.level_height + 300:
+			self.rect.x = self.game.world.player_spawn.x
+			self.rect.y = self.game.world.player_spawn.y
+			self.health = CHARACTERS[self.character]["HEALTH"]
+			self.magick = CHARACTERS[self.character]["MAGICK"]
+
 	def update(self, dt, surface:pygame.Surface, terrain:list):
 		self.move(dt)
 		self.roll(dt)
@@ -755,7 +766,8 @@ class Player(Entity):
 		self.cooldowns()
 		self.check_combo()
 		self.check_interactions()
-		
+		self.respawn()
+
 		if self.attacking:
 			self.create_attack()
 			self.rolling = False

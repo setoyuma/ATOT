@@ -49,9 +49,6 @@ class appearing_text(object):
 		text_surf = text_surf.convert()
 		return text_surf
 
-	
-
-
 class Cursor:
 
 	def __init__(self, game, cursor:str, size:int):

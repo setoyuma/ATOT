@@ -27,8 +27,6 @@ class Scene:
 
 	def universal_draw(self):
 		self.game.cursor.draw(self.game.screen)
-		if self.game.show_fps:
-			self.game.draw_fps()
 
 	def check_universal_events(self, pressed_keys, event):
 		quit_attempt = False
@@ -52,7 +50,7 @@ class Launcher(Scene):
 		super().__init__(game)
 		self.scene_type = 'launcher'
 		self.status = 'alpha'
-		self.game.screen = pygame.display.set_mode((1400,800))
+		self.game.screen = pygame.display.set_mode((1400,800), pygame.SCALED)
 		self.size = pygame.math.Vector2(800,800)
 
 		# assets
@@ -122,7 +120,8 @@ class Launcher(Scene):
 		self.game.screen.blit(self.savior_systems, (1296, 695))
 
 	def choose_save(self):
-		self.game.scenes = [ChooseSave(self.game, 'play game')]
+		self.game.scenes = [self.game.world]
+		# self.game.scenes = [ChooseSave(self.game, 'play game')]
 
 	def load_new(self):
 		self.game.scenes = [CreateNewGame(self.game)]
@@ -563,7 +562,6 @@ class World(Scene):
 		self.level_topleft = 0
 		self.level_bottomright = 0
 
-
 		# tile setup
 		self.tile_index = {}
 
@@ -622,6 +620,7 @@ class World(Scene):
 		# hud
 		self.hud = HUD(self.game, self.player, self.game.screen)
 
+	""" INITIAL CONFIG """
 	def calculate_level_size(self):
 		max_right = 0
 		max_bottom = 0
@@ -687,6 +686,7 @@ class World(Scene):
 			self.terrain_data,
 		]
 	
+	""" WORLD GENERATION """
 	def generate_player_spawn(self, world_data):
 		self.player_data = import_csv_layout(world_data['player'])
 		y = 0
@@ -710,9 +710,59 @@ class World(Scene):
 				x += 1
 			y += 1
 
-	def draw_enemies(self, surface:pygame.Surface):
+	def generate_enemy_rects(self):
 		for enemy in self.enemies:
-			enemy.draw(surface)
+			self.enemy_rects.append(enemy.rect)
+
+	def generate_tile_rects(self):
+		self.tile_rects = []
+		for layer in self.collision_tile_data:
+			y = 0
+			for row in layer:
+				x = 0
+				for tile_num, tile_id in enumerate(row):
+					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys() and int(tile_id) not in [18]:
+						self.tile_rects.append(pygame.Rect( (x * TILE_SIZE, y * TILE_SIZE), ( TILE_SIZE, TILE_SIZE ) ))
+					x += 1
+				y += 1
+	
+	def generate_constraint_rects(self):
+		self.constraint_rects = []
+		y = 0
+		if self.constraint_data:
+			for row in self.constraint_data:
+				x = 0
+				for tile_num, tile_id in enumerate(row):
+					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys():
+						self.constraint_rects.append(pygame.Rect( (x * TILE_SIZE, y * TILE_SIZE), ( TILE_SIZE, TILE_SIZE ) ))
+					x += 1
+				y += 1
+	
+	def generate_torch_positions(self):
+		y = 0
+		if self.torch_data:
+			for row in self.torch_data:
+				x = 0
+				for tile_num, tile_id in enumerate(row):
+					if int(tile_id) == self.torch_tile_id:
+						self.torch_positions.append([pygame.math.Vector2(x * TILE_SIZE - self.camera.level_scroll.x, y * TILE_SIZE - self.camera.level_scroll.y)])
+						if len(self.torch_positions) > self.num_of_torches:
+							self.torch_positions.pop(self.num_of_torches)
+					else:
+						pass
+					x += 1
+				y += 1
+
+	def setup_torches(self):
+		# torches
+		y = 0
+		for row in self.torch_data:
+			x = 0
+			for tile_num, tile_id in enumerate(row):
+				if int(tile_id) == self.torch_tile_id:
+					self.num_of_torches += 1
+				x += 1
+			y += 1
 
 	def update_enemies(self, dt, surface:pygame.Surface, terrain:list, constraints:list):
 		for enemy in self.enemies:
@@ -772,93 +822,6 @@ class World(Scene):
 							image_path='../assets/items/magick/magick_shard/magick_shard1.png'
 						)
 					)
-		
-	def generate_enemy_rects(self):
-		for enemy in self.enemies:
-			self.enemy_rects.append(enemy.rect)
-
-	def generate_tile_rects(self):
-		self.tile_rects = []
-		for layer in self.collision_tile_data:
-			y = 0
-			for row in layer:
-				x = 0
-				for tile_num, tile_id in enumerate(row):
-					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys() and int(tile_id) not in [18]:
-						self.tile_rects.append(pygame.Rect( (x * TILE_SIZE, y * TILE_SIZE), ( TILE_SIZE, TILE_SIZE ) ))
-					x += 1
-				y += 1
-	
-	def generate_constraint_rects(self):
-		self.constraint_rects = []
-		y = 0
-		if self.constraint_data:
-			for row in self.constraint_data:
-				x = 0
-				for tile_num, tile_id in enumerate(row):
-					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys():
-						self.constraint_rects.append(pygame.Rect( (x * TILE_SIZE, y * TILE_SIZE), ( TILE_SIZE, TILE_SIZE ) ))
-					x += 1
-				y += 1
-
-	def setup_torches(self):
-		# torches
-		y = 0
-		for row in self.torch_data:
-			x = 0
-			for tile_num, tile_id in enumerate(row):
-				if int(tile_id) == self.torch_tile_id:
-					self.num_of_torches += 1
-				x += 1
-			y += 1
-
-	def generate_torch_positions(self):
-		y = 0
-		if self.torch_data:
-			for row in self.torch_data:
-				x = 0
-				for tile_num, tile_id in enumerate(row):
-					if int(tile_id) == self.torch_tile_id:
-						self.torch_positions.append([pygame.math.Vector2(x * TILE_SIZE - self.camera.level_scroll.x, y * TILE_SIZE - self.camera.level_scroll.y)])
-						if len(self.torch_positions) > self.num_of_torches:
-							self.torch_positions.pop(self.num_of_torches)
-					else:
-						pass
-					x += 1
-				y += 1
-
-	def draw_tiles(self, screen):
-		for layer in self.layer_data:
-			y = 0
-			for row in layer:
-				x = 0
-				for tile_num, tile_id in enumerate(row):
-					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys():
-						screen.blit(self.tile_index[int(tile_id)], (x * TILE_SIZE - self.camera.level_scroll.x, y * TILE_SIZE - self.camera.level_scroll.y))
-					x += 1
-				y += 1
-	
-	def draw_foreground(self, screen):
-		for layer in self.foreground_layer_data:
-			y = 0
-			for row in layer:
-				x = 0
-				for tile_num, tile_id in enumerate(row):
-					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys():
-						screen.blit(self.tile_index[int(tile_id)], (x * TILE_SIZE - self.camera.level_scroll.x, y * TILE_SIZE - self.camera.level_scroll.y))
-					x += 1
-				y += 1
-
-	def respawn(self):
-		if self.game.world.player.health <= 0:
-			self.game.world.player.rect.x = self.player_spawn.x
-			self.game.world.player.rect.y = self.player_spawn.y
-			self.game.world.player.health = CHARACTERS[self.game.world.player.character]["HEALTH"]
-		elif self.game.world.player.rect.bottom >= self.level_height + 300:
-			self.game.world.player.rect.x = self.player_spawn.x
-			self.game.world.player.rect.y = self.player_spawn.y
-			self.game.world.player.health = CHARACTERS[self.game.world.player.character]["HEALTH"]
-			self.game.world.player.magick = CHARACTERS[self.game.world.player.character]["MAGICK"]
 
 	def world_FX(self):
 		# world particles
@@ -868,7 +831,7 @@ class World(Scene):
 					Particle(
 						self.game, 
 						random.choice(seto_colors["torch1"]), 
-						((int(self.torch_positions[index][0].x) + 85) + random.randint(-10, 10), int(self.torch_positions[index][0].y) + 72),
+						((int(self.torch_positions[index][0].x) + 58) + random.randint(-10, 10), int(self.torch_positions[index][0].y) + 50),
 						(0, random.randint(-3,-1)), 
 						random.randint(2,8), 
 						[], 
@@ -879,7 +842,7 @@ class World(Scene):
 		# world lights
 		for index, position in enumerate(self.torch_positions):
 			torch_glow = glow_surface(TILE_SIZE*2, [20,20,40], TORCH_BRIGHTNESS)
-			self.world_brightness.blit(torch_glow, (position[0].x + 56, (position[0].y + 32)) - self.camera.level_scroll - (102, 122), special_flags=pygame.BLEND_RGB_ADD)
+			self.world_brightness.blit(torch_glow, (position[0].x + 36, (position[0].y + 32)) - self.camera.level_scroll - (102, 122), special_flags=pygame.BLEND_RGB_ADD)
 
 		# player spell FX
 		for spell in self.game.world.player.projectiles:
@@ -894,11 +857,12 @@ class World(Scene):
 				if spell.status not in ['hit', 'remove']:
 					spell_glow = glow_surface(spell.size.x, [20,20,20], 100)
 					self.world_brightness.blit(spell_glow, spell.rect.topleft - self.camera.level_scroll - (50, 50), special_flags=BLEND_RGB_ADD)
-
+	
+	""" WORLD UPDATES """
 	def update_FX(self, surface:pygame.Surface):
 		for particle in self.world_particles:
 			particle.emit()
-			if particle.radius <= 0.5:
+			if particle.radius <= 0.2:
 				self.world_particles.remove(particle)
 
 	def update_items(self, surface:pygame.Surface):
@@ -909,11 +873,6 @@ class World(Scene):
 			if item.status in ['collected', 'despawned']:
 				self.world_items.remove(item)
 
-	def draw_map_image(self, surface:pygame.Surface):
-		map_image = get_image(f'../levels/level_data/{world_names[self.game.current_world]}.png')
-		map_image = scale_images([map_image], (self.level_width, self.level_height))[0]
-		surface.blit(map_image, (0,0) - self.camera.level_scroll)
-
 	def update_background(self):
 		self.game.screen.fill([55, 55, 92])
 		self.world_brightness.fill([WORLD_BRIGHTNESS, WORLD_BRIGHTNESS, WORLD_BRIGHTNESS])
@@ -922,73 +881,10 @@ class World(Scene):
 		self.game.screen.blit(self.full_background[1], (0,0)-self.camera.level_scroll * 0.5)
 		self.game.screen.blit(self.full_background[2], (0,0)-self.camera.level_scroll * 0.8)
 
-	def draw_world(self, surface:pygame.Surface):
-		# draw tiles
-		self.draw_tiles(surface)
-		self.generate_torch_positions()
-		# draw player
-		self.player.draw(surface)
-		# draw enemies
-		self.draw_enemies(surface)
-		# draw foreground
-		self.draw_foreground(surface)
-		# draw vfx
-		self.update_FX(surface)
-		self.world_FX()
-		self.game.screen.blit(self.world_brightness, (0,0), special_flags=BLEND_RGB_MULT)
-
-	def draw(self):
-		# updates
-		self.update()
-		self.update_enemies(self.game.dt, self.game.screen, self.game.world.tile_rects, self.game.world.constraint_rects)
-		self.player.update(self.game.dt, self.game.screen, self.game.world.tile_rects)
-
-		# drawing
-		self.update_background()
-		self.draw_world(self.game.screen)
-		self.player.stat_bar()
-		self.hud.update_spell_shard_count()
-		self.update_items(self.game.screen)
-		self.update_FX(self.game.screen)
-
-		self.hud.update_player_HUD()
-		self.hud.update_spell_slot()
-
-		# handle player projectiles
-		for projectile in self.player.projectiles:
-			projectile.draw(self.game.screen)
-
-
-			if projectile.status == 'remove':
-				self.player.projectiles.remove(projectile)
-			else:
-				if projectile.position.x >= projectile.cast_from.x + projectile.distance:
-					projectile.status = 'hit'				
-				if projectile.position.x <= projectile.cast_from.x - projectile.distance:
-					projectile.status = 'hit'				
-
-		# handle enemy projectiles
-		for enemy in self.game.world.enemies:
-			if enemy.name in ['Covenant Follower']:
-				for projectile in enemy.spells:
-					projectile.draw(self.game.screen)
-
-					if projectile.status == 'remove':
-						enemy.spells.remove(projectile)
-					else:
-						if projectile.position.x >= projectile.cast_from.x + projectile.distance:
-							projectile.status = 'hit'				
-						if projectile.position.x <= projectile.cast_from.x - projectile.distance:
-							projectile.status = 'hit'
-
-		self.universal_draw()
-		self.game.draw_fps()
-
 	def update(self):
 		if not self.events:
 			return
 		self.camera.update_position()
-		self.respawn()
 		
 		pressed_keys = pygame.key.get_pressed()
 		for event in pygame.event.get():
@@ -1068,7 +964,93 @@ class World(Scene):
 							)
 							play_sound(f'../assets/sounds/{self.player.active_spell}.wav')
 
-			
+	""" WORLD RENDERING """
+	def draw_tiles(self, screen):
+		for layer in self.layer_data:
+			y = 0
+			for row in layer:
+				x = 0
+				for tile_num, tile_id in enumerate(row):
+					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys():
+						screen.blit(self.tile_index[int(tile_id)], (x * TILE_SIZE - self.camera.level_scroll.x, y * TILE_SIZE - self.camera.level_scroll.y))
+					x += 1
+				y += 1
+	
+	def draw_foreground(self, screen):
+		for layer in self.foreground_layer_data:
+			y = 0
+			for row in layer:
+				x = 0
+				for tile_num, tile_id in enumerate(row):
+					if int(tile_id) != -1 and int(tile_id) in self.tile_index.keys():
+						screen.blit(self.tile_index[int(tile_id)], (x * TILE_SIZE - self.camera.level_scroll.x, y * TILE_SIZE - self.camera.level_scroll.y))
+					x += 1
+				y += 1
+
+	def draw_enemies(self, surface:pygame.Surface):
+		for enemy in self.enemies:
+			enemy.draw(surface)
+
+	def draw_world(self, surface:pygame.Surface):
+		# draw tiles
+		self.draw_tiles(surface)
+		self.generate_torch_positions()
+		# draw player
+		self.player.draw(surface)
+		# draw enemies
+		self.draw_enemies(surface)
+		# draw foreground
+		self.draw_foreground(surface)
+		# draw vfx
+		self.update_FX(surface)
+		self.world_FX()
+		self.game.screen.blit(self.world_brightness, (0,0), special_flags=BLEND_RGB_MULT)
+
+	def draw(self):
+		# updates
+		self.update_enemies(self.game.dt, self.game.screen, self.game.world.tile_rects, self.game.world.constraint_rects)
+		self.player.update(self.game.dt, self.game.screen, self.game.world.tile_rects)
+
+		# drawing
+		self.update_background()
+		self.draw_world(self.game.screen)
+		self.player.stat_bar()
+		self.hud.update_spell_shard_count()
+		self.update_items(self.game.screen)
+
+		self.hud.update_player_HUD()
+		self.hud.update_spell_slot()
+
+		# handle player projectiles
+		for projectile in self.player.projectiles:
+			projectile.draw(self.game.screen)
+
+
+			if projectile.status == 'remove':
+				self.player.projectiles.remove(projectile)
+			else:
+				if projectile.position.x >= projectile.cast_from.x + projectile.distance:
+					projectile.status = 'hit'				
+				if projectile.position.x <= projectile.cast_from.x - projectile.distance:
+					projectile.status = 'hit'				
+
+		# handle enemy projectiles
+		for enemy in self.game.world.enemies:
+			if enemy.name in ['Covenant Follower']:
+				for projectile in enemy.spells:
+					projectile.draw(self.game.screen)
+
+					if projectile.status == 'remove':
+						enemy.spells.remove(projectile)
+					else:
+						if projectile.position.x >= projectile.cast_from.x + projectile.distance:
+							projectile.status = 'hit'				
+						if projectile.position.x <= projectile.cast_from.x - projectile.distance:
+							projectile.status = 'hit'
+
+		self.universal_draw()
+		self.game.draw_fps()
+
 
 class RadialMenu(Scene):
 	
@@ -1089,6 +1071,10 @@ class RadialMenu(Scene):
 		exit_img = '../assets/ui/menu/back_arrow.png'
 		exit_img2 = '../assets/ui/menu/back_arrow2.png'
 		self.exit_button = Button(game, (96, 101), "exit", (1340, 50), self.exit, exit_img, exit_img2, text_size=1, text_color=[255,255,0])
+
+		# status
+		self.switch_scene = False
+		self.selected_option = False
 
 		# animation
 		self.size = (320, 320)
@@ -1117,8 +1103,14 @@ class RadialMenu(Scene):
 		animation = self.animation_keys[self.status]
 		self.frame_index += self.animation_speed
 
-		if self.frame_index >= len(animation)/2:
+		if self.frame_index >= len(animation)/2 - 2 and not self.selected_option:
 			self.frame_index = self.frame_index - 1
+		
+		if self.selected_option:
+			self.frame_index += self.animation_speed
+			if self.frame_index >= len(animation) - 1:
+				self.frame_index = len(animation) - 1
+				self.switch_scene = True
 
 		self.image = animation[int(self.frame_index)]
 
@@ -1164,7 +1156,7 @@ class RadialMenu(Scene):
 
 	def draw(self):
 		self.animate()
-		self.game.screen.blit(self.image, (SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-122))
+		self.game.screen.blit(self.image, (SCREEN_WIDTH//2-152, SCREEN_HEIGHT//2-142))
 		self.button.draw()
 		self.exit_button.draw()
 		draw_text(self.game.screen, text=self.options[self.selected], pos=(SCREEN_WIDTH//2+16, SCREEN_HEIGHT//2-222), size=24, font=FONT)
@@ -1179,14 +1171,18 @@ class RadialMenu(Scene):
 	def callback(self):
 		match self.options[self.selected]:
 			case 'Settings':
-				self.game.scenes[1] = Settings(self.game)
+				self.selected_option = True
+				if self.switch_scene:
+					self.game.scenes[1] = Settings(self.game)
 			case 'Grimoire':
 				pass
 			case 'Inventory':
 				pass
 			case 'Equipment':
 				pass
-			
+			case _:
+				self.selected_option = False
+				self.switch_scene = False
 
 class Settings(Scene):
 
@@ -1194,7 +1190,6 @@ class Settings(Scene):
 		super().__init__(game)
 		self.scene_type = 'settings'
 		self.game = game
-
 
 		# animation
 		self.size = self.game.screen.get_size()
@@ -1231,6 +1226,7 @@ class Settings(Scene):
 
 	def draw(self):
 		self.universal_draw()
+		self.game.screen.blit(self.image, )
 
 	def update(self):
 		self.universal_updates()
@@ -1246,56 +1242,31 @@ class ChatBubble(Scene):
 		self.scene_type = 'info box'
 		self.game = game
 		self.target = target
-		self.game.screen.convert_alpha()
 
-		self.box_text = 'hello muhfucka u not bout this business'
-		self.size = pygame.math.Vector2(200 + len(self.box_text), 80 + len(self.box_text))
-		self.chatbox_image = scale_images([get_image('../assets/ui/menu/chatbox.png')], (200 + len(self.box_text)*5, 80 + len(self.box_text)*2))[0]
+		self.box_text = 'hello muhfucka u not bout this business oadkoakdwoakda i hjijidoj iodjaid oajdioaj dioa jdios jdioa wjwoi90879y 87u uio hu gu'
+		self.size = pygame.math.Vector2(200, 80)
+		self.chatbox_image = scale_images([get_image('../assets/ui/menu/chatbox.png')], (464, 160))[0]
 
 		if self.target.facing_right:
-			self.infobox_rect = pygame.Rect( self.target.rect.topright - pygame.math.Vector2(0, 160), self.size )
+			self.infobox_rect = pygame.Rect( self.target.rect.topright - pygame.math.Vector2(100, 200), self.size )
 		else:
-			self.infobox_rect = pygame.Rect( self.target.rect.topleft - pygame.math.Vector2(0, 160), self.size )
-
-		self.infobox_border = pygame.Surface((self.size.x + 64, self.size.y + 48))
-		self.infobox_border.fill([255, 255, 255])
-		self.infobox_body = pygame.Surface(self.size)
-		self.infobox_body.fill([0, 0, 0])
+			self.infobox_rect = pygame.Rect( self.target.rect.topleft - pygame.math.Vector2(140, 220), self.size )
 
 	def configure_infobox(self):
 
 		infobox_rect2 = pygame.Rect( self.infobox_rect.center - self.game.world.camera.level_scroll - (64, 24), self.size )
-		self.game.screen.blit(self.chatbox_image, infobox_rect2.topleft + (64, 24))
 
-		# font = pygame.font.Font(FONT)
-		# text_line_wrap(
-		# 	self.game.screen,
-		# 	self.box_text,
-		# 	[255,255,255],
-		# 	infobox_rect2,
-		# 	font,
-		# 	True,
-		# 	None,
-		# 	size=32
-		# )
+		self.game.screen.blit(self.chatbox_image, infobox_rect2.topleft - pygame.math.Vector2(64, 56))
 
 		draw_text(
 			self.game.screen,
 			self.box_text,
-			self.infobox_rect.center - self.game.world.camera.level_scroll + pygame.math.Vector2(16 + len(self.box_text), 0),
+			self.infobox_rect.center - self.game.world.camera.level_scroll + pygame.math.Vector2(96, 0),
 			font=FONT,
 			size=26,
-			color=[255,255,255]
+			color=[255,255,255],
+			wraplength=400
 		)
-
-		# draw_custom_font_text(
-		# 	self.game.screen,
-		# 	self.game.font,
-		# 	self.box_text,
-		# 	18,
-		# 	self.infobox_rect.topleft - self.game.world.camera.level_scroll,
-		# 	[' ', '.']
-		# )
 
 	def update(self):
 		self.universal_updates()
@@ -1317,7 +1288,4 @@ class ChatBubble(Scene):
 
 	def draw(self):
 		self.universal_draw()
-
-		self.game.screen.fill([0,0,0,0], special_flags=BLEND_RGB_ADD)
-
 		self.configure_infobox()
